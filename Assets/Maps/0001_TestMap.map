@@ -5,7 +5,7 @@
 # TRIGGER <id> <x> <y> <width> <height> <eventName>
 
 MAP 0001_TestMap
-GROUND Assets/Sprites/Environment/basic_grass.png
+GROUND Assets/Sprites/Environment/Forest/forest_ground.png
 
 OBJECT rock_01 scenery -192 -64 Assets/Sprites/Environment/basic_rock.png 1
 OBJECT rock_02 scenery -128 -64 Assets/Sprites/Environment/basic_rock.png 1
