@@ -175,7 +175,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include=".github\copilot-instructions.md" />
-    <None Include="Assets\Maps\0001_TestMap.map" />
+    <None Include="Assets\**\*" />
     <None Include="DesignDocument.md" />
   </ItemGroup>
   <Target Name="CopyAssetsToOutput" AfterTargets="Build">
@@ -191,4 +191,6 @@
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
 </Project>
+
+
 

@@ -226,7 +226,8 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 - Sprite-Standardgröße: `64x64` Pixel (einheitliches Basisraster)
 - Map-Format (Prototyp): textbasiert, eine Datei pro Map (z. B. `0001_TestMap.map`)
 - Zeilenformat: `MAP`, `OBJECT`, `TRIGGER` (für Weltobjekte und Triggerzonen)
-- Aktuelle Platzhalter: `main_character.png` und `basic_rock.png`
+- Aktuelle Platzhalter: `main_character.png`, `basic_rock.png` und `basic_grass.png`
+- Map-Objektkategorie `untergrund`: Bodenflächen ohne Kollision (z. B. Gras)
 
 ---
 
@@ -269,6 +270,7 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 | 10.11.2026 | Delta-Time-basierte Bewegung | Framerate-unabhängiges Verhalten | Konsistente Bewegung auf verschiedenen Systemen |
 | 10.11.2026 | Modulare Zielstruktur für Systeme/Assets | Bessere Erweiterbarkeit und Wartbarkeit | Spätere Aufteilung in getrennte Engine-/Content-Module |
 | 10.11.2026 | Map-Dateien pro Level (`Assets/Maps/*.map`) mit `OBJECT`- und `TRIGGER`-Einträgen | Weltinhalte und Trigger sollen datengetrieben statt hartkodiert sein | Testmap `0001_TestMap` kann Objekte platzieren und Bereichs-Events auslösen |
+| 10.11.2026 | Neue Objektkategorie `untergrund` für Boden-Sprites (z. B. `basic_grass.png`) | Bodenflächen sollen als eigene Layer-Kategorie ohne Kollision pflegbar sein | Maps können kleinen Grasboden-Bereich datengetrieben definieren (`solid=0`) |
 
 ---
 
@@ -287,6 +289,7 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 | v0.3    | 10.11.2026 | Prototyp von Win32/GDI auf SFML-Loop, Input und Rendering migriert | Ihr Name |
 | v0.4    | 10.11.2026 | Asset-Struktur für Sprites (`Characters`/`Environment`) und 64x64-Standard dokumentiert | Ihr Name |
 | v0.5    | 10.11.2026 | Testmap-Dateiformat (`Assets/Maps/0001_TestMap.map`) und Triggerzonen-Ansatz dokumentiert | Ihr Name |
+| v0.6    | 10.11.2026 | Neues Environment-Sprite `basic_grass.png` und Map-Kategorie `untergrund` für kollisionslosen Boden ergänzt | Ihr Name |
 
 ---
 

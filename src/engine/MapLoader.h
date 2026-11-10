@@ -10,6 +10,11 @@
 
 inline MapObjectType ParseMapObjectType(const std::string& value)
 {
+	if (value == "untergrund")
+	{
+		return MapObjectType::Untergrund;
+	}
+
 	if (value == "wall")
 	{
 		return MapObjectType::Wall;
@@ -66,7 +71,7 @@ inline bool TryLoadMapFromFile(const std::string& filePath, MapData& outMap)
 			if (!lineStream.fail())
 			{
 				object.type = ParseMapObjectType(type);
-				if (object.type == MapObjectType::Scenery)
+				if (object.type == MapObjectType::Scenery || object.type == MapObjectType::Untergrund)
 				{
 					constexpr float gridSize = 64.0f;
 					object.x = SnapToGrid(object.x, gridSize);

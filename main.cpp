@@ -48,6 +48,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right));
 
         const float deltaTime = frameClock.restart().asSeconds();
+        const float fps = deltaTime > 0.0f ? (1.0f / deltaTime) : 0.0f;
         UpdateGame(game, deltaTime);
 
         const sf::Vector2u windowSize = window.getSize();
@@ -56,7 +57,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             static_cast<int>(windowSize.y)
         };
 
-        RenderGame(window, viewport, game);
+        RenderGame(window, viewport, game, fps);
         window.display();
     }
 

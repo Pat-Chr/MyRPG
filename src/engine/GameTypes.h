@@ -27,6 +27,7 @@ struct Viewport
 
 enum class MapObjectType
 {
+	Untergrund,
 	Scenery,
 	Wall,
 	Npc

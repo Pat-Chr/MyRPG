@@ -81,6 +81,10 @@ inline void RenderMapObjects(sf::RenderTarget& target, const Viewport& viewport,
         {
             fallback.setFillColor(sf::Color(225, 180, 130));
         }
+        else if (object.type == MapObjectType::Untergrund)
+        {
+            fallback.setFillColor(sf::Color(72, 152, 76));
+        }
         else
         {
             fallback.setFillColor(sf::Color(110, 138, 110));
@@ -104,7 +108,7 @@ inline void RenderTriggerDebug(sf::RenderTarget& target, const Viewport& viewpor
     }
 }
 
-inline void RenderGame(sf::RenderTarget& target, const Viewport& viewport, const GameState& game)
+inline void RenderGame(sf::RenderTarget& target, const Viewport& viewport, const GameState& game, float fps)
 {
     target.clear(sf::Color(22, 34, 26));
 
@@ -172,8 +176,8 @@ inline void RenderGame(sf::RenderTarget& target, const Viewport& viewport, const
         return;
     }
 
-    char coordinateBuffer[64];
-    std::snprintf(coordinateBuffer, sizeof(coordinateBuffer), "Map: %s   X: %.1f  Y: %.1f", game.activeMap.id.c_str(), game.player.x, game.player.y);
+    char coordinateBuffer[96];
+    std::snprintf(coordinateBuffer, sizeof(coordinateBuffer), "Map: %s   X: %.1f  Y: %.1f   FPS: %.1f", game.activeMap.id.c_str(), game.player.x, game.player.y, fps);
 
     sf::Text coordinateText(debugFont, coordinateBuffer, 16);
     coordinateText.setFillColor(sf::Color(230, 230, 230));

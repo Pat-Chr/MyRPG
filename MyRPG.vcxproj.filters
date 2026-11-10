@@ -36,6 +36,9 @@
     <ClInclude Include="src\engine\GameEngine.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="src\engine\MapLoader.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -58,6 +61,16 @@
   <ItemGroup>
     <None Include=".github\copilot-instructions.md" />
     <None Include="DesignDocument.md" />
+    <None Include="Assets\Sprites\Characters\main_character.png" />
+    <None Include="Assets\Sprites\Environment\basic_rock.png" />
+    <None Include="Assets\**\*">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\**\*">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\**\*">
+      <Filter>Ressourcendateien</Filter>
+    </None>
   </ItemGroup>
 </Project>
-
