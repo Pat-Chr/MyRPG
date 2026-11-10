@@ -58,6 +58,6 @@
   <ItemGroup>
     <None Include="VorlageP.b9a73280\MyRPG.vcxproj" />
     <None Include=".github\copilot-instructions.md" />
+    <None Include="docs\DesignDocument.md" />
   </ItemGroup>
 </Project>
-

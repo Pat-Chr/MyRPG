@@ -1,393 +1,281 @@
-﻿# MyRPG - Spielmechanik Dokumentation
+# Game Design Document (GDD) – Ausfüllbare Vorlage
 
-## Überblick
-
-Dieses Dokument beschreibt die Funktionsweise des MyRPG Spiels. Es dient als Referenz für zukünftige Entwicklungen und Wartung.
-
----
-
-## Architektur
-
-Das Spiel besteht aus drei Hauptkomponenten:
-
-1. **GameState** - Der globale Spielzustand
-2. **GameEngine** - Logik-Update-Funktionen
-3. **GameRenderer** - Rendering-Funktionen (noch nicht implementiert)
+## 0. Dokument-Info
+- **Projektname:** MyRPG
+- **Version:** v0.2
+- **Stand:** TBD
+- **Autor(en):** TBD
+- **Status:** In Arbeit
 
 ---
 
-## Datenstrukturen
+## 1. Vision & Elevator Pitch
+### Kurzbeschreibung (1–3 Sätze)
+MyRPG ist ein minimalistisches RPG-Spiel für Windows, geschrieben in C++ mit Win32 API. Der aktuelle Fokus liegt auf einer stabilen Game-Loop- und Input-Basis als Fundament für spätere Gameplay-Systeme.
 
-### GameState
+### Genre & Perspektive
+- **Genre:** RPG (aktuell als Framework/Grundgerüst)
+- **Perspektive (z. B. Top-Down, 2D-Side, First Person):** TBD
 
-Der globale Spielzustand, der in `main.cpp` als globale Variable `g_game` deklariert ist:
+### Zielgruppe
+- **Alter:** TBD
+- **Spielertyp:** Spieler mit Interesse an klassischem RPG-Gameplay
+- **Erfahrung (Casual/Hardcore):** TBD
 
-```cpp
-struct GameState
-{
-    Player player;      // Der Spieler
-    InputState input;   // Tastatur-Eingabezustand
-    ULONGLONG lastTick; // Zeitstempel für Delta-Zeit-Berechnung
-};
-```
+### Plattform(en)
+- PC (Windows)
 
-### Player
-
-Spieler-Struktur mit Position und Eigenschaften:
-
-```cpp
-struct Player
-{
-    float x = 0.0f;        // X-Koordinate (Zentriert im Fenster)
-    float y = 0.0f;        // Y-Koordinate (Zentriert im Fenster)
-    float speed = 220.0f;  // Bewegungsgeschwindigkeit in Pixel/Sekunde
-    int size = 24;         // Spielergröße in Pixel (für Kollisionserkennung)
-};
-```
-
-### InputState
-
-Verfolgt den Tastaturzustand für Bewegungssteuerung:
-
-```cpp
-struct InputState
-{
-    bool up = false;       // W oder Pfeil hoch
-    bool down = false;     // S oder Pfeil runter
-    bool left = false;     // A oder Pfeil links
-    right = false;         // D oder Pfeil rechts
-};
-```
+### USP (Alleinstellungsmerkmal)
+Technisch sauberes, erweiterbares RPG-Grundgerüst mit Delta-Time-basierter Bewegung und klar dokumentierter Architektur.
 
 ---
 
-## Spielablauf (Game Loop)
+## 2. Core Gameplay Loop
+### Hauptschleife
+1. Eingabe lesen (WASD/Pfeiltasten)
+2. Spielzustand mit Delta-Time aktualisieren (`UpdateGame`)
+3. Redraw anfordern (`InvalidateRect`)
+4. Render-Pfad in `WM_PAINT` ausführen (`RenderGame`, aktuell TODO)
 
-Der Hauptschleifen-Code befindet sich in `main.cpp`, Funktion `WndProc`:
+### Session-Ziel (pro 5–15 Minuten)
+Aktuell: Bewegung testen, Input prüfen und technische Stabilität des Loops validieren.
 
-### 1. WM_TIMER Nachricht (ca. alle 16ms)
-
-Jede Frame wird der folgende Zyklus ausgeführt:
-
-```cpp
-case WM_TIMER:
-    if (wParam == GAME_TIMER_ID)
-    {
-        const ULONGLONG now = GetTickCount64();
-        const float deltaTime = static_cast<float>(now - g_game.lastTick) / 1000.0f;
-        g_game.lastTick = now;
-
-        RECT clientRect{};
-        GetClientRect(hWnd, &clientRect);
-
-        UpdateGame(g_game, clientRect, deltaTime);
-        InvalidateRect(hWnd, nullptr, FALSE);
-    }
-    break;
-```
-
-**Schritte:**
-1. Aktuelle Zeit ermitteln (`GetTickCount64`)
-2. Delta-Zeit berechnen (in Sekunden)
-3. `lastTick` aktualisieren
-4. Spiellogik aktualisieren (`UpdateGame`)
-5. Fenster neu zeichnen anfordern (`InvalidateRect`)
+### Langfristiges Ziel (Metaprogression)
+TBD (System noch nicht implementiert)
 
 ---
 
-## UpdateLogik
+## 3. Spielerfantasie & Spielgefühl
+### Spielerrolle
+Steuerung eines einzelnen Spieler-Avatars im Fensterraum.
 
-### InitializeGameState
-
-Initialisiert den Spielzustand beim Start:
-
-```cpp
-inline void InitializeGameState(GameState& game, const RECT& clientRect)
-{
-    (void)clientRect;  // Client-Rect wird nicht benötigt
-    game.player.x = 0.0f;     // Spieler zentriert
-    game.player.y = 0.0f;
-    game.lastTick = GetTickCount64();
-}
-```
-
-**Hinweis:** Der Spieler wird immer bei (0, 0)初始isiert - dies entspricht dem Zentrum des Client-Bereichs im Windows-koordinatensystem.
-
-### SetMovementKey
-
-Verarbeitet Tastatureingaben und aktualisiert den InputState:
-
-```cpp
-inline void SetMovementKey(InputState& input, WPARAM key, bool isPressed)
-{
-    switch (key)
-    {
-    case 'W':
-    case VK_UP:
-        input.up = isPressed;
-        break;
-    case 'S':
-    case VK_DOWN:
-        input.down = isPressed;
-        break;
-    case 'A':
-    case VK_LEFT:
-        input.left = isPressed;
-        break;
-    case 'D':
-    case VK_RIGHT:
-        input.right = isPressed;
-        break;
-    default:
-        break;
-    }
-}
-```
-
-**Unterstützte Tasten:**
-- WASD (ASCII Codes)
-- Pfeiltasten (VK_UP, VK_DOWN, VK_LEFT, VK_RIGHT)
-
-### UpdateGame
-
-Führt die Spiellogik aus und bewegt den Spieler basierend auf der Eingabe:
-
-```cpp
-inline void UpdateGame(GameState& game, const RECT& clientRect, float deltaTime)
-{
-    (void)clientRect;  // Client-Rect wird aktuell nicht benötigt
-
-    float moveX = 0.0f;
-    float moveY = 0.0f;
-
-    // Bewegung berechnen
-    if (game.input.left)  moveX -= 1.0f;
-    if (game.input.right) moveX += 1.0f;
-    if (game.input.up)    moveY -= 1.0f;
-    if (game.input.down)  moveY += 1.0f;
-
-    // Normalisieren für diagonale Bewegung (gleiche Geschwindigkeit in alle Richtungen)
-    const float length = std::sqrt((moveX * moveX) + (moveY * moveY));
-    if (length > 0.0f)
-    {
-        moveX /= length;
-        moveY /= length;
-    }
-
-    // Position aktualisieren
-    game.player.x += moveX * game.player.speed * deltaTime;
-    game.player.y += moveY * game.player.speed * deltaTime;
-}
-```
-
-**Wichtige Aspekte:**
-- **Normalisierung:** Wenn diagonale Bewegung erfolgt (z.B. W+D), wird die Geschwindigkeit normalisiert, damit die Diagonale nicht schneller ist als gerade Linien.
-- **Delta-Zeit-basiert:** Die Positionsberechnung berücksichtigt `deltaTime`, was eine konsistente Geschwindigkeit unabhängig von der Frame-Rate gewährleistet.
-- **ClientRect:** Aktuell nicht verwendet - könnte für Kollisionsabfrage mit Fensterbegrenzungen genutzt werden.
+### Gewünschtes Gefühl
+- Spannung: TBD
+- Entdeckung: TBD
+- Machtfantasie: TBD
+- Risiko/Belohnung: TBD
 
 ---
 
-## Rendering (noch zu implementieren)
+## 4. Kernsysteme
+### 4.1 Bewegung
+- Laufgeschwindigkeit: 220 px/s (`Player.speed`)
+- Sprint/Ausweichen: Noch nicht implementiert
+- Kollision: Noch nicht implementiert (Fensterrand-Kollision als geplanter nächster Schritt)
 
-Die Render-Funktion wird in `WM_PAINT` aufgerufen:
+### 4.2 Kampf
+- Echtzeit / Rundenbasiert: TBD
+- Primärwaffen: Noch nicht implementiert
+- Sekundärfähigkeiten: Noch nicht implementiert
+- Schadenstypen: Noch nicht implementiert
+- Trefferfeedback: Noch nicht implementiert
 
-```cpp
-case WM_PAINT:
-{
-    PAINTSTRUCT ps;
-    HDC hdc = BeginPaint(hWnd, &ps);
+### 4.3 Ressourcen
+- Gesundheit: Noch nicht implementiert
+- Mana/Stamina: Noch nicht implementiert
+- Währung: Noch nicht implementiert
+- Verbrauchsgegenstände: Noch nicht implementiert
 
-    RECT clientRect{};
-    GetClientRect(hWnd, &clientRect);
+### 4.4 Progression
+- Levelsystem: Noch nicht implementiert
+- Skilltree: Noch nicht implementiert
+- Ausrüstung: Noch nicht implementiert
+- Freischaltungen: Noch nicht implementiert
 
-    RenderGame(hdc, clientRect, g_game);  // TODO: Implementieren
-
-    EndPaint(hWnd, &ps);
-}
-break;
-```
-
-**TODO:** Implementierung von `RenderGame` erforderlich.
-
----
-
-## Fensterinitialisierung
-
-### InitInstance
-
-Stellt das Hauptfenster und initialisiert den Spielzustand:
-
-```cpp
-BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
-{
-    hInst = hInstance;
-
-    HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, 0, 960, 540, nullptr, nullptr, hInstance, nullptr);
-
-    if (!hWnd)
-    {
-        return FALSE;
-    }
-
-    RECT clientRect{};
-    GetClientRect(hWnd, &clientRect);
-    InitializeGameState(g_game, clientRect);
-
-    SetTimer(hWnd, GAME_TIMER_ID, TARGET_FRAME_MS, nullptr);  // ~60 FPS
-
-    ShowWindow(hWnd, nCmdShow);
-    UpdateWindow(hWnd);
-
-    return TRUE;
-}
-```
-
-**Fenstergröße:** 960x540 Pixel
+### 4.5 Gegner/KI
+- Gegnertypen: Noch nicht implementiert
+- Verhaltensmuster: Noch nicht implementiert
+- Boss-Design: Noch nicht implementiert
 
 ---
 
-## Konstanten und Makros
+## 5. Regeln, Sieg/Niederlage, Balancing
+### Siegbedingungen
+Noch nicht definiert
 
-Definiert in `main.cpp`:
+### Niederlagebedingungen
+Noch nicht definiert
 
-| Konstante | Wert | Beschreibung |
-|-----------|------|--------------|
-| `MAX_LOADSTRING` | 100 | Maximale Länge für Strings |
-| `GAME_TIMER_ID` | 1 | Timer-Handle für den Game Loop |
-| `TARGET_FRAME_MS` | 16ms | Ziel-Framerate (~60 FPS) |
+### Schwierigkeit
+- Modus(e): TBD
+- Skalierung: TBD
 
----
-
-## Globale Variablen
-
-| Variable | Typ | Beschreibung |
-|----------|-----|--------------|
-| `hInst` | HINSTANCE | Handle der aktuellen Instanz |
-| `szTitle` | WCHAR[] | Fenstertiteltext |
-| `szWindowClass` | WCHAR[] | Klassenname des Hauptfensters |
-| `g_game` | GameState | Globale Spielzustandsvariable |
+### Balancing-Prinzipien
+- Delta-Time-basierte Bewegung für konsistentes Verhalten über verschiedene Framerates
+- Normalisierung diagonaler Bewegung, damit keine Richtungs-Vorteile entstehen
 
 ---
 
-## Event-Handling
+## 6. Welt-, Level- und Content-Design
+### Weltstruktur
+- TBD (derzeit technischer Prototyp ohne Welt-Content)
 
-### WM_KEYDOWN / WM_KEYUP
+### Biome/Regionen
+1. TBD
+2. TBD
+3. TBD
 
-Verarbeitet Tastatureingaben:
+### Level-Pacing
+- Intro: Bewegungs- und Input-Basis steht
+- Midgame: TBD
+- Endgame: TBD
 
-```cpp
-case WM_KEYDOWN:
-    if ((lParam & (1 << 30)) == 0)  // Nur linke Taste
-    {
-        SetMovementKey(g_game.input, wParam, true);
-    }
-    break;
-case WM_KEYUP:
-    SetMovementKey(g_game.input, wParam, false);
-    break;
-```
+### Checkpoints/Respawn
+Noch nicht implementiert
 
-**Hinweis:** Die Prüfung `(lParam & (1 << 30)) == 0` stellt sicher, dass nur linke Tasten verarbeitet werden (verhindert Doppelaktivierung durch rechte Taste).
-
-### WM_TIMER
-
-Startet den Game Loop (siehe oben).
-
-### WM_PAINT
-
-Zeichnet das Spiel (TODO: Implementieren).
-
-### WM_DESTROY
-
-Beendet den Timer und schließt das Programm.
+### Quests/Inhalte
+- Hauptquests: Noch nicht implementiert
+- Nebenquests: Noch nicht implementiert
+- Zufallsereignisse: Noch nicht implementiert
 
 ---
 
-## Erweiterungsmöglichkeiten
+## 7. Narrative Design
+### Prämisse
+Noch nicht definiert
 
-### 1. Kollisionsdetektion mit Fensterrand
+### Hauptfiguren
+- Name: Spielercharakter (TBD)
+- Rolle: Steuerbare Hauptfigur
+- Motivation: TBD
 
-Aktuell wird der Client-Rect in `UpdateGame` ignoriert (`(void)clientRect`). Um den Spieler im Fenster zu halten:
+### Story-Struktur (3 Akte oder Kapitel)
+- Akt/Kapitel 1: TBD
+- Akt/Kapitel 2: TBD
+- Akt/Kapitel 3: TBD
 
-```cpp
-// Beispiel: Abfrage von Fensterrändern
-if (game.player.x + game.player.size > clientRect.right - 10)
-{
-    game.player.x = static_cast<float>(clientRect.right - 10) - game.player.size;
-}
-```
-
-### 2. Hindernisse oder Gegner
-
-Hinzufügen von Objekten mit Kollisionsprüfung:
-
-```cpp
-struct GameObject
-{
-    float x, y;
-    int size;
-};
-
-// In UpdateGame für jedes Objekt prüfen...
-```
-
-### 3. Spielstände speichern
-
-Persistenz des Spielzustands implementieren (z.B. in `GameState` einen `saved` Flag hinzufügen).
+### Dialog- und Tonalitätsregeln
+Noch nicht definiert
 
 ---
 
-## Zusammenfassung des Flusses
+## 8. UX, UI und Steuerung
+### Eingabe
+- Tastatur/Maus: WASD + Pfeiltasten für Bewegung
+- Controller: Noch nicht implementiert
 
-```
-WM_CREATE → InitInstance → InitializeGameState → SetTimer
-                                              ↓
-                                      WM_TIMER (alle 16ms)
-                                              ↓
-                                GetTickCount64 → deltaTime berechnen
-                                              ↓
-                                         UpdateGame
-                                              ↓
-                                    InvalidateRect (WM_PAINT)
-                                              ↓
-                                   BeginPaint → RenderGame
-                                              ↓
-                                     EndPaint
-```
+### HUD
+- Muss anzeigen: TBD
+- Optional: TBD
 
----
+### Menüs
+- Hauptmenü: Noch nicht implementiert
+- Pause: Noch nicht implementiert
+- Inventar: Noch nicht implementiert
+- Settings: Noch nicht implementiert
 
-## Referenzen
-
-- Windows SDK Dokumentationen für `GetClientRect`, `BeginPaint`, etc.
-- Game Loop Best Practices in der DirectX/OpenGL Community
+### Feedback
+- Visuell: Rendering-Pipeline vorgesehen, Detailausgestaltung TBD
+- Audio: Noch nicht implementiert
+- Haptisch (falls relevant): Nicht relevant für aktuelle Windows-Basis
 
 ---
 
-## 📚 Projekt-Dokumentation
+## 9. Art Direction
+### Stil
+- TBD
 
-Alle wichtigen Informationen sind im [DOKUMENTATION](./DOKUMENTATION/) Ordner zusammengefasst:
+### Referenzen
+- Referenz 1: TBD
+- Referenz 2: TBD
 
-| Dokument | Zweck |
-|----------|-------|
-| [DesignDocument.md](./DesignDocument.md) | **Hauptdokument** - Technische Architektur, Datenstrukturen, Game Loop, Event Handling |
-| [README.md](./README.md) | Projekt-Übersicht mit Quick Start und Tech Stack |
-| [DOKUMENTATION/README.md](./DOKUMENTATION/README.md) | Wie die Dokumentation zu nutzen ist |
-| [DOKUMENTATION/AI-Nutzung-Leitfaden.md](./DOKUMENTATION/AI-Nutzung-Leitfaden.md) | Guide für AI-Assistenten (Copilot, etc.) - Wie sich an DesignDocument.md halten |
-| [DOKUMENTATION/INDEX.md](./DOKUMENTATION/INDEX.md) | Übersicht aller Dokumentationen |
+### Farbpalette & Lesbarkeit
+TBD
 
-## Nutzungsempfehlungen für AI-Assistenten
+### Animation
+- Spieler: Noch nicht implementiert
+- Gegner: Noch nicht implementiert
+- VFX: Noch nicht implementiert
 
-**Wichtig:** Wenn du AI-Tools (wie Copilot) verwendest:
+---
 
-1. **Immer DesignDocument.md öffnen** - Das ist die Single Source of Truth
-2. **Relevante Sektionen markieren** - z.B. "UpdateGame", "GameState", "Datenstrukturen"
-3. **Kontext im Prompt geben** - "Basierend auf DesignDocument.md Sektion X..."
-4. **Generierten Code prüfen** - Entspricht er dem Design?
-5. **Änderungen dokumentieren** - Neue Features in "Erweiterungsmöglichkeiten" aufnehmen
+## 10. Audio Direction
+### Musik
+- Stil: TBD
+- Dynamik (kampf-/explorationsabhängig): TBD
 
-## Referenzen
+### Soundeffekte
+- Schritte: Noch nicht implementiert
+- Treffer: Noch nicht implementiert
+- UI: Noch nicht implementiert
 
-- Windows SDK Dokumentationen für `GetClientRect`, `BeginPaint`, etc.
-- Game Loop Best Practices in der DirectX/OpenGL Community
+### Audio-Hinweise fürs Gameplay
+Noch nicht implementiert
+
+---
+
+## 11. Technik & Architektur
+### Engine/Framework
+- Win32 API, C++17 (Custom Game Loop)
+
+### Ziel-Performance
+- FPS-Ziel: ~60 FPS (`TARGET_FRAME_MS = 16`)
+- Auflösung: Fenstergröße 960x540
+- Hardware-Minimum: TBD
+
+### Speicher-/Ladeverhalten
+- Save-System: Noch nicht implementiert (als nächster Schritt vorgesehen)
+- Ladezeiten: TBD
+
+### Daten-/Dateistruktur (modular)
+- Aktuell zentrale Basis in `main.cpp` / `MyRPG.h`
+- Zielstruktur: Systeme getrennt nach Modulen (z. B. Combat, Inventory, Dialog)
+- Zielstruktur: Inhalte getrennt nach Typen (z. B. Sounds, Sprites, Story-Skripte)
+
+---
+
+## 12. Produktion & Scope
+### Must / Should / Could
+- **Must:** `RenderGame` implementieren, Kollisionsdetektion ergänzen, Save-System hinzufügen
+- **Should:** Gegner/Hindernisse integrieren
+- **Could:** Erweiterte Systeme (Inventar, Fähigkeiten, Story-Content)
+
+### Meilensteine
+- Prototyp: Basis-Loop + Input + Bewegung (erreicht)
+- Vertical Slice: Rendern + Kollision + einfache Interaktion (TBD)
+- Alpha: Kernsysteme spielbar (TBD)
+- Beta: Content-Ausbau + Balancing (TBD)
+- Release: TBD
+
+### Risiken
+- Technik: Rendering noch nicht umgesetzt, Architektur wächst aktuell aus zentralen Dateien
+- Zeit: Scope kann schnell wachsen, wenn mehrere Systeme parallel starten
+- Content: Narrative/Art/Audio sind noch offen
+
+---
+
+## 13. QA & Erfolgskriterien
+### Testfokus
+- Gameplay: Bewegungsverhalten inkl. diagonaler Normalisierung
+- Bugs: Input-Verarbeitung und Timer-Loop
+- Performance: Stabilität bei ~60 FPS
+- UX: Reaktionsgefühl der Steuerung
+
+### KPI/Erfolgskriterien
+- Stabiler Loop ohne Frame-abhängige Bewegung
+- Korrekte Input-Reaktion (WASD + Pfeiltasten)
+- Keine Richtungsbevorzugung bei diagonalem Input
+
+---
+
+## 14. Entscheidungslog (Decision Log)
+| Datum | Entscheidung | Grund | Auswirkung |
+|------|---------------|-------|------------|
+| TBD  | Win32 + C++17 als Basis | Schlankes, kontrolliertes Grundgerüst | Direkte Kontrolle über Loop/Event-Handling |
+| TBD  | Delta-Time-basierte Bewegung | Framerate-unabhängiges Verhalten | Konsistente Bewegung auf verschiedenen Systemen |
+| TBD  | Modulare Zielstruktur für Systeme/Assets | Bessere Erweiterbarkeit und Wartbarkeit | Spätere Aufteilung in getrennte Engine-/Content-Module |
+
+---
+
+## 15. Offene Fragen
+1. Welche Spielperspektive wird final genutzt (Top-Down, Side-View, etc.)?
+2. Welches Kampfmodell wird gewählt (Echtzeit vs. rundenbasiert)?
+3. Welche Mindest-Hardware soll offiziell unterstützt werden?
+
+---
+
+## 16. Änderungsverlauf
+| Version | Datum | Änderung | Autor |
+|---------|-------|----------|-------|
+| v0.1    |       | Initiale Vorlage | |
+| v0.2    | TBD   | Bekannte Projektinfos aus README und DesignDocument vorbefüllt | Copilot |
