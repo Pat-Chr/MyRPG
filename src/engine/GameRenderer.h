@@ -206,6 +206,7 @@ inline void RenderMapObjects(sf::RenderTarget& target, const Viewport& viewport,
     }
 }
 
+#ifdef _DEBUG
 /**
  * @brief Rendert Debug-Debugging-Overlays für Trigger-Zonen.
  * 
@@ -234,18 +235,19 @@ inline void RenderTriggerDebug(sf::RenderTarget& target, const Viewport& viewpor
         target.draw(area);
     }
 }
+#endif
 
 /**
  * @brief Haupt-Rendern-Funktion für den kompletten Spielszenen.
  * 
  * Rendert die gesamte Szene in der folgenden Reihenfolge:
  * 1. Hintergrund löschen (dunkelgrün: 22, 34, 26)
- * 2. Grid-Overlay für Debugging (32x32 Pixel Kacheln)
+ * 2. Grid-Overlay für Debugging (nur Debug-Build)
  * 3. Grundtextur/Kacheln
  * 4. Map-Objekte (Wände, NPCs, etc.)
- * 5. Trigger-Zonen (Debug-Overlays)
+ * 5. Trigger-Zonen (nur Debug-Build)
  * 6. Spieler-Charakter (Textur oder Fallback-Rechteck)
- * 7. UI: Koordinaten, FPS und letzte ausgelöste Ereignis-Nachricht
+ * 7. Debug-UI: Koordinaten, FPS und letzte ausgelöste Ereignis-Nachricht (nur Debug-Build)
  * 8. Kartenübergangs-Overlay (Fade-In/Fade-Out Effekt)
  * 
  * @param target SFML-Ziel für das Rendern
@@ -253,11 +255,12 @@ inline void RenderTriggerDebug(sf::RenderTarget& target, const Viewport& viewpor
  * @param game Aktueller Spielszustand
  * @param fps Aktuelle Frames pro Sekunde für die UI-Anzeige
  */
-inline void RenderGame(sf::RenderTarget& target, const Viewport& viewport, const GameState& game, float fps)
+inline void RenderGame(sf::RenderTarget& target, const Viewport& viewport, const GameState& game, [[maybe_unused]] float fps)
 {
     // Hintergrund mit dunkelgrünem Farbton löschen (Wald/Regenwald-Atmosphäre)
     target.clear(sf::Color(22, 34, 26));
 
+#ifdef _DEBUG
     // Grid für Debugging: 32x32 Pixel Kacheln, relativ zur Spielerposition
     const int tileSize = 32;
     const int gridOffsetX = static_cast<int>(std::fmod(-game.player.x, static_cast<float>(tileSize)));
@@ -279,10 +282,13 @@ inline void RenderGame(sf::RenderTarget& target, const Viewport& viewport, const
     }
 
     target.draw(grid);
+#endif
 
     RenderDefaultGround(target, viewport, game);
     RenderMapObjects(target, viewport, game);
+#ifdef _DEBUG
     RenderTriggerDebug(target, viewport, game);
+#endif
 
     // Spieler-Charakter rendern (Textur oder Fallback-Rechteck)
     const float playerSize = static_cast<float>(game.player.size);
@@ -320,38 +326,38 @@ inline void RenderGame(sf::RenderTarget& target, const Viewport& viewport, const
         target.draw(player);
     }
 
+    #ifdef _DEBUG
     // Debug-Font laden (versucht zuerst consola.ttf, falls nicht vorhanden: arial.ttf)
     static sf::Font debugFont;
     static const bool debugFontLoaded = debugFont.openFromFile("C:/Windows/Fonts/consola.ttf") ||
                                         debugFont.openFromFile("C:/Windows/Fonts/arial.ttf");
 
-    if (!debugFontLoaded)
+    if (debugFontLoaded)
     {
-        return; // Ohne Font keine UI-Elemente möglich
+        // Koordinaten und FPS in der oberen rechten Ecke anzeigen
+        char coordinateBuffer[96];
+        std::snprintf(coordinateBuffer, sizeof(coordinateBuffer), "Map: %s   X: %.1f  Y: %.1f   FPS: %.1f", game.activeMap.id.c_str(), game.player.x, game.player.y, fps);
+
+        sf::Text coordinateText(debugFont, coordinateBuffer, 16);
+        coordinateText.setFillColor(sf::Color(230, 230, 230));
+
+        const sf::FloatRect bounds = coordinateText.getLocalBounds();
+        // Positioniert den Text rechts oben (Viewport-Ende minus Textbreite)
+        coordinateText.setPosition({ static_cast<float>(viewport.width) - bounds.size.x - 12.0f, 8.0f });
+
+        target.draw(coordinateText);
+
+        // Gezeigtes Trigger-Ereignis in der oberen linken Ecke (falls vorhanden)
+        if (!game.lastTriggeredEvent.empty())
+        {
+            std::string triggerLine = "Trigger: " + game.lastTriggeredEvent;
+            sf::Text triggerText(debugFont, triggerLine, 16);
+            triggerText.setFillColor(sf::Color(255, 230, 140)); // Hellgelb für hervorgehobene Ereignisse
+            triggerText.setPosition({ 12.0f, 8.0f });
+            target.draw(triggerText);
+        }
     }
-
-    // Koordinaten und FPS in der oberen rechten Ecke anzeigen
-    char coordinateBuffer[96];
-    std::snprintf(coordinateBuffer, sizeof(coordinateBuffer), "Map: %s   X: %.1f  Y: %.1f   FPS: %.1f", game.activeMap.id.c_str(), game.player.x, game.player.y, fps);
-
-    sf::Text coordinateText(debugFont, coordinateBuffer, 16);
-    coordinateText.setFillColor(sf::Color(230, 230, 230));
-
-    const sf::FloatRect bounds = coordinateText.getLocalBounds();
-    // Positioniert den Text rechts oben (Viewport-Ende minus Textbreite)
-    coordinateText.setPosition({ static_cast<float>(viewport.width) - bounds.size.x - 12.0f, 8.0f });
-
-    target.draw(coordinateText);
-
-    // Gezeigtes Trigger-Ereignis in der oberen linken Ecke (falls vorhanden)
-    if (!game.lastTriggeredEvent.empty())
-    {
-        std::string triggerLine = "Trigger: " + game.lastTriggeredEvent;
-        sf::Text triggerText(debugFont, triggerLine, 16);
-        triggerText.setFillColor(sf::Color(255, 230, 140)); // Hellgelb für hervorgehobene Ereignisse
-        triggerText.setPosition({ 12.0f, 8.0f });
-        target.draw(triggerText);
-    }
+#endif
 
     // Kartenübergangs-Overlay (Fade-In oder Fade-Out Effekt)
     if (game.mapTransition.phase != MapTransitionPhase::None)

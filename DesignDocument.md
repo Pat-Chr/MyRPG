@@ -157,6 +157,8 @@ Mischung aus ernst und leicht humorvoll
 ### HUD
 - Muss anzeigen: Health, Ausdauer, XP, Level
 - Optional: Weitere Elemente kommen später hinzu
+- Nur im Debug-Build: Karten-ID, Spielerkoordinaten, FPS und letztes Trigger-Ereignis; zusätzlich werden Trigger-Bereiche und das Debug-Raster sichtbar dargestellt. Im Release-Build entfallen diese Debug-Anzeigen, die Trigger-Funktion bleibt erhalten.
+- Diese Trennung ist eine dauerhafte Vorgabe und soll bei zukünftigen Änderungen beibehalten werden: Debug-Informationen und Trigger-Markierungen sind nur in Debug-Builds sichtbar; Release-Builds bleiben frei von diesen Anzeigen.
 
 ### Menüs
 - Hauptmenü: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
