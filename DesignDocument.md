@@ -271,6 +271,8 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 | 10.11.2026 | Modulare Zielstruktur für Systeme/Assets | Bessere Erweiterbarkeit und Wartbarkeit | Spätere Aufteilung in getrennte Engine-/Content-Module |
 | 10.11.2026 | Map-Dateien pro Level (`Assets/Maps/*.map`) mit `OBJECT`- und `TRIGGER`-Einträgen | Weltinhalte und Trigger sollen datengetrieben statt hartkodiert sein | Testmap `0001_TestMap` kann Objekte platzieren und Bereichs-Events auslösen |
 | 10.11.2026 | Neue Objektkategorie `untergrund` für Boden-Sprites (z. B. `basic_grass.png`) | Bodenflächen sollen als eigene Layer-Kategorie ohne Kollision pflegbar sein | Maps können kleinen Grasboden-Bereich datengetrieben definieren (`solid=0`) |
+| 10.11.2026 | Forest-Biome als eigener Asset-Unterordner (`Assets/Sprites/Environment/Forest/`) mit 64x64-Sprites | Modulare Erweiterbarkeit und klare Trennung pro Content-Thema | Neue Waldkarte kann eigenständig mit eigener Sprite-Familie gestaltet und gepflegt werden |
+| 10.11.2026 | Trigger-Events `Load_*` starten Mapwechsel mit kurzem Fade-to-Black | Kartenübergänge sollen klar lesbar und visuell weicher sein | Startmap kann per Trigger zur Forest-Map wechseln; Rendering zeichnet dynamisches Dunkel-Overlay während Transition |
 
 ---
 
@@ -290,6 +292,8 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 | v0.4    | 10.11.2026 | Asset-Struktur für Sprites (`Characters`/`Environment`) und 64x64-Standard dokumentiert | Ihr Name |
 | v0.5    | 10.11.2026 | Testmap-Dateiformat (`Assets/Maps/0001_TestMap.map`) und Triggerzonen-Ansatz dokumentiert | Ihr Name |
 | v0.6    | 10.11.2026 | Neues Environment-Sprite `basic_grass.png` und Map-Kategorie `untergrund` für kollisionslosen Boden ergänzt | Ihr Name |
+| v0.7    | 10.11.2026 | Neue große Zusatzkarte `0001_Forest.map` (ca. 40x40 Tiles) plus Forest-Sprite-Familie (`ground/path/tree/bush/rock/stump/flower`) ergänzt | Ihr Name |
+| v0.8    | 10.11.2026 | Trigger-gesteuerter Kartenwechsel zwischen `0001_TestMap` und `0001_Forest` mit kurzem Dunkel-Übergang integriert | Ihr Name |
 
 ---
 

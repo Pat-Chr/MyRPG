@@ -178,19 +178,17 @@
     <None Include="Assets\**\*" />
     <None Include="DesignDocument.md" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="Assets\Sprites\Environment\Forest\forest_sprite_roles.txt" />
+  </ItemGroup>
   <Target Name="CopyAssetsToOutput" AfterTargets="Build">
     <ItemGroup>
       <AssetFiles Include="Assets\**\*" />
     </ItemGroup>
     <MakeDir Directories="$(OutDir)Assets" />
-    <Copy SourceFiles="@(AssetFiles)"
-          DestinationFiles="@(AssetFiles->'$(OutDir)%(Identity)')"
-          SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(AssetFiles)" DestinationFiles="@(AssetFiles->'$(OutDir)%(Identity)')" SkipUnchangedFiles="true" />
   </Target>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
 </Project>
-
-
-

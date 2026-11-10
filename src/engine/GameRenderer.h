@@ -3,6 +3,7 @@
 #include <SFML/Graphics.hpp>
 
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
 #include <string>
 #include <unordered_map>
@@ -194,5 +195,18 @@ inline void RenderGame(sf::RenderTarget& target, const Viewport& viewport, const
         triggerText.setFillColor(sf::Color(255, 230, 140));
         triggerText.setPosition({ 12.0f, 8.0f });
         target.draw(triggerText);
+    }
+
+    if (game.mapTransition.phase != MapTransitionPhase::None)
+    {
+        const float duration = game.mapTransition.duration > 0.0f ? game.mapTransition.duration : 0.001f;
+        const float progress = std::clamp(game.mapTransition.timer / duration, 0.0f, 1.0f);
+        const float alphaFactor = game.mapTransition.phase == MapTransitionPhase::FadeOut ? progress : (1.0f - progress);
+        const auto alpha = static_cast<std::uint8_t>(std::clamp(alphaFactor * 255.0f, 0.0f, 255.0f));
+
+        sf::RectangleShape fadeOverlay({ static_cast<float>(viewport.width), static_cast<float>(viewport.height) });
+        fadeOverlay.setPosition({ 0.0f, 0.0f });
+        fadeOverlay.setFillColor(sf::Color(0, 0, 0, alpha));
+        target.draw(fadeOverlay);
     }
 }

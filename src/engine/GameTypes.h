@@ -61,10 +61,28 @@ struct MapData
 	std::vector<TriggerZone> triggers;
 };
 
+enum class MapTransitionPhase
+{
+	None,
+	FadeOut,
+	FadeIn
+};
+
+struct MapTransitionState
+{
+	MapTransitionPhase phase = MapTransitionPhase::None;
+	float timer = 0.0f;
+	float duration = 0.28f;
+	std::string targetMapPath;
+	float targetPlayerX = 0.0f;
+	float targetPlayerY = 0.0f;
+};
+
 struct GameState
 {
 	Player player;
 	InputState input;
 	MapData activeMap;
 	std::string lastTriggeredEvent;
+	MapTransitionState mapTransition;
 };

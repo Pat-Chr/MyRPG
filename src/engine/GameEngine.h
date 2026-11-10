@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <utility>
 
 #include "GameTypes.h"
 #include "MapLoader.h"
@@ -11,8 +12,87 @@ inline bool IsInsideTrigger(const TriggerZone& trigger, float x, float y)
     return x >= trigger.x && x <= (trigger.x + trigger.width) && y >= trigger.y && y <= (trigger.y + trigger.height);
 }
 
+inline bool IsMapTransitionActive(const GameState& game)
+{
+    return game.mapTransition.phase != MapTransitionPhase::None;
+}
+
+inline bool TryResolveMapTransitionTarget(const std::string& eventName, std::string& outMapPath, float& outSpawnX, float& outSpawnY)
+{
+    if (eventName == "Load_0001_Forest")
+    {
+        outMapPath = "Assets/Maps/0001_Forest.map";
+        outSpawnX = -128.0f;
+        outSpawnY = 1024.0f;
+        return true;
+    }
+
+    if (eventName == "Load_0001_TestMap")
+    {
+        outMapPath = "Assets/Maps/0001_TestMap.map";
+        outSpawnX = 0.0f;
+        outSpawnY = -128.0f;
+        return true;
+    }
+
+    return false;
+}
+
+inline void BeginMapTransition(GameState& game, std::string targetMapPath, float targetPlayerX, float targetPlayerY)
+{
+    if (IsMapTransitionActive(game))
+    {
+        return;
+    }
+
+    game.mapTransition.phase = MapTransitionPhase::FadeOut;
+    game.mapTransition.timer = 0.0f;
+    game.mapTransition.targetMapPath = std::move(targetMapPath);
+    game.mapTransition.targetPlayerX = targetPlayerX;
+    game.mapTransition.targetPlayerY = targetPlayerY;
+}
+
+inline void UpdateMapTransition(GameState& game, float deltaTime)
+{
+    if (!IsMapTransitionActive(game))
+    {
+        return;
+    }
+
+    game.mapTransition.timer += deltaTime;
+    if (game.mapTransition.timer < game.mapTransition.duration)
+    {
+        return;
+    }
+
+    if (game.mapTransition.phase == MapTransitionPhase::FadeOut)
+    {
+        MapData nextMap;
+        if (TryLoadMapFromFile(game.mapTransition.targetMapPath, nextMap))
+        {
+            game.activeMap = std::move(nextMap);
+            game.player.x = game.mapTransition.targetPlayerX;
+            game.player.y = game.mapTransition.targetPlayerY;
+            game.lastTriggeredEvent = "MapLoaded: " + game.activeMap.id;
+        }
+
+        game.mapTransition.phase = MapTransitionPhase::FadeIn;
+        game.mapTransition.timer = 0.0f;
+        return;
+    }
+
+    game.mapTransition.phase = MapTransitionPhase::None;
+    game.mapTransition.timer = 0.0f;
+    game.mapTransition.targetMapPath.clear();
+}
+
 inline void UpdateTriggers(GameState& game)
 {
+    if (IsMapTransitionActive(game))
+    {
+        return;
+    }
+
     for (TriggerZone& trigger : game.activeMap.triggers)
     {
         const bool isInside = IsInsideTrigger(trigger, game.player.x, game.player.y);
@@ -20,6 +100,14 @@ inline void UpdateTriggers(GameState& game)
         if (isInside && !trigger.isPlayerInside)
         {
             game.lastTriggeredEvent = trigger.eventName;
+
+            std::string targetMapPath;
+            float targetPlayerX = 0.0f;
+            float targetPlayerY = 0.0f;
+            if (TryResolveMapTransitionTarget(trigger.eventName, targetMapPath, targetPlayerX, targetPlayerY))
+            {
+                BeginMapTransition(game, std::move(targetMapPath), targetPlayerX, targetPlayerY);
+            }
         }
 
         trigger.isPlayerInside = isInside;
@@ -109,6 +197,12 @@ inline bool IsSolidObjectBlockingPosition(const GameState& game, float playerX, 
 
 inline void UpdateGame(GameState& game, float deltaTime)
 {
+    if (IsMapTransitionActive(game))
+    {
+        UpdateMapTransition(game, deltaTime);
+        return;
+    }
+
     float moveX = 0.0f;
     float moveY = 0.0f;
 
