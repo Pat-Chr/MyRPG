@@ -11,7 +11,7 @@
 
 ## 1. Vision & Elevator Pitch
 ### Kurzbeschreibung (1–3 Sätze)
-MyRPG ist ein minimalistisches RPG-Spiel für Windows, geschrieben in C++ mit Win32 API. Der aktuelle Fokus liegt auf einer stabilen Game-Loop- und Input-Basis als Fundament für spätere Gameplay-Systeme.
+MyRPG ist ein minimalistisches RPG-Spiel für Windows, geschrieben in C++ mit SFML. Der aktuelle Fokus liegt auf einer stabilen Game-Loop- und Input-Basis als Fundament für spätere Gameplay-Systeme.
 
 ### Genre & Perspektive
 - **Genre:** RPG (aktuell als Framework/Grundgerüst)
@@ -32,10 +32,10 @@ Technisch sauberes, erweiterbares RPG-Grundgerüst mit Delta-Time-basierter Bewe
 
 ## 2. Core Gameplay Loop
 ### Hauptschleife
-1. Eingabe lesen (WASD/Pfeiltasten)
+1. Eingabe lesen (WASD/Pfeiltasten über SFML Keyboard-State)
 2. Spielzustand mit Delta-Time aktualisieren (`UpdateGame`)
-3. Redraw anfordern (`InvalidateRect`)
-4. Render-Pfad in `WM_PAINT` ausführen (`RenderGame`, aktuell TODO)
+3. Szene pro Frame rendern (`RenderGame`)
+4. Frame präsentieren (`window.display`)
 
 ### Session-Ziel (pro 5–15 Minuten)
 Aktuell: Bewegung testen, Input prüfen und technische Stabilität des Loops validieren.
@@ -157,6 +157,8 @@ Mischung aus ernst und leicht humorvoll
 ### HUD
 - Muss anzeigen: Health, Ausdauer, XP, Level
 - Optional: Weitere Elemente kommen später hinzu
+- Nur im Debug-Build: Karten-ID, Spielerkoordinaten, FPS und letztes Trigger-Ereignis; zusätzlich werden Trigger-Bereiche und das Debug-Raster sichtbar dargestellt. Im Release-Build entfallen diese Debug-Anzeigen, die Trigger-Funktion bleibt erhalten.
+- Diese Trennung ist eine dauerhafte Vorgabe und soll bei zukünftigen Änderungen beibehalten werden: Debug-Informationen und Trigger-Markierungen sind nur in Debug-Builds sichtbar; Release-Builds bleiben frei von diesen Anzeigen.
 
 ### Menüs
 - Hauptmenü: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
@@ -206,10 +208,10 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 
 ## 11. Technik & Architektur
 ### Engine/Framework
-- Win32 API, C++17 (Custom Game Loop)
+- SFML 3, C++20 (Custom Game Loop)
 
 ### Ziel-Performance
-- FPS-Ziel: ~60 FPS (`TARGET_FRAME_MS = 16`)
+- FPS-Ziel: ~60 FPS (`window.setFramerateLimit(60)`)
 - Auflösung: Fenstergröße 960x540
 - Hardware-Minimum: Aktueller Windows-PC mit einfacher Grafikkarte
 
@@ -221,6 +223,14 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 - Aktuell zentrale Basis in `main.cpp` / `MyRPG.h`
 - Zielstruktur: Systeme getrennt nach Modulen (z. B. Combat, Inventory, Dialog)
 - Zielstruktur: Inhalte getrennt nach Typen (z. B. Sounds, Sprites, Story-Skripte)
+- Asset-Ordner für Sprites: `Assets/Sprites/Characters/` und `Assets/Sprites/Environment/`
+- Asset-Ordner für Maps: `Assets/Maps/`
+- Sprite-Standardgröße: `64x64` Pixel (einheitliches Basisraster)
+- Map-Format (Prototyp): textbasiert, eine Datei pro Map (z. B. `0001_TestMap.map`)
+- Zeilenformat: `MAP`, `GROUND`, `OBJECT`, `TRIGGER`; `GROUND <spritePath>` füllt den sichtbaren Kartenbereich gekachelt als Standardboden
+- Abweichende Bodenkacheln werden als `OBJECT` vom Typ `untergrund` eingetragen; weitere Map-Objekte und Trigger bleiben separat
+- Aktuelle Platzhalter: `main_character.png`, `basic_rock.png` und `basic_grass.png`
+- Map-Objektkategorie `untergrund`: Bodenflächen ohne Kollision (z. B. Gras)
 
 ---
 
@@ -262,6 +272,11 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 | 10.11.2026 | Win32 + C++17 als Basis | Schlankes, kontrolliertes Grundgerüst | Direkte Kontrolle über Loop/Event-Handling |
 | 10.11.2026 | Delta-Time-basierte Bewegung | Framerate-unabhängiges Verhalten | Konsistente Bewegung auf verschiedenen Systemen |
 | 10.11.2026 | Modulare Zielstruktur für Systeme/Assets | Bessere Erweiterbarkeit und Wartbarkeit | Spätere Aufteilung in getrennte Engine-/Content-Module |
+| 10.11.2026 | Map-Dateien pro Level (`Assets/Maps/*.map`) mit `OBJECT`- und `TRIGGER`-Einträgen | Weltinhalte und Trigger sollen datengetrieben statt hartkodiert sein | Testmap `0001_TestMap` kann Objekte platzieren und Bereichs-Events auslösen |
+| 10.11.2026 | Map-Direktive `GROUND` für gekachelten Standardboden; abweichende Kacheln bleiben `OBJECT untergrund` | Wiederholte Bodeneinträge sparen und Kartenflächen automatisch füllen | Testmap und Forest-Map definieren je eine Standard-Bodentextur |
+| 10.11.2026 | Neue Objektkategorie `untergrund` für Boden-Sprites (z. B. `basic_grass.png`) | Bodenflächen sollen als eigene Layer-Kategorie ohne Kollision pflegbar sein | Maps können kleinen Grasboden-Bereich datengetrieben definieren (`solid=0`) |
+| 10.11.2026 | Forest-Biome als eigener Asset-Unterordner (`Assets/Sprites/Environment/Forest/`) mit 64x64-Sprites | Modulare Erweiterbarkeit und klare Trennung pro Content-Thema | Neue Waldkarte kann eigenständig mit eigener Sprite-Familie gestaltet und gepflegt werden |
+| 10.11.2026 | Trigger-Events `Load_*` starten Mapwechsel mit kurzem Fade-to-Black | Kartenübergänge sollen klar lesbar und visuell weicher sein | Startmap kann per Trigger zur Forest-Map wechseln; Rendering zeichnet dynamisches Dunkel-Overlay während Transition |
 
 ---
 
@@ -277,3 +292,21 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 |---------|-------|----------|-------|
 | v0.1    |       | Initiale Vorlage | |
 | v0.2    | 10.11.2026 | Bekannte Projektinfos aus README und DesignDocument vorbefüllt | Ihr Name |
+| v0.3    | 10.11.2026 | Prototyp von Win32/GDI auf SFML-Loop, Input und Rendering migriert | Ihr Name |
+| v0.4    | 10.11.2026 | Asset-Struktur für Sprites (`Characters`/`Environment`) und 64x64-Standard dokumentiert | Ihr Name |
+| v0.5    | 10.11.2026 | Testmap-Dateiformat (`Assets/Maps/0001_TestMap.map`) und Triggerzonen-Ansatz dokumentiert | Ihr Name |
+| v0.6    | 10.11.2026 | Neues Environment-Sprite `basic_grass.png` und Map-Kategorie `untergrund` für kollisionslosen Boden ergänzt | Ihr Name |
+| v0.7    | 10.11.2026 | Neue große Zusatzkarte `0001_Forest.map` (ca. 40x40 Tiles) plus Forest-Sprite-Familie (`ground/path/tree/bush/rock/stump/flower`) ergänzt | Ihr Name |
+| v0.8    | 10.11.2026 | Trigger-gesteuerter Kartenwechsel zwischen `0001_TestMap` und `0001_Forest` mit kurzem Dunkel-Übergang integriert | Ihr Name |
+
+---
+
+## 17. Migrationsnotiz (Win32/GDI -> SFML)
+- Eingabe, Update und Rendering laufen jetzt in einem SFML-Hauptloop.
+- Engine-Daten/Logik (`GameTypes`, `GameEngine`) wurden von Win32-Typen entkoppelt.
+- Raster- und Player-Rendering wurden auf SFML (`VertexArray`, `RectangleShape`) portiert.
+
+### Nächste sinnvolle Schritte
+1. Spritesheet-Rendering für den Spieler statt Platzhalter-Rechteck.
+2. Kamera/Viewport als eigenes Modul unter `src/engine` auslagern.
+3. Erstes Asset- und Content-Verzeichnis für Texturen/Sounds anlegen.

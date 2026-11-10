@@ -1,0 +1,10 @@
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/libogg_x64-windows/debug/lib/ogg.lib
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/libogg_x64-windows/debug/bin/ogg.dll
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/libogg_x64-windows/debug/include/ogg/config_types.h
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/libogg_x64-windows/debug/include/ogg/ogg.h
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/libogg_x64-windows/debug/include/ogg/os_types.h
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/libogg_x64-windows/debug/lib/cmake/Ogg/OggTargets.cmake
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/libogg_x64-windows/debug/lib/cmake/Ogg/OggTargets-debug.cmake
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/libogg_x64-windows/debug/lib/cmake/Ogg/OggConfig.cmake
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/libogg_x64-windows/debug/lib/cmake/Ogg/OggConfigVersion.cmake
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/libogg_x64-windows/debug/lib/pkgconfig/ogg.pc

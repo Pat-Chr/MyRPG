@@ -1,0 +1,165 @@
+// file: src\engine\MapLoader.h
+#pragma once
+
+#include <algorithm>
+#include <cmath>
+#include <fstream>
+#include <sstream>
+#include <string>
+
+#include "GameTypes.h"
+
+/**
+ * @brief Wandelt einen String-Wert in ein MapObjectType-Enum um.
+ * 
+ * Unterstützt die folgenden Typen:
+ * - "untergrund" -> MapObjectType::Untergrund (Bodenobjekte)
+ * - "wall"       -> MapObjectType::Wall (Wände/Barrieren)
+ * - "npc"        -> MapObjectType::Npc (NPC-Charaktere)
+ * 
+ * @param value Der String-Wert, der interpretiert werden soll.
+ * @return MapObjectType Das zugehörige Enum-Wert, falls bekannt.
+ * @return MapObjectType::Scenery als Default für unbekannte Typen.
+ */
+inline MapObjectType ParseMapObjectType(const std::string& value)
+{
+	if (value == "untergrund")
+	{
+		return MapObjectType::Untergrund;
+	}
+
+	if (value == "wall")
+	{
+		return MapObjectType::Wall;
+	}
+
+	if (value == "npc")
+	{
+		return MapObjectType::Npc;
+	}
+
+	return MapObjectType::Scenery; // Default für unbekannte Typen
+}
+
+/**
+ * @brief Rundet eine Koordinaten auf das nächste Grid-Gitter.
+ * 
+ * Wird verwendet, um Positionsdaten von NPCs oder Scenery-Objekten
+ * an das 64px-Grid des Spiels zu schnappen (Snap-to-Grid).
+ * 
+ * @param value Die Roh-Koordinate, die gerundet werden soll.
+ * @param gridSize Die Größe eines Grid-Zells in Pixeln (Standard: 64).
+ * @return float Die auf das nächste Grid gerundete Koordinate.
+ */
+inline float SnapToGrid(float value, float gridSize)
+{
+	return std::round(value / gridSize) * gridSize;
+}
+
+/**
+ * @brief Lädt eine Map-Datei aus einer Textdatei und parsst sie in ein MapData-Objekt.
+ * 
+ * Unterstützt folgende Keywords im Dateiformat:
+ * - MAP ID         : Setzt die Map-ID
+ * - GROUND path    : Setzt den Pfad zum Boden-Sprite
+ * - OBJECT id type x y spritePath solidFlag : Lädt ein Objekt (wird auf Grid gesnapped)
+ * - TRIGGER id x y width height eventName : Definiert einen Trigger-Zone
+ * 
+ * Zeilen, die leer sind oder mit '#' beginnen, werden ignoriert.
+ * 
+ * @param filePath Der Pfad zur Map-Textdatei.
+ * @param outMap Referenz auf das MapData-Objekt zum Ausfüllen.
+ * @return true Wenn die Map erfolgreich geladen wurde (MAP ID vorhanden).
+ * @return false Wenn die Datei nicht gefunden, leer oder ohne MAP ID ist.
+ * 
+ * Beispiel Dateiformat:
+ * # This is a comment
+ * MAP my_level_01
+ * GROUND grass.png
+ * OBJECT 1 npc 128 64 player_sprite.png 1
+ * OBJECT 2 wall 320 480 stone_wall.png 1
+ * OBJECT 3 untergrund 0 0 ground_tile.png 0
+ * TRIGGER 5 100 200 150 on_level_complete
+ */
+inline bool TryLoadMapFromFile(const std::string& filePath, MapData& outMap)
+{
+	std::ifstream input(filePath);
+	if (!input.is_open())
+	{
+		return false; // Datei konnte nicht geöffnet werden
+	}
+
+	MapData loadedMap;
+	std::string line;
+
+	while (std::getline(input, line))
+	{
+		// Leerzeilen und Kommentare ignorieren
+		if (line.empty() || line[0] == '#')
+		{
+			continue;
+		}
+
+		std::istringstream lineStream(line);
+		std::string keyword;
+		lineStream >> keyword;
+
+		if (keyword == "MAP")
+		{
+			lineStream >> loadedMap.id; // Map-ID ist erforderlich für eine gültige Map
+			continue;
+		}
+
+		if (keyword == "GROUND")
+		{
+			lineStream >> loadedMap.defaultGroundPath; // Pfad zum Boden-Sprite
+			continue;
+		}
+
+		if (keyword == "OBJECT")
+		{
+			MapObject object;
+			std::string type;
+			int solidFlag = 0;
+
+			lineStream >> object.id >> type >> object.x >> object.y >> object.spritePath >> solidFlag;
+			if (!lineStream.fail()) // Nur parsen, wenn alle Werte erfolgreich gelesen wurden
+			{
+				object.type = ParseMapObjectType(type);
+				
+				// Bodenobjekte und Scenery auf 64px-Grid snapen
+				if (object.type == MapObjectType::Scenery || object.type == MapObjectType::Untergrund)
+				{
+					constexpr float gridSize = 64.0f;
+					object.x = SnapToGrid(object.x, gridSize);
+					object.y = SnapToGrid(object.y, gridSize);
+				}
+				
+				object.solid = solidFlag != 0; // Festkörper-Objekte wenn Flag != 0
+				loadedMap.objects.push_back(object);
+			}
+
+			continue;
+		}
+
+		if (keyword == "TRIGGER")
+		{
+			TriggerZone trigger;
+			lineStream >> trigger.id >> trigger.x >> trigger.y >> trigger.width >> trigger.height >> trigger.eventName;
+
+			if (!lineStream.fail()) // Nur hinzufügen, wenn alle Werte erfolgreich gelesen wurden
+			{
+				loadedMap.triggers.push_back(trigger);
+			}
+		}
+	}
+
+	// Map ohne ID ist ungültig - keine leeren Maps zurückgeben
+	if (loadedMap.id.empty())
+	{
+		return false;
+	}
+
+	outMap = std::move(loadedMap);
+	return true;
+}
