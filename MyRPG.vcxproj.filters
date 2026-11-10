@@ -59,8 +59,72 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <None Include=".github\copilot-instructions.md" />
-    <None Include="DesignDocument.md" />
+    <None Include="Assets\**\*">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Maps\0001_TestMap.map" />
+    <None Include="Assets\Sprites\Characters\main_character.png" />
+    <None Include="Assets\Sprites\Environment\basic_grass.png" />
+    <None Include="Assets\Sprites\Environment\basic_rock.png" />
+    <None Include="Assets\Sprites\Environment\Forest\forest_bush.png" />
+    <None Include="Assets\Sprites\Environment\Forest\forest_flower.png" />
+    <None Include="Assets\Sprites\Environment\Forest\forest_ground.png" />
+    <None Include="Assets\Sprites\Environment\Forest\forest_path.png" />
+    <None Include="Assets\Sprites\Environment\Forest\forest_rock.png" />
+    <None Include="Assets\Sprites\Environment\Forest\forest_sprite_roles.txt" />
+    <None Include="Assets\Sprites\Environment\Forest\forest_stump.png" />
+    <None Include="Assets\Sprites\Environment\Forest\forest_tree.png" />
+    <None Include="Assets\**\*">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\**\*">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\**\*">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\**\*">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\**\*">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\**\*">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\**\*">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\**\*">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Maps\0001_TestMap.map" />
+    <None Include="Assets\Sprites\Characters\main_character.png" />
+    <None Include="Assets\Sprites\Environment\basic_grass.png" />
+    <None Include="Assets\Sprites\Environment\basic_rock.png" />
+    <None Include="Assets\Sprites\Environment\Forest\forest_bush.png" />
+    <None Include="Assets\Sprites\Environment\Forest\forest_flower.png" />
+    <None Include="Assets\Sprites\Environment\Forest\forest_ground.png" />
+    <None Include="Assets\Sprites\Environment\Forest\forest_path.png" />
+    <None Include="Assets\Sprites\Environment\Forest\forest_rock.png" />
+    <None Include="Assets\Sprites\Environment\Forest\forest_sprite_roles.txt" />
+    <None Include="Assets\Sprites\Environment\Forest\forest_stump.png" />
+    <None Include="Assets\Sprites\Environment\Forest\forest_tree.png" />
+    <None Include="Assets\**\*">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\**\*">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\**\*">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include=".github\copilot-instructions.md">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="DesignDocument.md">
+      <Filter>Ressourcendateien</Filter>
+    </None>
     <None Include="Assets\**\*">
       <Filter>Ressourcendateien</Filter>
     </None>
