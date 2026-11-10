@@ -33,12 +33,35 @@ inline void RenderGame(sf::RenderTarget& target, const Viewport& viewport, const
     target.draw(grid);
 
     const float playerSize = static_cast<float>(game.player.size);
-    sf::RectangleShape player({ playerSize, playerSize });
-    player.setFillColor(sf::Color(176, 220, 255));
-    player.setOrigin({ playerSize * 0.5f, playerSize * 0.5f });
-    player.setPosition({ viewport.width * 0.5f, viewport.height * 0.5f });
 
-    target.draw(player);
+    static sf::Texture playerTexture;
+    static const bool playerTextureLoaded = playerTexture.loadFromFile("Assets/Sprites/Characters/main_character.png");
+
+    if (playerTextureLoaded)
+    {
+        playerTexture.setSmooth(false);
+
+        sf::Sprite playerSprite(playerTexture);
+        const sf::Vector2u textureSize = playerTexture.getSize();
+
+        if (textureSize.x > 0u && textureSize.y > 0u)
+        {
+            playerSprite.setOrigin({ textureSize.x * 0.5f, textureSize.y * 0.5f });
+            playerSprite.setScale({ playerSize / textureSize.x, playerSize / textureSize.y });
+        }
+
+        playerSprite.setPosition({ viewport.width * 0.5f, viewport.height * 0.5f });
+        target.draw(playerSprite);
+    }
+    else
+    {
+        sf::RectangleShape player({ playerSize, playerSize });
+        player.setFillColor(sf::Color(176, 220, 255));
+        player.setOrigin({ playerSize * 0.5f, playerSize * 0.5f });
+        player.setPosition({ viewport.width * 0.5f, viewport.height * 0.5f });
+
+        target.draw(player);
+    }
 
     static sf::Font debugFont;
     static const bool debugFontLoaded = debugFont.openFromFile("C:/Windows/Fonts/consola.ttf") ||

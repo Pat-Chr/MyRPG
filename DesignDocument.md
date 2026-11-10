@@ -221,6 +221,9 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 - Aktuell zentrale Basis in `main.cpp` / `MyRPG.h`
 - Zielstruktur: Systeme getrennt nach Modulen (z. B. Combat, Inventory, Dialog)
 - Zielstruktur: Inhalte getrennt nach Typen (z. B. Sounds, Sprites, Story-Skripte)
+- Asset-Ordner für Sprites: `Assets/Sprites/Characters/` und `Assets/Sprites/Environment/`
+- Sprite-Standardgröße: `64x64` Pixel (einheitliches Basisraster)
+- Aktuelle Platzhalter: `main_character.png` und `basic_rock.png`
 
 ---
 
@@ -278,6 +281,7 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 | v0.1    |       | Initiale Vorlage | |
 | v0.2    | 10.11.2026 | Bekannte Projektinfos aus README und DesignDocument vorbefüllt | Ihr Name |
 | v0.3    | 10.11.2026 | Prototyp von Win32/GDI auf SFML-Loop, Input und Rendering migriert | Ihr Name |
+| v0.4    | 10.11.2026 | Asset-Struktur für Sprites (`Characters`/`Environment`) und 64x64-Standard dokumentiert | Ihr Name |
 
 ---
 

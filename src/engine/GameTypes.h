@@ -5,7 +5,7 @@ struct Player
 	float x = 0.0f;
 	float y = 0.0f;
 	float speed = 220.0f;
-	int size = 24;
+	int size = 64;
 };
 
 struct InputState
