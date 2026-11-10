@@ -1,19 +1,11 @@
 # Simple map format
 # MAP <mapId>
+# GROUND <defaultSpritePath>
 # OBJECT <id> <type> <x> <y> <spritePath> <solid(0|1)>
 # TRIGGER <id> <x> <y> <width> <height> <eventName>
 
 MAP 0001_TestMap
-
-OBJECT grass_01 untergrund -64 -64 Assets/Sprites/Environment/basic_grass.png 0
-OBJECT grass_02 untergrund 0 -64 Assets/Sprites/Environment/basic_grass.png 0
-OBJECT grass_03 untergrund 64 -64 Assets/Sprites/Environment/basic_grass.png 0
-OBJECT grass_04 untergrund -64 0 Assets/Sprites/Environment/basic_grass.png 0
-OBJECT grass_05 untergrund 0 0 Assets/Sprites/Environment/basic_grass.png 0
-OBJECT grass_06 untergrund 64 0 Assets/Sprites/Environment/basic_grass.png 0
-OBJECT grass_07 untergrund -64 64 Assets/Sprites/Environment/basic_grass.png 0
-OBJECT grass_08 untergrund 0 64 Assets/Sprites/Environment/basic_grass.png 0
-OBJECT grass_09 untergrund 64 64 Assets/Sprites/Environment/basic_grass.png 0
+GROUND Assets/Sprites/Environment/basic_grass.png
 
 OBJECT rock_01 scenery -192 -64 Assets/Sprites/Environment/basic_rock.png 1
 OBJECT rock_02 scenery -128 -64 Assets/Sprites/Environment/basic_rock.png 1

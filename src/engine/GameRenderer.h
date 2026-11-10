@@ -46,6 +46,59 @@ inline sf::Texture* GetCachedTexture(const std::string& path)
     return &created->second;
 }
 
+inline void RenderDefaultGround(sf::RenderTarget& target, const Viewport& viewport, const GameState& game)
+{
+    if (game.activeMap.defaultGroundPath.empty())
+    {
+        return;
+    }
+
+    constexpr float tileSize = 64.0f;
+    const float halfWidth = static_cast<float>(viewport.width) * 0.5f;
+    const float halfHeight = static_cast<float>(viewport.height) * 0.5f;
+    const int firstTileX = static_cast<int>(std::floor((game.player.x - halfWidth) / tileSize)) - 1;
+    const int lastTileX = static_cast<int>(std::ceil((game.player.x + halfWidth) / tileSize)) + 1;
+    const int firstTileY = static_cast<int>(std::floor((game.player.y - halfHeight) / tileSize)) - 1;
+    const int lastTileY = static_cast<int>(std::ceil((game.player.y + halfHeight) / tileSize)) + 1;
+    sf::Texture* texture = GetCachedTexture(game.activeMap.defaultGroundPath);
+
+    if (texture != nullptr)
+    {
+        sf::Sprite ground(*texture);
+        const sf::Vector2u textureSize = texture->getSize();
+
+        if (textureSize.x > 0u && textureSize.y > 0u)
+        {
+            ground.setOrigin({ textureSize.x * 0.5f, textureSize.y * 0.5f });
+            ground.setScale({ tileSize / textureSize.x, tileSize / textureSize.y });
+        }
+
+        for (int tileY = firstTileY; tileY <= lastTileY; ++tileY)
+        {
+            for (int tileX = firstTileX; tileX <= lastTileX; ++tileX)
+            {
+                ground.setPosition(WorldToScreen(tileX * tileSize, tileY * tileSize, game, viewport));
+                target.draw(ground);
+            }
+        }
+
+        return;
+    }
+
+    sf::RectangleShape ground({ tileSize, tileSize });
+    ground.setOrigin({ tileSize * 0.5f, tileSize * 0.5f });
+    ground.setFillColor(sf::Color(72, 152, 76));
+
+    for (int tileY = firstTileY; tileY <= lastTileY; ++tileY)
+    {
+        for (int tileX = firstTileX; tileX <= lastTileX; ++tileX)
+        {
+            ground.setPosition(WorldToScreen(tileX * tileSize, tileY * tileSize, game, viewport));
+            target.draw(ground);
+        }
+    }
+}
+
 inline void RenderMapObjects(sf::RenderTarget& target, const Viewport& viewport, const GameState& game)
 {
     constexpr float objectSize = 64.0f;
@@ -134,6 +187,7 @@ inline void RenderGame(sf::RenderTarget& target, const Viewport& viewport, const
 
     target.draw(grid);
 
+    RenderDefaultGround(target, viewport, game);
     RenderMapObjects(target, viewport, game);
     RenderTriggerDebug(target, viewport, game);
 

@@ -61,6 +61,12 @@ inline bool TryLoadMapFromFile(const std::string& filePath, MapData& outMap)
 			continue;
 		}
 
+		if (keyword == "GROUND")
+		{
+			lineStream >> loadedMap.defaultGroundPath;
+			continue;
+		}
+
 		if (keyword == "OBJECT")
 		{
 			MapObject object;

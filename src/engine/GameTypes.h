@@ -57,6 +57,7 @@ struct TriggerZone
 struct MapData
 {
 	std::string id;
+	std::string defaultGroundPath;
 	std::vector<MapObject> objects;
 	std::vector<TriggerZone> triggers;
 };

@@ -178,9 +178,6 @@
     <None Include="Assets\**\*" />
     <None Include="DesignDocument.md" />
   </ItemGroup>
-  <ItemGroup>
-    <Text Include="Assets\Sprites\Environment\Forest\forest_sprite_roles.txt" />
-  </ItemGroup>
   <Target Name="CopyAssetsToOutput" AfterTargets="Build">
     <ItemGroup>
       <AssetFiles Include="Assets\**\*" />

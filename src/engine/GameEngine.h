@@ -117,6 +117,7 @@ inline void UpdateTriggers(GameState& game)
 inline void InitializeFallbackMap(GameState& game)
 {
     game.activeMap.id = "fallback_map";
+    game.activeMap.defaultGroundPath = "Assets/Sprites/Environment/basic_grass.png";
     game.activeMap.objects.clear();
     game.activeMap.triggers.clear();
 

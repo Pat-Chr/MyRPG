@@ -64,20 +64,5 @@
     <None Include="Assets\**\*">
       <Filter>Ressourcendateien</Filter>
     </None>
-    <None Include="Assets\**\*">
-      <Filter>Ressourcendateien</Filter>
-    </None>
-    <None Include="Assets\**\*">
-      <Filter>Ressourcendateien</Filter>
-    </None>
-    <None Include="Assets\**\*">
-      <Filter>Ressourcendateien</Filter>
-    </None>
-    <None Include="Assets\**\*">
-      <Filter>Ressourcendateien</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="Assets\Sprites\Environment\Forest\forest_sprite_roles.txt" />
   </ItemGroup>
 </Project>
