@@ -3,6 +3,7 @@
 #include <SFML/Graphics.hpp>
 
 #include <cmath>
+#include <cstdio>
 
 #include "GameTypes.h"
 
@@ -38,4 +39,24 @@ inline void RenderGame(sf::RenderTarget& target, const Viewport& viewport, const
     player.setPosition({ viewport.width * 0.5f, viewport.height * 0.5f });
 
     target.draw(player);
+
+    static sf::Font debugFont;
+    static const bool debugFontLoaded = debugFont.openFromFile("C:/Windows/Fonts/consola.ttf") ||
+                                        debugFont.openFromFile("C:/Windows/Fonts/arial.ttf");
+
+    if (!debugFontLoaded)
+    {
+        return;
+    }
+
+    char coordinateBuffer[64];
+    std::snprintf(coordinateBuffer, sizeof(coordinateBuffer), "X: %.1f  Y: %.1f", game.player.x, game.player.y);
+
+    sf::Text coordinateText(debugFont, coordinateBuffer, 16);
+    coordinateText.setFillColor(sf::Color(230, 230, 230));
+
+    const sf::FloatRect bounds = coordinateText.getLocalBounds();
+    coordinateText.setPosition({ static_cast<float>(viewport.width) - bounds.size.x - 12.0f, 8.0f });
+
+    target.draw(coordinateText);
 }
