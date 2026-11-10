@@ -11,6 +11,19 @@
 
 #include "GameTypes.h"
 
+/**
+ * @brief Wandelt Weltkoordinaten in Bildschirmkoordinaten um.
+ * 
+ * Da SFML die Kamera nicht nativ unterstützt, wird der Spieler als virtuelles
+ * Kamera-Zentrum verwendet. Die Weltkoordinaten werden relativ zum Spieler
+ * verschoben und dann auf den Bildschirm zentriert (Viewport-Hälfte).
+ * 
+ * @param worldX X-Koordinate in der Spielwelt
+ * @param worldY Y-Koordinate in der Spielwelt
+ * @param game Aktueller Spielszustand (enthält Spieler-Position)
+ * @param viewport Aktuelle Viewport-Dimensionen
+ * @return sf::Vector2f Bildschirmposition für den gegebenen Weltkoordinaten
+ */
 inline sf::Vector2f WorldToScreen(float worldX, float worldY, const GameState& game, const Viewport& viewport)
 {
     const float halfWidth = static_cast<float>(viewport.width) * 0.5f;
@@ -19,6 +32,17 @@ inline sf::Vector2f WorldToScreen(float worldX, float worldY, const GameState& g
     return sf::Vector2f((worldX - game.player.x) + halfWidth, (worldY - game.player.y) + halfHeight);
 }
 
+/**
+ * @brief Lädt und cached SFML-Texturen für effizientes Rendern.
+ * 
+ * Verwendet einen Thread-sicheren UnorderedMap zur Caching von geladenen Texturen.
+ * Vermeidet redundante Dateiladungen und reduziert so GPU-Overhead bei vielen
+ * Texturzugriffen. Die Texturen werden mit setSmooth(false) konfiguriert für
+ * pixelgenaues Rendern (keine Naiv-Glättung).
+ * 
+ * @param path Pfad zur Texturdatei im Dateisystem
+ * @return sf::Texture* Pointer zur geladenen Textur, nullptr bei Lade-/Cache-Fehler
+ */
 inline sf::Texture* GetCachedTexture(const std::string& path)
 {
     static std::unordered_map<std::string, sf::Texture> textureCache;
@@ -46,6 +70,20 @@ inline sf::Texture* GetCachedTexture(const std::string& path)
     return &created->second;
 }
 
+/**
+ * @brief Rendert den Hintergrund-Grund (Boden/Karte).
+ * 
+ * Lädt das Grundtextur vom angegebenen Pfad und rendert alle Kacheln, die im
+ * Sichtbereich des Spielers liegen. Der Berechnungsbereich erstreckt sich um
+ * 2 Kacheln über/unter dem Viewport-Rahmen hinaus für nahtloses Rendern an den Rändern.
+ * 
+ * Falls keine Textur angegeben ist oder das Laden fehlschlägt, wird ein einfaches
+ * grünes Rechteck (sf::Color(72, 152, 76)) als Fallback verwendet.
+ * 
+ * @param target SFML-Ziel für das Rendern (z.B. Fenster, RenderTarget)
+ * @param viewport Aktuelle Viewport-Dimensionen
+ * @param game Aktueller Spielszustand (enthält den Pfad zur Grundtextur)
+ */
 inline void RenderDefaultGround(sf::RenderTarget& target, const Viewport& viewport, const GameState& game)
 {
     if (game.activeMap.defaultGroundPath.empty())
@@ -56,10 +94,12 @@ inline void RenderDefaultGround(sf::RenderTarget& target, const Viewport& viewpo
     constexpr float tileSize = 64.0f;
     const float halfWidth = static_cast<float>(viewport.width) * 0.5f;
     const float halfHeight = static_cast<float>(viewport.height) * 0.5f;
+    // Berechnet den Kachelbereich um den Spieler herum, erweitert um 1 Kachel in jede Richtung
     const int firstTileX = static_cast<int>(std::floor((game.player.x - halfWidth) / tileSize)) - 1;
     const int lastTileX = static_cast<int>(std::ceil((game.player.x + halfWidth) / tileSize)) + 1;
     const int firstTileY = static_cast<int>(std::floor((game.player.y - halfHeight) / tileSize)) - 1;
     const int lastTileY = static_cast<int>(std::ceil((game.player.y + halfHeight) / tileSize)) + 1;
+    
     sf::Texture* texture = GetCachedTexture(game.activeMap.defaultGroundPath);
 
     if (texture != nullptr)
@@ -67,6 +107,7 @@ inline void RenderDefaultGround(sf::RenderTarget& target, const Viewport& viewpo
         sf::Sprite ground(*texture);
         const sf::Vector2u textureSize = texture->getSize();
 
+        // Zentriert den Sprite-Origin und skaliert auf die gewünschte Kachelgröße
         if (textureSize.x > 0u && textureSize.y > 0u)
         {
             ground.setOrigin({ textureSize.x * 0.5f, textureSize.y * 0.5f });
@@ -85,6 +126,7 @@ inline void RenderDefaultGround(sf::RenderTarget& target, const Viewport& viewpo
         return;
     }
 
+    // Fallback: einfaches grünes Rechteck wenn keine Textur verfügbar ist
     sf::RectangleShape ground({ tileSize, tileSize });
     ground.setOrigin({ tileSize * 0.5f, tileSize * 0.5f });
     ground.setFillColor(sf::Color(72, 152, 76));
@@ -99,6 +141,20 @@ inline void RenderDefaultGround(sf::RenderTarget& target, const Viewport& viewpo
     }
 }
 
+/**
+ * @brief Rendert alle Map-Objekte (Wände, NPCs, Interaktive Elemente).
+ * 
+ * Iteriert über alle Objekte in der aktiven Karte und rendert jedes entweder als
+ * Textur-Sprite oder als farbiges Rechteck-Fallback je nach Objekttyp:
+ * - Wall: Grau (140, 140, 140)
+ * - Npc: Beige (225, 180, 130)
+ * - Untergrund: Grün (72, 152, 76)
+ * - Sonstiges: Hellgrün (110, 138, 110)
+ * 
+ * @param target SFML-Ziel für das Rendern
+ * @param viewport Aktuelle Viewport-Dimensionen
+ * @param game Aktueller Spielszustand (enthält die Liste der Map-Objekte)
+ */
 inline void RenderMapObjects(sf::RenderTarget& target, const Viewport& viewport, const GameState& game)
 {
     constexpr float objectSize = 64.0f;
@@ -112,6 +168,7 @@ inline void RenderMapObjects(sf::RenderTarget& target, const Viewport& viewport,
             sf::Sprite sprite(*texture);
             const sf::Vector2u textureSize = texture->getSize();
 
+            // Zentriert und skaliert das Sprite auf die Standard-Objektgröße (64x64)
             if (textureSize.x > 0u && textureSize.y > 0u)
             {
                 sprite.setOrigin({ textureSize.x * 0.5f, textureSize.y * 0.5f });
@@ -123,6 +180,7 @@ inline void RenderMapObjects(sf::RenderTarget& target, const Viewport& viewport,
             continue;
         }
 
+        // Fallback-Rechteck wenn keine Textur verfügbar ist
         sf::RectangleShape fallback({ objectSize, objectSize });
         fallback.setOrigin({ objectSize * 0.5f, objectSize * 0.5f });
         fallback.setPosition(screenPos);
@@ -148,24 +206,59 @@ inline void RenderMapObjects(sf::RenderTarget& target, const Viewport& viewport,
     }
 }
 
+/**
+ * @brief Rendert Debug-Debugging-Overlays für Trigger-Zonen.
+ * 
+ * Zeigt halbtransparente Rechtecke an, die die Auslösebereiche (Trigger Zones) darstellen.
+ * Der Rahmen ändert die Farbe basierend darauf, ob der Spieler sich innerhalb des Triggers befindet:
+ * - Spieler drinnen: Hellgelb (255, 220, 120)
+ * - Spieler draußen: Dunkelgelb (180, 180, 90)
+ * 
+ * Die Füllfarbe ist dunkel mit leichtem Gelbton (120, 120, 0, 35).
+ * 
+ * @param target SFML-Ziel für das Rendern
+ * @param viewport Aktuelle Viewport-Dimensionen
+ * @param game Aktueller Spielszustand (enthält Trigger-Liste und Spielerposition)
+ */
 inline void RenderTriggerDebug(sf::RenderTarget& target, const Viewport& viewport, const GameState& game)
 {
     for (const TriggerZone& trigger : game.activeMap.triggers)
     {
         sf::RectangleShape area({ trigger.width, trigger.height });
         area.setPosition(WorldToScreen(trigger.x, trigger.y, game, viewport));
-        area.setFillColor(sf::Color(120, 120, 0, 35));
+        area.setFillColor(sf::Color(120, 120, 0, 35)); // Dunkles Gelb mit 35% Opazität
         area.setOutlineThickness(1.0f);
+        // Rahmenfarbe ändert sich je nach Spielerposition im Trigger
         area.setOutlineColor(trigger.isPlayerInside ? sf::Color(255, 220, 120) : sf::Color(180, 180, 90));
 
         target.draw(area);
     }
 }
 
+/**
+ * @brief Haupt-Rendern-Funktion für den kompletten Spielszenen.
+ * 
+ * Rendert die gesamte Szene in der folgenden Reihenfolge:
+ * 1. Hintergrund löschen (dunkelgrün: 22, 34, 26)
+ * 2. Grid-Overlay für Debugging (32x32 Pixel Kacheln)
+ * 3. Grundtextur/Kacheln
+ * 4. Map-Objekte (Wände, NPCs, etc.)
+ * 5. Trigger-Zonen (Debug-Overlays)
+ * 6. Spieler-Charakter (Textur oder Fallback-Rechteck)
+ * 7. UI: Koordinaten, FPS und letzte ausgelöste Ereignis-Nachricht
+ * 8. Kartenübergangs-Overlay (Fade-In/Fade-Out Effekt)
+ * 
+ * @param target SFML-Ziel für das Rendern
+ * @param viewport Aktuelle Viewport-Dimensionen
+ * @param game Aktueller Spielszustand
+ * @param fps Aktuelle Frames pro Sekunde für die UI-Anzeige
+ */
 inline void RenderGame(sf::RenderTarget& target, const Viewport& viewport, const GameState& game, float fps)
 {
+    // Hintergrund mit dunkelgrünem Farbton löschen (Wald/Regenwald-Atmosphäre)
     target.clear(sf::Color(22, 34, 26));
 
+    // Grid für Debugging: 32x32 Pixel Kacheln, relativ zur Spielerposition
     const int tileSize = 32;
     const int gridOffsetX = static_cast<int>(std::fmod(-game.player.x, static_cast<float>(tileSize)));
     const int gridOffsetY = static_cast<int>(std::fmod(-game.player.y, static_cast<float>(tileSize)));
@@ -191,8 +284,10 @@ inline void RenderGame(sf::RenderTarget& target, const Viewport& viewport, const
     RenderMapObjects(target, viewport, game);
     RenderTriggerDebug(target, viewport, game);
 
+    // Spieler-Charakter rendern (Textur oder Fallback-Rechteck)
     const float playerSize = static_cast<float>(game.player.size);
 
+    // Lädt den Spieler-Textur einmalig (static hält die Initialisierung über Aufrufe hinweg)
     static sf::Texture playerTexture;
     static const bool playerTextureLoaded = playerTexture.loadFromFile("Assets/Sprites/Characters/main_character.png");
 
@@ -203,17 +298,20 @@ inline void RenderGame(sf::RenderTarget& target, const Viewport& viewport, const
         sf::Sprite playerSprite(playerTexture);
         const sf::Vector2u textureSize = playerTexture.getSize();
 
+        // Zentriert und skaliert die Spielertextur auf die gewünschte Größe
         if (textureSize.x > 0u && textureSize.y > 0u)
         {
             playerSprite.setOrigin({ textureSize.x * 0.5f, textureSize.y * 0.5f });
             playerSprite.setScale({ playerSize / textureSize.x, playerSize / textureSize.y });
         }
 
+        // Spieler zentriert im Viewport
         playerSprite.setPosition({ viewport.width * 0.5f, viewport.height * 0.5f });
         target.draw(playerSprite);
     }
     else
     {
+        // Fallback: leuchtendes bläulich-weißes Rechteck wenn keine Textur verfügbar ist
         sf::RectangleShape player({ playerSize, playerSize });
         player.setFillColor(sf::Color(176, 220, 255));
         player.setOrigin({ playerSize * 0.5f, playerSize * 0.5f });
@@ -222,15 +320,17 @@ inline void RenderGame(sf::RenderTarget& target, const Viewport& viewport, const
         target.draw(player);
     }
 
+    // Debug-Font laden (versucht zuerst consola.ttf, falls nicht vorhanden: arial.ttf)
     static sf::Font debugFont;
     static const bool debugFontLoaded = debugFont.openFromFile("C:/Windows/Fonts/consola.ttf") ||
                                         debugFont.openFromFile("C:/Windows/Fonts/arial.ttf");
 
     if (!debugFontLoaded)
     {
-        return;
+        return; // Ohne Font keine UI-Elemente möglich
     }
 
+    // Koordinaten und FPS in der oberen rechten Ecke anzeigen
     char coordinateBuffer[96];
     std::snprintf(coordinateBuffer, sizeof(coordinateBuffer), "Map: %s   X: %.1f  Y: %.1f   FPS: %.1f", game.activeMap.id.c_str(), game.player.x, game.player.y, fps);
 
@@ -238,29 +338,33 @@ inline void RenderGame(sf::RenderTarget& target, const Viewport& viewport, const
     coordinateText.setFillColor(sf::Color(230, 230, 230));
 
     const sf::FloatRect bounds = coordinateText.getLocalBounds();
+    // Positioniert den Text rechts oben (Viewport-Ende minus Textbreite)
     coordinateText.setPosition({ static_cast<float>(viewport.width) - bounds.size.x - 12.0f, 8.0f });
 
     target.draw(coordinateText);
 
+    // Gezeigtes Trigger-Ereignis in der oberen linken Ecke (falls vorhanden)
     if (!game.lastTriggeredEvent.empty())
     {
         std::string triggerLine = "Trigger: " + game.lastTriggeredEvent;
         sf::Text triggerText(debugFont, triggerLine, 16);
-        triggerText.setFillColor(sf::Color(255, 230, 140));
+        triggerText.setFillColor(sf::Color(255, 230, 140)); // Hellgelb für hervorgehobene Ereignisse
         triggerText.setPosition({ 12.0f, 8.0f });
         target.draw(triggerText);
     }
 
+    // Kartenübergangs-Overlay (Fade-In oder Fade-Out Effekt)
     if (game.mapTransition.phase != MapTransitionPhase::None)
     {
         const float duration = game.mapTransition.duration > 0.0f ? game.mapTransition.duration : 0.001f;
         const float progress = std::clamp(game.mapTransition.timer / duration, 0.0f, 1.0f);
+        // Fade-Out: alpha von 0 → 1 (wird dunkler), Fade-In: alpha von 1 → 0 (wird heller)
         const float alphaFactor = game.mapTransition.phase == MapTransitionPhase::FadeOut ? progress : (1.0f - progress);
         const auto alpha = static_cast<std::uint8_t>(std::clamp(alphaFactor * 255.0f, 0.0f, 255.0f));
 
         sf::RectangleShape fadeOverlay({ static_cast<float>(viewport.width), static_cast<float>(viewport.height) });
         fadeOverlay.setPosition({ 0.0f, 0.0f });
-        fadeOverlay.setFillColor(sf::Color(0, 0, 0, alpha));
+        fadeOverlay.setFillColor(sf::Color(0, 0, 0, alpha)); // Schwarzes Overlay mit variabler Opazität
         target.draw(fadeOverlay);
     }
 }

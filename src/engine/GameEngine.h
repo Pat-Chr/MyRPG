@@ -7,17 +7,27 @@
 #include "GameTypes.h"
 #include "MapLoader.h"
 
+// Prüft, ob ein gegebener Punkt innerhalb eines Trigger-Bereichs liegt.
+// Ein Trigger ist ein rechteckiger Bereich mit definierten Abmessungen.
 inline bool IsInsideTrigger(const TriggerZone& trigger, float x, float y)
 {
     return x >= trigger.x && x <= (trigger.x + trigger.width) && y >= trigger.y && y <= (trigger.y + trigger.height);
 }
 
+// Prüft, ob gerade eine Map-Übergangsanimation läuft.
+// Wenn eine Map-Transition aktiv ist, sind keine Spieleraktionen oder Trigger-Auslöser erlaubt.
 inline bool IsMapTransitionActive(const GameState& game)
 {
     return game.mapTransition.phase != MapTransitionPhase::None;
 }
 
-inline bool TryResolveMapTransitionTarget(const std::string& eventName, std::string& outMapPath, float& outSpawnX, float& outSpawnY)
+// Versucht, ein Ziel für einen Map-Übergang basierend auf einem Event-Namen zu finden.
+// Wenn der Event-Namen in der Liste der bekannten Übergänge existiert, werden die Ziel-Map-Pfade und
+// das Spawn-Position zurückgegeben. Andernfalls wird false zurückgegeben.
+inline bool TryResolveMapTransitionTarget(const std::string& eventName, 
+                                          std::string& outMapPath, 
+                                          float& outSpawnX, 
+                                          float& outSpawnY)
 {
     if (eventName == "Load_0001_Forest")
     {
@@ -38,7 +48,13 @@ inline bool TryResolveMapTransitionTarget(const std::string& eventName, std::str
     return false;
 }
 
-inline void BeginMapTransition(GameState& game, std::string targetMapPath, float targetPlayerX, float targetPlayerY)
+// Startet einen Map-Übergang zur angegebenen Ziel-Map.
+// Der Spieler wird während des Übergangs ausgeblendet und an der Zielposition wieder eingeblendet.
+// Wenn bereits ein aktiver Übergang läuft, wird keine Aktion ausgeführt.
+inline void BeginMapTransition(GameState& game, 
+                               std::string targetMapPath, 
+                               float targetPlayerX, 
+                               float targetPlayerY)
 {
     if (IsMapTransitionActive(game))
     {
@@ -52,6 +68,9 @@ inline void BeginMapTransition(GameState& game, std::string targetMapPath, float
     game.mapTransition.targetPlayerY = targetPlayerY;
 }
 
+// Aktualisiert den Map-Übergangsstatus.
+// Verarbeitet die Zeit für das Ausblenden der aktuellen Map und das Einblenden der nächsten Map.
+// Wenn der Übergang abgeschlossen ist, wird die neue Map geladen und der Spieler an die Zielposition versetzt.
 inline void UpdateMapTransition(GameState& game, float deltaTime)
 {
     if (!IsMapTransitionActive(game))
@@ -86,6 +105,9 @@ inline void UpdateMapTransition(GameState& game, float deltaTime)
     game.mapTransition.targetMapPath.clear();
 }
 
+// Aktualisiert die Trigger-Zustände und löst Event-Aktionen aus.
+// Wenn ein Spieler in einem Trigger-Bereich ist, wird das entsprechende Event ausgelöst.
+// Bei aktivem Map-Übergang werden keine Trigger-Abfragen durchgeführt.
 inline void UpdateTriggers(GameState& game)
 {
     if (IsMapTransitionActive(game))
@@ -114,6 +136,9 @@ inline void UpdateTriggers(GameState& game)
     }
 }
 
+// Initialisiert die Spiel-Engine mit einer einfachen Fallback-Map.
+// Wird verwendet, wenn keine Map geladen werden kann oder als Startzustand.
+// Erstellt ein einfaches Grundfeld und einen Test-Stein sowie einen Trigger-Bereich.
 inline void InitializeFallbackMap(GameState& game)
 {
     game.activeMap.id = "fallback_map";
@@ -141,6 +166,8 @@ inline void InitializeFallbackMap(GameState& game)
     });
 }
 
+// Initialisiert den Spielzustand mit der ersten verfügbaren Map.
+// Versucht, die Test-Map zu laden. Wenn das fehlschlägt, wird eine Fallback-Map verwendet.
 inline void InitializeGameState(GameState& game)
 {
     game.player.x = 0.0f;
@@ -153,6 +180,8 @@ inline void InitializeGameState(GameState& game)
     }
 }
 
+// Stellt den Bewegungszustand des Spielers basierend auf Tastatureingaben ein.
+// Setzt die Richtungsfahnen (up, down, left, right) für die Bewegungsberechnung.
 inline void SetMovementState(InputState& input, bool up, bool down, bool left, bool right)
 {
     input.up = up;
@@ -161,6 +190,9 @@ inline void SetMovementState(InputState& input, bool up, bool down, bool left, b
     input.right = right;
 }
 
+// Prüft, ob ein Map-Objekt den Spieler blockiert.
+// Berechnet die Kollisionsboxen von Objekten und des Spielers und prüft auf Überlappung.
+// Nur feste (solid) Objekte werden berücksichtigt. Fluids oder andere Objekttypen werden ignoriert.
 inline bool IsSolidObjectBlockingPosition(const GameState& game, float playerX, float playerY)
 {
     constexpr float mapObjectSize = 64.0f;
@@ -196,6 +228,10 @@ inline bool IsSolidObjectBlockingPosition(const GameState& game, float playerX, 
     return false;
 }
 
+// Haupt-Update-Funktion für das Spiel.
+// Verarbeitet Spielerbewegung, Kollisionserkennung und Trigger-Auslöser.
+// Wenn eine Map-Transition aktiv ist, wird nur die Transition-Logik aktualisiert.
+// Andernfalls wird die normale Spiellogik ausgeführt: Bewegung, Kollisionsprüfung und Trigger-Updates.
 inline void UpdateGame(GameState& game, float deltaTime)
 {
     if (IsMapTransitionActive(game))
