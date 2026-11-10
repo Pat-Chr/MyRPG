@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cmath>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -20,6 +21,11 @@ inline MapObjectType ParseMapObjectType(const std::string& value)
 	}
 
 	return MapObjectType::Scenery;
+}
+
+inline float SnapToGrid(float value, float gridSize)
+{
+	return std::round(value / gridSize) * gridSize;
 }
 
 inline bool TryLoadMapFromFile(const std::string& filePath, MapData& outMap)
@@ -60,6 +66,12 @@ inline bool TryLoadMapFromFile(const std::string& filePath, MapData& outMap)
 			if (!lineStream.fail())
 			{
 				object.type = ParseMapObjectType(type);
+				if (object.type == MapObjectType::Scenery)
+				{
+					constexpr float gridSize = 64.0f;
+					object.x = SnapToGrid(object.x, gridSize);
+					object.y = SnapToGrid(object.y, gridSize);
+				}
 				object.solid = solidFlag != 0;
 				loadedMap.objects.push_back(object);
 			}
