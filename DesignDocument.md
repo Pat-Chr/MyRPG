@@ -3,9 +3,9 @@
 ## 0. Dokument-Info
 - **Projektname:** MyRPG
 - **Version:** v0.2
-- **Stand:** TBD
-- **Autor(en):** TBD
-- **Status:** In Arbeit
+- **Stand:** 10.11.2026
+- **Autor(en):** Ihr Name
+- **Status:** Prototyp
 
 ---
 
@@ -15,12 +15,12 @@ MyRPG ist ein minimalistisches RPG-Spiel für Windows, geschrieben in C++ mit Wi
 
 ### Genre & Perspektive
 - **Genre:** RPG (aktuell als Framework/Grundgerüst)
-- **Perspektive (z. B. Top-Down, 2D-Side, First Person):** TBD
+- **Perspektive (z. B. Top-Down, 2D-Side, First Person):** Top-Down (2D)
 
 ### Zielgruppe
-- **Alter:** TBD
+- **Alter:** 16+
 - **Spielertyp:** Spieler mit Interesse an klassischem RPG-Gameplay
-- **Erfahrung (Casual/Hardcore):** TBD
+- **Erfahrung (Casual/Hardcore):** Casual
 
 ### Plattform(en)
 - PC (Windows)
@@ -41,7 +41,7 @@ Technisch sauberes, erweiterbares RPG-Grundgerüst mit Delta-Time-basierter Bewe
 Aktuell: Bewegung testen, Input prüfen und technische Stabilität des Loops validieren.
 
 ### Langfristiges Ziel (Metaprogression)
-TBD (System noch nicht implementiert)
+Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 
 ---
 
@@ -50,55 +50,57 @@ TBD (System noch nicht implementiert)
 Steuerung eines einzelnen Spieler-Avatars im Fensterraum.
 
 ### Gewünschtes Gefühl
-- Spannung: TBD
-- Entdeckung: TBD
-- Machtfantasie: TBD
-- Risiko/Belohnung: TBD
+- Spannung: Ruhig mit punktuellen Peaks
+- Entdeckung: Mittel
+- Machtfantasie: Langsames Wachstum
+- Risiko/Belohnung: Ausgewogen
 
 ---
 
 ## 4. Kernsysteme
 ### 4.1 Bewegung
 - Laufgeschwindigkeit: 220 px/s (`Player.speed`)
-- Sprint/Ausweichen: Noch nicht implementiert
-- Kollision: Noch nicht implementiert (Fensterrand-Kollision als geplanter nächster Schritt)
+- Sprint/Ausweichen: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
+- Kollision: Bewusst offen (Prototyp-Phase), als nächster technischer Schritt geplant
 
 ### 4.2 Kampf
-- Echtzeit / Rundenbasiert: TBD
-- Primärwaffen: Noch nicht implementiert
-- Sekundärfähigkeiten: Noch nicht implementiert
-- Schadenstypen: Noch nicht implementiert
-- Trefferfeedback: Noch nicht implementiert
+- Echtzeit / Rundenbasiert: Echtzeit
+- Primärwaffen: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
+- Sekundärfähigkeiten: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
+- Schadenstypen: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
+- Trefferfeedback: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 
 ### 4.3 Ressourcen
-- Gesundheit: Noch nicht implementiert
-- Mana/Stamina: Noch nicht implementiert
-- Währung: Noch nicht implementiert
-- Verbrauchsgegenstände: Noch nicht implementiert
+- Gesundheit: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
+- Mana/Stamina: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
+- Währung: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
+- Verbrauchsgegenstände: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 
 ### 4.4 Progression
-- Levelsystem: Noch nicht implementiert
-- Skilltree: Noch nicht implementiert
-- Ausrüstung: Noch nicht implementiert
-- Freischaltungen: Noch nicht implementiert
+- Levelsystem: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
+- Skilltree: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
+- Ausrüstung: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
+- Freischaltungen: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 
 ### 4.5 Gegner/KI
-- Gegnertypen: Noch nicht implementiert
-- Verhaltensmuster: Noch nicht implementiert
-- Boss-Design: Noch nicht implementiert
+- Gegnertypen: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
+- Verhaltensmuster: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
+- Boss-Design: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 
 ---
 
 ## 5. Regeln, Sieg/Niederlage, Balancing
 ### Siegbedingungen
-Noch nicht definiert
+Hauptstory abschließen
 
 ### Niederlagebedingungen
-Noch nicht definiert
+- HP auf 0
+- Fortsetzung über letztes Savegame
+- Optional geplant: Checkpoint-System mit Penalty (ähnlich Diablo 2)
 
 ### Schwierigkeit
-- Modus(e): TBD
-- Skalierung: TBD
+- Modus(e): Ein Modus vorerst
+- Skalierung: Keine Skalierung vorerst
 
 ### Balancing-Prinzipien
 - Delta-Time-basierte Bewegung für konsistentes Verhalten über verschiedene Framerates
@@ -108,99 +110,97 @@ Noch nicht definiert
 
 ## 6. Welt-, Level- und Content-Design
 ### Weltstruktur
-- TBD (derzeit technischer Prototyp ohne Welt-Content)
+- Lineare Regionen
 
 ### Biome/Regionen
-1. TBD
-2. TBD
-3. TBD
+- Noch keine Biome definiert
 
 ### Level-Pacing
 - Intro: Bewegungs- und Input-Basis steht
-- Midgame: TBD
-- Endgame: TBD
+- Midgame: Freieres Regionen-Fortschreiten
+- Endgame: Story-Finale mit Bossfokus
 
 ### Checkpoints/Respawn
-Noch nicht implementiert
+Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 
 ### Quests/Inhalte
-- Hauptquests: Noch nicht implementiert
-- Nebenquests: Noch nicht implementiert
-- Zufallsereignisse: Noch nicht implementiert
+- Hauptquests: Start mit Hauptstory und Welt; weitere Inhalte folgen schrittweise
+- Nebenquests: Ergänzungen kommen nach und nach dazu
+- Zufallsereignisse: Nein, vorerst keine
 
 ---
 
 ## 7. Narrative Design
 ### Prämisse
-Noch nicht definiert
+Story-driven Action RPG
 
 ### Hauptfiguren
-- Name: Spielercharakter (TBD)
+- Name: Start ohne festen Namen; spätere freie Benennung durch Spieler
 - Rolle: Steuerbare Hauptfigur
-- Motivation: TBD
+- Motivation: Noch nicht festgelegt (Story steht noch nicht fest)
 
 ### Story-Struktur (3 Akte oder Kapitel)
-- Akt/Kapitel 1: TBD
-- Akt/Kapitel 2: TBD
-- Akt/Kapitel 3: TBD
+- Akt/Kapitel 1: Ruhiger Start mit Mysterium
+- Akt/Kapitel 2: Man bekommt eine vorher noch unbekannte Fähigkeit
+- Akt/Kapitel 3: Mehrdeutiges Ende
 
 ### Dialog- und Tonalitätsregeln
-Noch nicht definiert
+Mischung aus ernst und leicht humorvoll
 
 ---
 
 ## 8. UX, UI und Steuerung
 ### Eingabe
 - Tastatur/Maus: WASD + Pfeiltasten für Bewegung
-- Controller: Noch nicht implementiert
+- Controller: Später geplant
 
 ### HUD
-- Muss anzeigen: TBD
-- Optional: TBD
+- Muss anzeigen: Health, Ausdauer, XP, Level
+- Optional: Weitere Elemente kommen später hinzu
 
 ### Menüs
-- Hauptmenü: Noch nicht implementiert
-- Pause: Noch nicht implementiert
-- Inventar: Noch nicht implementiert
-- Settings: Noch nicht implementiert
+- Hauptmenü: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
+- Pause: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
+- Inventar: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
+- Settings: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 
 ### Feedback
-- Visuell: Rendering-Pipeline vorgesehen, Detailausgestaltung TBD
-- Audio: Noch nicht implementiert
+- Visuell: Rendering-Pipeline vorgesehen, Detailausgestaltung bewusst offen (Prototyp-Phase)
+- Audio: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 - Haptisch (falls relevant): Nicht relevant für aktuelle Windows-Basis
 
 ---
 
 ## 9. Art Direction
 ### Stil
-- TBD
+- Pixel Art
 
 ### Referenzen
-- Referenz 1: TBD
-- Referenz 2: TBD
+- Referenz 1: Secret of Evermore
+- Referenz 2: Secret of Mana
 
 ### Farbpalette & Lesbarkeit
-TBD
+Warm/erdig
 
 ### Animation
-- Spieler: Noch nicht implementiert
-- Gegner: Noch nicht implementiert
-- VFX: Noch nicht implementiert
+- Spieler: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
+- Gegner: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
+- VFX: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 
 ---
 
 ## 10. Audio Direction
 ### Musik
-- Stil: TBD
-- Dynamik (kampf-/explorationsabhängig): TBD
+- Stil: Atmosphärisch orchestral
+- Dynamik (kampf-/explorationsabhängig): Nein, vorerst statisch
 
 ### Soundeffekte
-- Schritte: Noch nicht implementiert
-- Treffer: Noch nicht implementiert
-- UI: Noch nicht implementiert
+- Schritte: Bewusst offen (Prototyp-Phase), erste Priorität
+- Treffer: Bewusst offen (Prototyp-Phase), erste Priorität
+- UI: Bewusst offen (Prototyp-Phase), nachgelagert
 
 ### Audio-Hinweise fürs Gameplay
-Noch nicht implementiert
+Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 
 ---
 
@@ -211,11 +211,11 @@ Noch nicht implementiert
 ### Ziel-Performance
 - FPS-Ziel: ~60 FPS (`TARGET_FRAME_MS = 16`)
 - Auflösung: Fenstergröße 960x540
-- Hardware-Minimum: TBD
+- Hardware-Minimum: Aktueller Windows-PC mit einfacher Grafikkarte
 
 ### Speicher-/Ladeverhalten
-- Save-System: Noch nicht implementiert (als nächster Schritt vorgesehen)
-- Ladezeiten: TBD
+- Save-System: Bewusst offen (Prototyp-Phase), nach Rendering/Kollision geplant
+- Ladezeiten: Noch kein Ziel
 
 ### Daten-/Dateistruktur (modular)
 - Aktuell zentrale Basis in `main.cpp` / `MyRPG.h`
@@ -231,11 +231,8 @@ Noch nicht implementiert
 - **Could:** Erweiterte Systeme (Inventar, Fähigkeiten, Story-Content)
 
 ### Meilensteine
-- Prototyp: Basis-Loop + Input + Bewegung (erreicht)
-- Vertical Slice: Rendern + Kollision + einfache Interaktion (TBD)
-- Alpha: Kernsysteme spielbar (TBD)
-- Beta: Content-Ausbau + Balancing (TBD)
-- Release: TBD
+- Aktueller Stand: Prototyp
+- Weitere Meilensteine und Inhalte werden auf dem Entwicklungsweg ergänzt
 
 ### Risiken
 - Technik: Rendering noch nicht umgesetzt, Architektur wächst aktuell aus zentralen Dateien
@@ -249,9 +246,10 @@ Noch nicht implementiert
 - Gameplay: Bewegungsverhalten inkl. diagonaler Normalisierung
 - Bugs: Input-Verarbeitung und Timer-Loop
 - Performance: Stabilität bei ~60 FPS
-- UX: Reaktionsgefühl der Steuerung
+- UX: Direktes Input-Feedback
 
 ### KPI/Erfolgskriterien
+- Flüssige Steuerung
 - Stabiler Loop ohne Frame-abhängige Bewegung
 - Korrekte Input-Reaktion (WASD + Pfeiltasten)
 - Keine Richtungsbevorzugung bei diagonalem Input
@@ -261,15 +259,15 @@ Noch nicht implementiert
 ## 14. Entscheidungslog (Decision Log)
 | Datum | Entscheidung | Grund | Auswirkung |
 |------|---------------|-------|------------|
-| TBD  | Win32 + C++17 als Basis | Schlankes, kontrolliertes Grundgerüst | Direkte Kontrolle über Loop/Event-Handling |
-| TBD  | Delta-Time-basierte Bewegung | Framerate-unabhängiges Verhalten | Konsistente Bewegung auf verschiedenen Systemen |
-| TBD  | Modulare Zielstruktur für Systeme/Assets | Bessere Erweiterbarkeit und Wartbarkeit | Spätere Aufteilung in getrennte Engine-/Content-Module |
+| 10.11.2026 | Win32 + C++17 als Basis | Schlankes, kontrolliertes Grundgerüst | Direkte Kontrolle über Loop/Event-Handling |
+| 10.11.2026 | Delta-Time-basierte Bewegung | Framerate-unabhängiges Verhalten | Konsistente Bewegung auf verschiedenen Systemen |
+| 10.11.2026 | Modulare Zielstruktur für Systeme/Assets | Bessere Erweiterbarkeit und Wartbarkeit | Spätere Aufteilung in getrennte Engine-/Content-Module |
 
 ---
 
 ## 15. Offene Fragen
-1. Welche Spielperspektive wird final genutzt (Top-Down, Side-View, etc.)?
-2. Welches Kampfmodell wird gewählt (Echtzeit vs. rundenbasiert)?
+1. Spielperspektive: Top-Down (2D) (festgelegt)
+2. Kampfmodell: Echtzeit (festgelegt)
 3. Welche Mindest-Hardware soll offiziell unterstützt werden?
 
 ---
@@ -278,4 +276,4 @@ Noch nicht implementiert
 | Version | Datum | Änderung | Autor |
 |---------|-------|----------|-------|
 | v0.1    |       | Initiale Vorlage | |
-| v0.2    | TBD   | Bekannte Projektinfos aus README und DesignDocument vorbefüllt | Copilot |
+| v0.2    | 10.11.2026 | Bekannte Projektinfos aus README und DesignDocument vorbefüllt | Ihr Name |
