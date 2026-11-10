@@ -175,7 +175,18 @@
   </ItemGroup>
   <ItemGroup>
     <None Include=".github\copilot-instructions.md" />
-    <None Include="Assets\**\*" />
+    <None Include="Assets\Maps\0001_Forest.map" />
+    <None Include="Assets\Maps\0001_TestMap.map" />
+    <None Include="Assets\Sprites\Characters\main_character.png" />
+    <None Include="Assets\Sprites\Environment\basic_grass.png" />
+    <None Include="Assets\Sprites\Environment\basic_rock.png" />
+    <None Include="Assets\Sprites\Environment\Forest\forest_bush.png" />
+    <None Include="Assets\Sprites\Environment\Forest\forest_flower.png" />
+    <None Include="Assets\Sprites\Environment\Forest\forest_ground.png" />
+    <None Include="Assets\Sprites\Environment\Forest\forest_path.png" />
+    <None Include="Assets\Sprites\Environment\Forest\forest_rock.png" />
+    <None Include="Assets\Sprites\Environment\Forest\forest_stump.png" />
+    <None Include="Assets\Sprites\Environment\Forest\forest_tree.png" />
     <None Include="DesignDocument.md" />
   </ItemGroup>
   <Target Name="CopyAssetsToOutput" AfterTargets="Build">
