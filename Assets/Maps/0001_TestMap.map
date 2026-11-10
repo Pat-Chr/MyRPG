@@ -1,0 +1,18 @@
+# Simple map format
+# MAP <mapId>
+# OBJECT <id> <type> <x> <y> <spritePath> <solid(0|1)>
+# TRIGGER <id> <x> <y> <width> <height> <eventName>
+
+MAP 0001_TestMap
+
+OBJECT rock_01 scenery -192 -64 Assets/Sprites/Environment/basic_rock.png 1
+OBJECT rock_02 scenery -96 -32 Assets/Sprites/Environment/basic_rock.png 1
+OBJECT rock_03 scenery 32 -96 Assets/Sprites/Environment/basic_rock.png 1
+OBJECT rock_04 scenery 160 -48 Assets/Sprites/Environment/basic_rock.png 1
+OBJECT rock_05 scenery -160 96 Assets/Sprites/Environment/basic_rock.png 1
+OBJECT rock_06 scenery -32 128 Assets/Sprites/Environment/basic_rock.png 1
+OBJECT rock_07 scenery 96 96 Assets/Sprites/Environment/basic_rock.png 1
+OBJECT rock_08 scenery 224 160 Assets/Sprites/Environment/basic_rock.png 1
+
+TRIGGER spawn_area -80 -80 160 160 Trigger_SpawnArea
+TRIGGER north_path -64 -260 220 120 Trigger_NorthPath

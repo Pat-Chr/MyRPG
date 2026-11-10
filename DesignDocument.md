@@ -222,7 +222,10 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 - Zielstruktur: Systeme getrennt nach Modulen (z. B. Combat, Inventory, Dialog)
 - Zielstruktur: Inhalte getrennt nach Typen (z. B. Sounds, Sprites, Story-Skripte)
 - Asset-Ordner für Sprites: `Assets/Sprites/Characters/` und `Assets/Sprites/Environment/`
+- Asset-Ordner für Maps: `Assets/Maps/`
 - Sprite-Standardgröße: `64x64` Pixel (einheitliches Basisraster)
+- Map-Format (Prototyp): textbasiert, eine Datei pro Map (z. B. `0001_TestMap.map`)
+- Zeilenformat: `MAP`, `OBJECT`, `TRIGGER` (für Weltobjekte und Triggerzonen)
 - Aktuelle Platzhalter: `main_character.png` und `basic_rock.png`
 
 ---
@@ -265,6 +268,7 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 | 10.11.2026 | Win32 + C++17 als Basis | Schlankes, kontrolliertes Grundgerüst | Direkte Kontrolle über Loop/Event-Handling |
 | 10.11.2026 | Delta-Time-basierte Bewegung | Framerate-unabhängiges Verhalten | Konsistente Bewegung auf verschiedenen Systemen |
 | 10.11.2026 | Modulare Zielstruktur für Systeme/Assets | Bessere Erweiterbarkeit und Wartbarkeit | Spätere Aufteilung in getrennte Engine-/Content-Module |
+| 10.11.2026 | Map-Dateien pro Level (`Assets/Maps/*.map`) mit `OBJECT`- und `TRIGGER`-Einträgen | Weltinhalte und Trigger sollen datengetrieben statt hartkodiert sein | Testmap `0001_TestMap` kann Objekte platzieren und Bereichs-Events auslösen |
 
 ---
 
@@ -282,6 +286,7 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 | v0.2    | 10.11.2026 | Bekannte Projektinfos aus README und DesignDocument vorbefüllt | Ihr Name |
 | v0.3    | 10.11.2026 | Prototyp von Win32/GDI auf SFML-Loop, Input und Rendering migriert | Ihr Name |
 | v0.4    | 10.11.2026 | Asset-Struktur für Sprites (`Characters`/`Environment`) und 64x64-Standard dokumentiert | Ihr Name |
+| v0.5    | 10.11.2026 | Testmap-Dateiformat (`Assets/Maps/0001_TestMap.map`) und Triggerzonen-Ansatz dokumentiert | Ihr Name |
 
 ---
 

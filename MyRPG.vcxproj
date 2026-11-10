@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -159,6 +159,7 @@
     <ClInclude Include="src\engine\GameEngine.h" />
     <ClInclude Include="src\engine\GameRenderer.h" />
     <ClInclude Include="src\engine\GameTypes.h" />
+    <ClInclude Include="src\engine\MapLoader.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="MyRPG.h" />
   </ItemGroup>
@@ -174,15 +175,20 @@
   </ItemGroup>
   <ItemGroup>
     <None Include=".github\copilot-instructions.md" />
+    <None Include="Assets\Maps\0001_TestMap.map" />
     <None Include="DesignDocument.md" />
   </ItemGroup>
+  <Target Name="CopyAssetsToOutput" AfterTargets="Build">
+    <ItemGroup>
+      <AssetFiles Include="Assets\**\*" />
+    </ItemGroup>
+    <MakeDir Directories="$(OutDir)Assets" />
+    <Copy SourceFiles="@(AssetFiles)"
+          DestinationFiles="@(AssetFiles->'$(OutDir)%(Identity)')"
+          SkipUnchangedFiles="true" />
+  </Target>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
 </Project>
-
-
-
-
-
 
