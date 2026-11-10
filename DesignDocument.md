@@ -11,7 +11,7 @@
 
 ## 1. Vision & Elevator Pitch
 ### Kurzbeschreibung (1–3 Sätze)
-MyRPG ist ein minimalistisches RPG-Spiel für Windows, geschrieben in C++ mit Win32 API. Der aktuelle Fokus liegt auf einer stabilen Game-Loop- und Input-Basis als Fundament für spätere Gameplay-Systeme.
+MyRPG ist ein minimalistisches RPG-Spiel für Windows, geschrieben in C++ mit SFML. Der aktuelle Fokus liegt auf einer stabilen Game-Loop- und Input-Basis als Fundament für spätere Gameplay-Systeme.
 
 ### Genre & Perspektive
 - **Genre:** RPG (aktuell als Framework/Grundgerüst)
@@ -32,10 +32,10 @@ Technisch sauberes, erweiterbares RPG-Grundgerüst mit Delta-Time-basierter Bewe
 
 ## 2. Core Gameplay Loop
 ### Hauptschleife
-1. Eingabe lesen (WASD/Pfeiltasten)
+1. Eingabe lesen (WASD/Pfeiltasten über SFML Keyboard-State)
 2. Spielzustand mit Delta-Time aktualisieren (`UpdateGame`)
-3. Redraw anfordern (`InvalidateRect`)
-4. Render-Pfad in `WM_PAINT` ausführen (`RenderGame`, aktuell TODO)
+3. Szene pro Frame rendern (`RenderGame`)
+4. Frame präsentieren (`window.display`)
 
 ### Session-Ziel (pro 5–15 Minuten)
 Aktuell: Bewegung testen, Input prüfen und technische Stabilität des Loops validieren.
@@ -206,10 +206,10 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 
 ## 11. Technik & Architektur
 ### Engine/Framework
-- Win32 API, C++17 (Custom Game Loop)
+- SFML 3, C++20 (Custom Game Loop)
 
 ### Ziel-Performance
-- FPS-Ziel: ~60 FPS (`TARGET_FRAME_MS = 16`)
+- FPS-Ziel: ~60 FPS (`window.setFramerateLimit(60)`)
 - Auflösung: Fenstergröße 960x540
 - Hardware-Minimum: Aktueller Windows-PC mit einfacher Grafikkarte
 
@@ -277,3 +277,16 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 |---------|-------|----------|-------|
 | v0.1    |       | Initiale Vorlage | |
 | v0.2    | 10.11.2026 | Bekannte Projektinfos aus README und DesignDocument vorbefüllt | Ihr Name |
+| v0.3    | 10.11.2026 | Prototyp von Win32/GDI auf SFML-Loop, Input und Rendering migriert | Ihr Name |
+
+---
+
+## 17. Migrationsnotiz (Win32/GDI -> SFML)
+- Eingabe, Update und Rendering laufen jetzt in einem SFML-Hauptloop.
+- Engine-Daten/Logik (`GameTypes`, `GameEngine`) wurden von Win32-Typen entkoppelt.
+- Raster- und Player-Rendering wurden auf SFML (`VertexArray`, `RectangleShape`) portiert.
+
+### Nächste sinnvolle Schritte
+1. Spritesheet-Rendering für den Spieler statt Platzhalter-Rechteck.
+2. Kamera/Viewport als eigenes Modul unter `src/engine` auslagern.
+3. Erstes Asset- und Content-Verzeichnis für Texturen/Sounds anlegen.

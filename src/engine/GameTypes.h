@@ -1,7 +1,5 @@
 #pragma once
 
-#include <Windows.h>
-
 struct Player
 {
 	float x = 0.0f;
@@ -18,9 +16,14 @@ struct InputState
 	bool right = false;
 };
 
+struct Viewport
+{
+	int width = 0;
+	int height = 0;
+};
+
 struct GameState
 {
 	Player player;
 	InputState input;
-	ULONGLONG lastTick = 0;
 };

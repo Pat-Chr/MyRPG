@@ -1,49 +1,26 @@
 #pragma once
 
-#include <Windows.h>
-
 #include <algorithm>
 #include <cmath>
 
 #include "GameTypes.h"
 
-inline void InitializeGameState(GameState& game, const RECT& clientRect)
+inline void InitializeGameState(GameState& game)
 {
-    (void)clientRect;
     game.player.x = 0.0f;
     game.player.y = 0.0f;
-    game.lastTick = GetTickCount64();
 }
 
-inline void SetMovementKey(InputState& input, WPARAM key, bool isPressed)
+inline void SetMovementState(InputState& input, bool up, bool down, bool left, bool right)
 {
-    switch (key)
-    {
-    case 'W':
-    case VK_UP:
-        input.up = isPressed;
-        break;
-    case 'S':
-    case VK_DOWN:
-        input.down = isPressed;
-        break;
-    case 'A':
-    case VK_LEFT:
-        input.left = isPressed;
-        break;
-    case 'D':
-    case VK_RIGHT:
-        input.right = isPressed;
-        break;
-    default:
-        break;
-    }
+    input.up = up;
+    input.down = down;
+    input.left = left;
+    input.right = right;
 }
 
-inline void UpdateGame(GameState& game, const RECT& clientRect, float deltaTime)
+inline void UpdateGame(GameState& game, float deltaTime)
 {
-    (void)clientRect;
-
     float moveX = 0.0f;
     float moveY = 0.0f;
 

@@ -1,0 +1,11 @@
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/libpng_x64-windows/debug/lib/libpng16d.lib
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/libpng_x64-windows/debug/bin/libpng16d.dll
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/libpng_x64-windows/debug/lib/pkgconfig/libpng16.pc
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/libpng_x64-windows/debug/lib/libpng/libpng16.cmake
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/libpng_x64-windows/debug/lib/libpng/libpng16-debug.cmake
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/libpng_x64-windows/debug/lib/libpng16d.lib
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/libpng_x64-windows/debug/bin/libpng16d.dll
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/libpng_x64-windows/debug/lib/cmake/PNG/PNGTargets.cmake
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/libpng_x64-windows/debug/lib/cmake/PNG/PNGTargets-debug.cmake
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/libpng_x64-windows/debug/lib/cmake/PNG/PNGConfig.cmake
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/libpng_x64-windows/debug/lib/cmake/PNG/PNGConfigVersion.cmake

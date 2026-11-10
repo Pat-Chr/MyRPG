@@ -1,0 +1,17 @@
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/brotli_x64-windows/debug/tools/brotli/brotli.exe
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/brotli_x64-windows/debug/lib/brotlienc.lib
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/brotli_x64-windows/debug/bin/brotlienc.dll
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/brotli_x64-windows/debug/lib/brotlidec.lib
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/brotli_x64-windows/debug/bin/brotlidec.dll
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/brotli_x64-windows/debug/lib/brotlicommon.lib
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/brotli_x64-windows/debug/bin/brotlicommon.dll
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/brotli_x64-windows/debug/share/unofficial-brotli/unofficial-brotli-config.cmake
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/brotli_x64-windows/debug/share/unofficial-brotli/unofficial-brotli-config-debug.cmake
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/brotli_x64-windows/debug/lib/pkgconfig/libbrotlicommon.pc
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/brotli_x64-windows/debug/lib/pkgconfig/libbrotlidec.pc
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/brotli_x64-windows/debug/lib/pkgconfig/libbrotlienc.pc
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/brotli_x64-windows/debug/share/man/man1/brotli.1
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/brotli_x64-windows/debug/share/man/man3/constants.h.3
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/brotli_x64-windows/debug/share/man/man3/decode.h.3
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/brotli_x64-windows/debug/share/man/man3/encode.h.3
+E:/Visual Studio Projects/repos/MyRPG/vcpkg_installed/vcpkg/pkgs/brotli_x64-windows/debug/share/man/man3/types.h.3
