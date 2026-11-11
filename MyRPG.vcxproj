@@ -1,56 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
-	<ProjectConfiguration Include="Debug|Win32">
-	  <Configuration>Debug</Configuration>
-	  <Platform>Win32</Platform>
-	</ProjectConfiguration>
-	<ProjectConfiguration Include="Release|Win32">
-	  <Configuration>Release</Configuration>
-	  <Platform>Win32</Platform>
-	</ProjectConfiguration>
-	<ProjectConfiguration Include="Debug|x64">
-	  <Configuration>Debug</Configuration>
-	  <Platform>x64</Platform>
-	</ProjectConfiguration>
-	<ProjectConfiguration Include="Release|x64">
-	  <Configuration>Release</Configuration>
-	  <Platform>x64</Platform>
-	</ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-	<VCProjectVersion>18.0</VCProjectVersion>
-	<Keyword>Win32Proj</Keyword>
-	<ProjectGuid>{b9a73280-ab1d-47b1-96cb-6a62af2bdb5b}</ProjectGuid>
-	<RootNamespace>MyRPG</RootNamespace>
-	<WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <VCProjectVersion>18.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{b9a73280-ab1d-47b1-96cb-6a62af2bdb5b}</ProjectGuid>
+    <RootNamespace>MyRPG</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-	<ConfigurationType>Application</ConfigurationType>
-	<UseDebugLibraries>true</UseDebugLibraries>
-	<PlatformToolset>v145</PlatformToolset>
-	<CharacterSet>Unicode</CharacterSet>
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v145</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-	<ConfigurationType>Application</ConfigurationType>
-	<UseDebugLibraries>false</UseDebugLibraries>
-	<PlatformToolset>v145</PlatformToolset>
-	<WholeProgramOptimization>true</WholeProgramOptimization>
-	<CharacterSet>Unicode</CharacterSet>
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v145</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-	<ConfigurationType>Application</ConfigurationType>
-	<UseDebugLibraries>true</UseDebugLibraries>
-	<PlatformToolset>v145</PlatformToolset>
-	<CharacterSet>Unicode</CharacterSet>
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v145</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-	<ConfigurationType>Application</ConfigurationType>
-	<UseDebugLibraries>false</UseDebugLibraries>
-	<PlatformToolset>v145</PlatformToolset>
-	<WholeProgramOptimization>true</WholeProgramOptimization>
-	<CharacterSet>Unicode</CharacterSet>
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v145</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -58,132 +58,134 @@
   <ImportGroup Label="Shared">
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-	<Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-	<Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-	<Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-	<Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-	<VcpkgEnableManifest>true</VcpkgEnableManifest>
+    <VcpkgEnableManifest>true</VcpkgEnableManifest>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-	<ClCompile>
-	  <WarningLevel>Level3</WarningLevel>
-	  <SDLCheck>true</SDLCheck>
-	  <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-	  <ConformanceMode>true</ConformanceMode>
-	  <LanguageStandard>stdcpp20</LanguageStandard>
-	  <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
-	  <AdditionalIncludeDirectories>$(MSBuildProjectDirectory)\vcpkg_installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-	</ClCompile>
-	<Link>
-	  <SubSystem>Windows</SubSystem>
-	  <GenerateDebugInformation>true</GenerateDebugInformation>
-	  <AdditionalLibraryDirectories>$(MSBuildProjectDirectory)\vcpkg_installed\x64-windows\lib;$(MSBuildProjectDirectory)\vcpkg_installed\x64-windows\debug\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-	</Link>
-	<Manifest>
-	  <EnableSegmentHeap>true</EnableSegmentHeap>
-	</Manifest>
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory)\vcpkg_installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(MSBuildProjectDirectory)\vcpkg_installed\x64-windows\lib;$(MSBuildProjectDirectory)\vcpkg_installed\x64-windows\debug\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+    <Manifest>
+      <EnableSegmentHeap>true</EnableSegmentHeap>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-	<ClCompile>
-	  <WarningLevel>Level3</WarningLevel>
-	  <FunctionLevelLinking>true</FunctionLevelLinking>
-	  <IntrinsicFunctions>true</IntrinsicFunctions>
-	  <SDLCheck>true</SDLCheck>
-	  <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-	  <ConformanceMode>true</ConformanceMode>
-	  <LanguageStandard>stdcpp20</LanguageStandard>
-	  <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
-	  <AdditionalIncludeDirectories>$(MSBuildProjectDirectory)\vcpkg_installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-	</ClCompile>
-	<Link>
-	  <SubSystem>Windows</SubSystem>
-	  <GenerateDebugInformation>true</GenerateDebugInformation>
-	  <AdditionalLibraryDirectories>$(MSBuildProjectDirectory)\vcpkg_installed\x64-windows\lib;$(MSBuildProjectDirectory)\vcpkg_installed\x64-windows\debug\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-	</Link>
-	<Manifest>
-	  <EnableSegmentHeap>true</EnableSegmentHeap>
-	</Manifest>
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory)\vcpkg_installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(MSBuildProjectDirectory)\vcpkg_installed\x64-windows\lib;$(MSBuildProjectDirectory)\vcpkg_installed\x64-windows\debug\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+    <Manifest>
+      <EnableSegmentHeap>true</EnableSegmentHeap>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-	<ClCompile>
-	  <WarningLevel>Level3</WarningLevel>
-	  <SDLCheck>true</SDLCheck>
-	  <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-	  <ConformanceMode>true</ConformanceMode>
-	  <LanguageStandard>stdcpp20</LanguageStandard>
-	  <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
-	  <AdditionalIncludeDirectories>$(MSBuildProjectDirectory)\vcpkg_installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-	</ClCompile>
-	<Link>
-	  <SubSystem>Windows</SubSystem>
-	  <GenerateDebugInformation>true</GenerateDebugInformation>
-	  <AdditionalLibraryDirectories>$(MSBuildProjectDirectory)\vcpkg_installed\x64-windows\lib;$(MSBuildProjectDirectory)\vcpkg_installed\x64-windows\debug\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-	</Link>
-	<Manifest>
-	  <EnableSegmentHeap>true</EnableSegmentHeap>
-	</Manifest>
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory)\vcpkg_installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(MSBuildProjectDirectory)\vcpkg_installed\x64-windows\lib;$(MSBuildProjectDirectory)\vcpkg_installed\x64-windows\debug\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+    <Manifest>
+      <EnableSegmentHeap>true</EnableSegmentHeap>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-	<ClCompile>
-	  <WarningLevel>Level3</WarningLevel>
-	  <FunctionLevelLinking>true</FunctionLevelLinking>
-	  <IntrinsicFunctions>true</IntrinsicFunctions>
-	  <SDLCheck>true</SDLCheck>
-	  <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-	  <ConformanceMode>true</ConformanceMode>
-	  <LanguageStandard>stdcpp20</LanguageStandard>
-	  <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
-	  <AdditionalIncludeDirectories>$(MSBuildProjectDirectory)\vcpkg_installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-	</ClCompile>
-	<Link>
-	  <SubSystem>Windows</SubSystem>
-	  <GenerateDebugInformation>true</GenerateDebugInformation>
-	  <AdditionalLibraryDirectories>$(MSBuildProjectDirectory)\vcpkg_installed\x64-windows\lib;$(MSBuildProjectDirectory)\vcpkg_installed\x64-windows\debug\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-	</Link>
-	<Manifest>
-	  <EnableSegmentHeap>true</EnableSegmentHeap>
-	</Manifest>
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory)\vcpkg_installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(MSBuildProjectDirectory)\vcpkg_installed\x64-windows\lib;$(MSBuildProjectDirectory)\vcpkg_installed\x64-windows\debug\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+    <Manifest>
+      <EnableSegmentHeap>true</EnableSegmentHeap>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-	<ClInclude Include="framework.h" />
-	<ClInclude Include="Resource.h" />
-	<ClInclude Include="src\engine\GameEngine.h" />
-	<ClInclude Include="src\engine\GameRenderer.h" />
-	<ClInclude Include="src\engine\GameTypes.h" />
-	<ClInclude Include="src\engine\MapLoader.h" />
-	<ClInclude Include="targetver.h" />
-	<ClInclude Include="MyRPG.h" />
+    <ClInclude Include="framework.h" />
+    <ClInclude Include="Resource.h" />
+    <ClInclude Include="src\engine\AnimationLoader.h" />
+    <ClInclude Include="src\engine\GameEngine.h" />
+    <ClInclude Include="src\engine\GameRenderer.h" />
+    <ClInclude Include="src\engine\GameTypes.h" />
+    <ClInclude Include="src\engine\MapLoader.h" />
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="MyRPG.h" />
   </ItemGroup>
   <ItemGroup>
-	<ClCompile Include="main.cpp" />
+    <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-	<ResourceCompile Include="MyRPG.rc" />
+    <ResourceCompile Include="MyRPG.rc" />
   </ItemGroup>
   <ItemGroup>
-	<Image Include="small.ico" />
-	<Image Include="MyRPG.ico" />
+    <Image Include="small.ico" />
+    <Image Include="MyRPG.ico" />
   </ItemGroup>
   <ItemGroup>
-	<None Include=".github\copilot-instructions.md" />
-	<None Include="DesignDocument.md" />
-	<Content Include="Assets\**\*" />
+    <None Include=".github\copilot-instructions.md" />
+    <None Include="Assets\Animations\Characters\player_walk.anim" />
+    <None Include="DesignDocument.md" />
+    <Content Include="Assets\**\*" />
   </ItemGroup>
   <Target Name="CopyAssetsToOutput" AfterTargets="Build">
-	<ItemGroup>
-	  <AssetFiles Include="Assets\**\*" />
-	</ItemGroup>
-	<MakeDir Directories="$(OutDir)Assets" />
-	<Copy SourceFiles="@(AssetFiles)" DestinationFiles="@(AssetFiles->'$(OutDir)%(Identity)')" SkipUnchangedFiles="true" />
+    <ItemGroup>
+      <AssetFiles Include="Assets\**\*" />
+    </ItemGroup>
+    <MakeDir Directories="$(OutDir)Assets" />
+    <Copy SourceFiles="@(AssetFiles)" DestinationFiles="@(AssetFiles->'$(OutDir)%(Identity)')" SkipUnchangedFiles="true" />
   </Target>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

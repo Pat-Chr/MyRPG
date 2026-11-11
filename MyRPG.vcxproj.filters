@@ -39,6 +39,9 @@
     <ClInclude Include="src\engine\MapLoader.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="src\engine\AnimationLoader.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -59,7 +62,37 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Assets\**\*">
+    <None Include="Assets\Maps\0001_TestMap.map">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Sprites\Characters\jump_man.png">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Sprites\Characters\main_character.png">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Sprites\Environment\basic_rock.png">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Sprites\Environment\Forest\forest_bush.png">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Sprites\Environment\Forest\forest_flower.png">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Sprites\Environment\Forest\forest_ground.png">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Sprites\Environment\Forest\forest_path.png">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Sprites\Environment\Forest\forest_rock.png">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Sprites\Environment\Forest\forest_stump.png">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Sprites\Environment\Forest\forest_tree.png">
       <Filter>Ressourcendateien</Filter>
     </None>
     <None Include="Assets\**\*">
@@ -86,18 +119,6 @@
     <None Include="Assets\**\*">
       <Filter>Ressourcendateien</Filter>
     </None>
-    <None Include="Assets\Maps\0001_TestMap.map" />
-    <None Include="Assets\Sprites\Characters\main_character.png" />
-    <None Include="Assets\Sprites\Environment\basic_grass.png" />
-    <None Include="Assets\Sprites\Environment\basic_rock.png" />
-    <None Include="Assets\Sprites\Environment\Forest\forest_bush.png" />
-    <None Include="Assets\Sprites\Environment\Forest\forest_flower.png" />
-    <None Include="Assets\Sprites\Environment\Forest\forest_ground.png" />
-    <None Include="Assets\Sprites\Environment\Forest\forest_path.png" />
-    <None Include="Assets\Sprites\Environment\Forest\forest_rock.png" />
-    <None Include="Assets\Sprites\Environment\Forest\forest_sprite_roles.txt" />
-    <None Include="Assets\Sprites\Environment\Forest\forest_stump.png" />
-    <None Include="Assets\Sprites\Environment\Forest\forest_tree.png" />
     <None Include="Assets\**\*">
       <Filter>Ressourcendateien</Filter>
     </None>
@@ -173,5 +194,6 @@
     <None Include="Assets\**\*">
       <Filter>Ressourcendateien</Filter>
     </None>
+    <None Include="Assets\Animations\Characters\player_walk.anim" />
   </ItemGroup>
 </Project>

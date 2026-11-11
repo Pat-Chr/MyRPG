@@ -1,0 +1,27 @@
+# Player movement animation
+ANIM 1
+texture Assets/Sprites/Characters/jump_man.png
+frame_duration 0.2
+frame 42 54 113 187
+frame 166 48 116 192
+frame 292 51 116 189
+frame 422 141 107 99
+frame 540 54 133 172
+frame 685 54 115 178
+frame 812 54 90 182
+frame 912 16 128 206
+frame 1056 16 128 206
+frame 1200 54 116 170
+frame 16 259 167 173
+frame 200 266 168 176
+frame 380 264 153 184
+frame 546 266 148 181
+frame 708 274 117 174
+frame 842 351 103 98
+frame 960 248 112 201
+frame 1082 343 103 106
+frame 1196 344 99 105
+frame 44 480 165 185
+frame 223 479 166 186
+frame 400 464 170 208
+frame 582 464 171 201

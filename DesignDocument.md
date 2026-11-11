@@ -2,7 +2,7 @@
 
 ## 0. Dokument-Info
 - **Projektname:** MyRPG
-- **Version:** v0.9
+- **Version:** v1.0
 - **Stand:** 11.11.2026
 - **Autor(en):** Ihr Name
 - **Status:** Prototyp
@@ -224,9 +224,11 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 - Zielstruktur: Systeme getrennt nach Modulen (z. B. Combat, Inventory, Dialog)
 - Zielstruktur: Inhalte getrennt nach Typen (z. B. Sounds, Sprites, Story-Skripte)
 - Asset-Ordner für Sprites: `Assets/Sprites/Characters/` und `Assets/Sprites/Environment/`
+- Asset-Ordner für Animationen: `Assets/Animations/Characters/`; Animationen liegen getrennt vom Renderer als `.anim`-Dateien vor
+- `.anim`-Format Version 1: `ANIM 1`, `texture <spritePath>`, `frame_duration <seconds>` und eine `frame <x> <y> <width> <height>`-Zeile pro Spritesheet-Ausschnitt. Die Anzahl und Reihenfolge der `frame`-Zeilen bestimmen die Animation; mindestens ein Frame ist erforderlich. Ein separates Anzahlfeld ist nicht nötig.
 - Asset-Ordner für Maps: `Assets/Maps/`
 - Sprite-Standardgröße: `64x64` Pixel (einheitliches Basisraster)
-- Spieler-Sprite `main_character.png`: transparentes 64x64-Pixel-Art im warm-erdigen Stil
+- Spieler-Sprite `jump_man.png`: Animations-Spritesheet mit transparentem Hintergrund; `player_walk.anim` enthält die Frame-Koordinaten und die Dauer, jede Pose wird auf 64 Pixel Höhe skaliert
 - Map-Format (Prototyp): textbasiert, eine Datei pro Map (z. B. `0001_TestMap.map`)
 - Zeilenformat: `MAP`, `GROUND`, `OBJECT`, `TRIGGER`; `GROUND <spritePath>` füllt den sichtbaren Kartenbereich gekachelt als Standardboden
 - Abweichende Bodenkacheln werden als `OBJECT` vom Typ `untergrund` eingetragen; weitere Map-Objekte und Trigger bleiben separat
@@ -278,7 +280,9 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 | 10.11.2026 | Neue Objektkategorie `untergrund` für Boden-Sprites (z. B. `basic_grass.png`) | Bodenflächen sollen als eigene Layer-Kategorie ohne Kollision pflegbar sein | Maps können kleinen Grasboden-Bereich datengetrieben definieren (`solid=0`) |
 | 10.11.2026 | Forest-Biome als eigener Asset-Unterordner (`Assets/Sprites/Environment/Forest/`) mit 64x64-Sprites | Modulare Erweiterbarkeit und klare Trennung pro Content-Thema | Neue Waldkarte kann eigenständig mit eigener Sprite-Familie gestaltet und gepflegt werden |
 | 10.11.2026 | Trigger-Events `Load_*` starten Mapwechsel mit kurzem Fade-to-Black | Kartenübergänge sollen klar lesbar und visuell weicher sein | Startmap kann per Trigger zur Forest-Map wechseln; Rendering zeichnet dynamisches Dunkel-Overlay während Transition |
-| 11.11.2026 | Spieler-Sprite als transparentes 64x64-Pixel-Art im warm-erdigen Stil | Die Hauptfigur soll zur festgelegten Pixel-Art-Art-Direction passen und im Raster klar lesbar sein | `main_character.png` ersetzt den bisherigen flächigen Platzhalter ohne Änderung an Pfad oder Rendering-Größe |
+| 11.11.2026 | Spieler-Spritesheet `jump_man.png` mit 23 Animationsposen | Die Hauptfigur erhält eine vollständige Bewegungsanimation; das Schachbrett des Sheets dient nicht als Spielhintergrund | Das Rendering entfernt den grauen Hintergrund, schneidet die Posen aus und spielt sie bei Bewegung pixelgenau in einer Schleife ab |
+| 11.11.2026 | Animationsdaten in versionierten `.anim`-Dateien statt im Renderer | Frames und Wiedergabeparameter sollen unabhängig von Engine-Code erweiterbar sein | `player_walk.anim` liefert Sheet-Pfad, Framedauer und Frame-Rechtecke an den Renderer |
+| 11.11.2026 | Schachbretthintergrund aus `jump_man.png` entfernt und als PNG-Transparenz gespeichert | Sprite-Assets sollen ohne Laufzeit-Farbfilter direkt verwendbar sein | Der Renderer lädt die Textur mit transparentem Hintergrund direkt aus der PNG |
 
 ---
 
@@ -301,6 +305,9 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 | v0.7    | 10.11.2026 | Neue große Zusatzkarte `0001_Forest.map` (ca. 40x40 Tiles) plus Forest-Sprite-Familie (`ground/path/tree/bush/rock/stump/flower`) ergänzt | Ihr Name |
 | v0.8    | 10.11.2026 | Trigger-gesteuerter Kartenwechsel zwischen `0001_TestMap` und `0001_Forest` mit kurzem Dunkel-Übergang integriert | Ihr Name |
 | v0.9    | 11.11.2026 | Spieler-Sprite `main_character.png` als transparentes Pixel-Art im 64x64-Raster überarbeitet | Ihr Name |
+| v1.0    | 11.11.2026 | Animiertes Spieler-Spritesheet `jump_man.png` mit 23 Posen eingebunden; Schachbretthintergrund wird beim Laden entfernt | Ihr Name |
+| v1.1    | 11.11.2026 | Spieler-Frame-Koordinaten und Framedauer in `Assets/Animations/Characters/player_walk.anim` ausgelagert | Ihr Name |
+| v1.2    | 11.11.2026 | Schachbretthintergrund direkt in `jump_man.png` transparent gemacht; Laufzeit-Farbfilter entfernt | Ihr Name |
 
 ---
 

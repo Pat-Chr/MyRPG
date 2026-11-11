@@ -2,6 +2,7 @@
 
 #include <SFML/Graphics.hpp>
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -9,6 +10,7 @@
 #include <unordered_map>
 #include <utility>
 
+#include "AnimationLoader.h"
 #include "GameTypes.h"
 
 /**
@@ -290,28 +292,56 @@ inline void RenderGame(sf::RenderTarget& target, const Viewport& viewport, const
     RenderTriggerDebug(target, viewport, game);
 #endif
 
-    // Spieler-Charakter rendern (Textur oder Fallback-Rechteck)
+    // Spieler-Charakter rendern (animiertes Sprite oder Fallback-Rechteck)
     const float playerSize = static_cast<float>(game.player.size);
+    static const SpriteAnimation playerAnimation = []()
+    {
+        SpriteAnimation animation;
+        LoadAnimationFromFile("Assets/Animations/Characters/player_walk.anim", animation);
+        return animation;
+    }();
 
-    // Lädt den Spieler-Textur einmalig (static hält die Initialisierung über Aufrufe hinweg)
     static sf::Texture playerTexture;
-    static const bool playerTextureLoaded = playerTexture.loadFromFile("Assets/Sprites/Characters/main_character.png");
+    static const bool playerTextureLoaded = []()
+    {
+        if (playerAnimation.frames.empty())
+        {
+            return false;
+        }
+
+        const std::string& spritePath = playerAnimation.texturePath;
+        if (!playerTexture.loadFromFile(spritePath))
+        {
+            std::fprintf(stderr, "Failed to load player sprite sheet: %s\n", spritePath.c_str());
+            return false;
+        }
+
+        playerTexture.setSmooth(false);
+        return true;
+    }();
 
     if (playerTextureLoaded)
     {
-        playerTexture.setSmooth(false);
-
-        sf::Sprite playerSprite(playerTexture);
-        const sf::Vector2u textureSize = playerTexture.getSize();
-
-        // Zentriert und skaliert die Spielertextur auf die gewünschte Größe
-        if (textureSize.x > 0u && textureSize.y > 0u)
+        static sf::Clock playerAnimationClock;
+        static bool wasPlayerMoving = false;
+        const bool playerMoving = game.input.up || game.input.down || game.input.left || game.input.right;
+        if (playerMoving != wasPlayerMoving)
         {
-            playerSprite.setOrigin({ textureSize.x * 0.5f, textureSize.y * 0.5f });
-            playerSprite.setScale({ playerSize / textureSize.x, playerSize / textureSize.y });
+            playerAnimationClock.restart();
+            wasPlayerMoving = playerMoving;
         }
 
-        // Spieler zentriert im Viewport
+        const std::size_t frameIndex = playerMoving
+            ? static_cast<std::size_t>(playerAnimationClock.getElapsedTime().asSeconds() / playerAnimation.frameDuration) % playerAnimation.frames.size()
+            : 0;
+        const sf::IntRect& frame = playerAnimation.frames[frameIndex];
+
+        sf::Sprite playerSprite(playerTexture);
+        playerSprite.setTextureRect(frame);
+        const float frameHeight = static_cast<float>(frame.size.y);
+        const float frameScale = playerSize / frameHeight;
+        playerSprite.setOrigin({ static_cast<float>(frame.size.x) * 0.5f, frameHeight * 0.5f });
+        playerSprite.setScale({ frameScale, frameScale });
         playerSprite.setPosition({ viewport.width * 0.5f, viewport.height * 0.5f });
         target.draw(playerSprite);
     }
