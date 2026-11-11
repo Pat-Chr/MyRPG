@@ -1,4 +1,4 @@
-// main.cpp : Definiert den Einstiegspunkt für die Anwendung.
+// main.cpp : Entry Point MyRPG
 //
 
 #include <Windows.h>
