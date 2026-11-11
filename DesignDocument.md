@@ -2,8 +2,8 @@
 
 ## 0. Dokument-Info
 - **Projektname:** MyRPG
-- **Version:** v0.2
-- **Stand:** 10.11.2026
+- **Version:** v0.9
+- **Stand:** 11.11.2026
 - **Autor(en):** Ihr Name
 - **Status:** Prototyp
 
@@ -226,10 +226,11 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 - Asset-Ordner für Sprites: `Assets/Sprites/Characters/` und `Assets/Sprites/Environment/`
 - Asset-Ordner für Maps: `Assets/Maps/`
 - Sprite-Standardgröße: `64x64` Pixel (einheitliches Basisraster)
+- Spieler-Sprite `main_character.png`: transparentes 64x64-Pixel-Art im warm-erdigen Stil
 - Map-Format (Prototyp): textbasiert, eine Datei pro Map (z. B. `0001_TestMap.map`)
 - Zeilenformat: `MAP`, `GROUND`, `OBJECT`, `TRIGGER`; `GROUND <spritePath>` füllt den sichtbaren Kartenbereich gekachelt als Standardboden
 - Abweichende Bodenkacheln werden als `OBJECT` vom Typ `untergrund` eingetragen; weitere Map-Objekte und Trigger bleiben separat
-- Aktuelle Platzhalter: `main_character.png`, `basic_rock.png` und `basic_grass.png`
+- Aktuelle Platzhalter: `basic_rock.png` und `basic_grass.png`
 - Map-Objektkategorie `untergrund`: Bodenflächen ohne Kollision (z. B. Gras)
 
 ---
@@ -277,6 +278,7 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 | 10.11.2026 | Neue Objektkategorie `untergrund` für Boden-Sprites (z. B. `basic_grass.png`) | Bodenflächen sollen als eigene Layer-Kategorie ohne Kollision pflegbar sein | Maps können kleinen Grasboden-Bereich datengetrieben definieren (`solid=0`) |
 | 10.11.2026 | Forest-Biome als eigener Asset-Unterordner (`Assets/Sprites/Environment/Forest/`) mit 64x64-Sprites | Modulare Erweiterbarkeit und klare Trennung pro Content-Thema | Neue Waldkarte kann eigenständig mit eigener Sprite-Familie gestaltet und gepflegt werden |
 | 10.11.2026 | Trigger-Events `Load_*` starten Mapwechsel mit kurzem Fade-to-Black | Kartenübergänge sollen klar lesbar und visuell weicher sein | Startmap kann per Trigger zur Forest-Map wechseln; Rendering zeichnet dynamisches Dunkel-Overlay während Transition |
+| 11.11.2026 | Spieler-Sprite als transparentes 64x64-Pixel-Art im warm-erdigen Stil | Die Hauptfigur soll zur festgelegten Pixel-Art-Art-Direction passen und im Raster klar lesbar sein | `main_character.png` ersetzt den bisherigen flächigen Platzhalter ohne Änderung an Pfad oder Rendering-Größe |
 
 ---
 
@@ -298,6 +300,7 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 | v0.6    | 10.11.2026 | Neues Environment-Sprite `basic_grass.png` und Map-Kategorie `untergrund` für kollisionslosen Boden ergänzt | Ihr Name |
 | v0.7    | 10.11.2026 | Neue große Zusatzkarte `0001_Forest.map` (ca. 40x40 Tiles) plus Forest-Sprite-Familie (`ground/path/tree/bush/rock/stump/flower`) ergänzt | Ihr Name |
 | v0.8    | 10.11.2026 | Trigger-gesteuerter Kartenwechsel zwischen `0001_TestMap` und `0001_Forest` mit kurzem Dunkel-Übergang integriert | Ihr Name |
+| v0.9    | 11.11.2026 | Spieler-Sprite `main_character.png` als transparentes Pixel-Art im 64x64-Raster überarbeitet | Ihr Name |
 
 ---
 
@@ -307,6 +310,6 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 - Raster- und Player-Rendering wurden auf SFML (`VertexArray`, `RectangleShape`) portiert.
 
 ### Nächste sinnvolle Schritte
-1. Spritesheet-Rendering für den Spieler statt Platzhalter-Rechteck.
+1. Animations-Spritesheet für den Spieler ergänzen.
 2. Kamera/Viewport als eigenes Modul unter `src/engine` auslagern.
 3. Erstes Asset- und Content-Verzeichnis für Texturen/Sounds anlegen.
