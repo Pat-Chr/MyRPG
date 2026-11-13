@@ -47,6 +47,7 @@
     <ClCompile Include="main.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MyRPG.rc">
@@ -62,16 +63,37 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Assets\Maps\0001_Forest.map">
+      <Filter>Ressourcendateien</Filter>
+    </None>
     <None Include="Assets\Maps\0001_TestMap.map">
       <Filter>Ressourcendateien</Filter>
     </None>
+    <None Include="Assets\Sprites\Characters\HeroFox-iso_walk_down.png">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Sprites\Characters\HeroFox-iso_walk_left.png">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Sprites\Characters\HeroFox-iso_walk_northeast-trimmed.png">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Sprites\Characters\HeroFox-iso_walk_northwest-trimmed.png">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Sprites\Characters\HeroFox-iso_walk_right.png">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Sprites\Characters\HeroFox-iso_walk_southeast-trimmed.png">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Sprites\Characters\HeroFox-iso_walk_southwest-trimmed.png">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Sprites\Characters\HeroFox-iso_walk_up.png">
+      <Filter>Ressourcendateien</Filter>
+    </None>
     <None Include="Assets\Sprites\Characters\jump_man.png">
-      <Filter>Ressourcendateien</Filter>
-    </None>
-    <None Include="Assets\Sprites\Characters\main_character.png">
-      <Filter>Ressourcendateien</Filter>
-    </None>
-    <None Include="Assets\Sprites\Environment\basic_rock.png">
       <Filter>Ressourcendateien</Filter>
     </None>
     <None Include="Assets\Sprites\Environment\Forest\forest_bush.png">
@@ -125,9 +147,6 @@
     <None Include="Assets\**\*">
       <Filter>Ressourcendateien</Filter>
     </None>
-    <None Include="Assets\**\*">
-      <Filter>Ressourcendateien</Filter>
-    </None>
     <None Include=".github\copilot-instructions.md">
       <Filter>Ressourcendateien</Filter>
     </None>
@@ -139,14 +158,12 @@
     </None>
     <None Include="Assets\Maps\0001_TestMap.map" />
     <None Include="Assets\Sprites\Characters\main_character.png" />
-    <None Include="Assets\Sprites\Environment\basic_grass.png" />
     <None Include="Assets\Sprites\Environment\basic_rock.png" />
     <None Include="Assets\Sprites\Environment\Forest\forest_bush.png" />
     <None Include="Assets\Sprites\Environment\Forest\forest_flower.png" />
     <None Include="Assets\Sprites\Environment\Forest\forest_ground.png" />
     <None Include="Assets\Sprites\Environment\Forest\forest_path.png" />
     <None Include="Assets\Sprites\Environment\Forest\forest_rock.png" />
-    <None Include="Assets\Sprites\Environment\Forest\forest_sprite_roles.txt" />
     <None Include="Assets\Sprites\Environment\Forest\forest_stump.png" />
     <None Include="Assets\Sprites\Environment\Forest\forest_tree.png" />
     <None Include="Assets\**\*">
@@ -195,5 +212,13 @@
       <Filter>Ressourcendateien</Filter>
     </None>
     <None Include="Assets\Animations\Characters\player_walk.anim" />
+    <None Include="Assets\Animations\Characters\player_walk_right.anim" />
+    <None Include="Assets\Animations\Characters\player_walk_down.anim" />
+    <None Include="Assets\Animations\Characters\player_walk_up.anim" />
+    <None Include="Assets\Animations\Characters\player_walk_northwest.anim" />
+    <None Include="Assets\Animations\Characters\player_walk_left.anim" />
+    <None Include="Assets\Animations\Characters\player_walk_southwest.anim" />
+    <None Include="Assets\Animations\Characters\player_walk_northeast.anim" />
+    <None Include="Assets\Animations\Characters\player_walk_southeast.anim" />
   </ItemGroup>
 </Project>

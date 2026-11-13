@@ -172,6 +172,8 @@ inline void InitializeGameState(GameState& game)
 {
     game.player.x = 0.0f;
     game.player.y = 0.0f;
+    game.player.direction = PlayerDirection::Down;
+    game.player.moving = false;
     game.lastTriggeredEvent.clear();
 
     if (!TryLoadMapFromFile("Assets/Maps/0001_TestMap.map", game.activeMap))
@@ -236,6 +238,7 @@ inline void UpdateGame(GameState& game, float deltaTime)
 {
     if (IsMapTransitionActive(game))
     {
+        game.player.moving = false;
         UpdateMapTransition(game, deltaTime);
         return;
     }
@@ -255,6 +258,8 @@ inline void UpdateGame(GameState& game, float deltaTime)
         moveY /= length;
     }
 
+    const float previousX = game.player.x;
+    const float previousY = game.player.y;
     const float nextX = game.player.x + (moveX * game.player.speed * deltaTime);
     if (!IsSolidObjectBlockingPosition(game, nextX, game.player.y))
     {
@@ -265,6 +270,30 @@ inline void UpdateGame(GameState& game, float deltaTime)
     if (!IsSolidObjectBlockingPosition(game, game.player.x, nextY))
     {
         game.player.y = nextY;
+    }
+
+    const float actualX = game.player.x - previousX;
+    const float actualY = game.player.y - previousY;
+    game.player.moving = actualX != 0.0f || actualY != 0.0f;
+    const float facingX = game.player.moving ? actualX : moveX;
+    const float facingY = game.player.moving ? actualY : moveY;
+    if (facingY < 0.0f)
+    {
+        game.player.direction = facingX < 0.0f ? PlayerDirection::Northwest :
+            facingX > 0.0f ? PlayerDirection::Northeast : PlayerDirection::Up;
+    }
+    else if (facingY > 0.0f)
+    {
+        game.player.direction = facingX < 0.0f ? PlayerDirection::Southwest :
+            facingX > 0.0f ? PlayerDirection::Southeast : PlayerDirection::Down;
+    }
+    else if (facingX < 0.0f)
+    {
+        game.player.direction = PlayerDirection::Left;
+    }
+    else if (facingX > 0.0f)
+    {
+        game.player.direction = PlayerDirection::Right;
     }
 
     UpdateTriggers(game);

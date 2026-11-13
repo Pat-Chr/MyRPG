@@ -3,6 +3,7 @@
 #include <SFML/Graphics.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -294,49 +295,58 @@ inline void RenderGame(sf::RenderTarget& target, const Viewport& viewport, const
 
     // Spieler-Charakter rendern (animiertes Sprite oder Fallback-Rechteck)
     const float playerSize = static_cast<float>(game.player.size);
-    static const SpriteAnimation playerAnimation = []()
+    struct PlayerAnimation
     {
         SpriteAnimation animation;
-        LoadAnimationFromFile("Assets/Animations/Characters/player_walk.anim", animation);
-        return animation;
-    }();
-
-    static sf::Texture playerTexture;
-    static const bool playerTextureLoaded = []()
+        sf::Texture* texture = nullptr;
+    };
+    static const auto playerAnimations = []()
     {
-        if (playerAnimation.frames.empty())
+        const std::array<const char*, 8> paths = {
+            "Assets/Animations/Characters/player_walk_down.anim",
+            "Assets/Animations/Characters/player_walk_up.anim",
+            "Assets/Animations/Characters/player_walk_left.anim",
+            "Assets/Animations/Characters/player_walk_right.anim",
+            "Assets/Animations/Characters/player_walk_northwest.anim",
+            "Assets/Animations/Characters/player_walk_northeast.anim",
+            "Assets/Animations/Characters/player_walk_southwest.anim",
+            "Assets/Animations/Characters/player_walk_southeast.anim"
+        };
+        std::array<PlayerAnimation, 8> animations;
+        for (std::size_t i = 0; i < paths.size(); ++i)
         {
-            return false;
+            if (LoadAnimationFromFile(paths[i], animations[i].animation))
+            {
+                animations[i].texture = GetCachedTexture(animations[i].animation.texturePath);
+                if (animations[i].texture == nullptr)
+                {
+                    std::fprintf(stderr, "Failed to load player sprite sheet: %s\n", animations[i].animation.texturePath.c_str());
+                }
+            }
         }
-
-        const std::string& spritePath = playerAnimation.texturePath;
-        if (!playerTexture.loadFromFile(spritePath))
-        {
-            std::fprintf(stderr, "Failed to load player sprite sheet: %s\n", spritePath.c_str());
-            return false;
-        }
-
-        playerTexture.setSmooth(false);
-        return true;
+        return animations;
     }();
 
-    if (playerTextureLoaded)
+    const PlayerAnimation& selected = playerAnimations[static_cast<std::size_t>(game.player.direction)];
+    if (selected.texture != nullptr)
     {
         static sf::Clock playerAnimationClock;
         static bool wasPlayerMoving = false;
-        const bool playerMoving = game.input.up || game.input.down || game.input.left || game.input.right;
-        if (playerMoving != wasPlayerMoving)
+        static PlayerDirection previousDirection = PlayerDirection::Down;
+        if (game.player.moving != wasPlayerMoving || game.player.direction != previousDirection)
         {
             playerAnimationClock.restart();
-            wasPlayerMoving = playerMoving;
+            wasPlayerMoving = game.player.moving;
+            previousDirection = game.player.direction;
         }
 
-        const std::size_t frameIndex = playerMoving
+        const SpriteAnimation& playerAnimation = selected.animation;
+        const std::size_t frameIndex = game.player.moving
             ? static_cast<std::size_t>(playerAnimationClock.getElapsedTime().asSeconds() / playerAnimation.frameDuration) % playerAnimation.frames.size()
             : 0;
         const sf::IntRect& frame = playerAnimation.frames[frameIndex];
 
-        sf::Sprite playerSprite(playerTexture);
+        sf::Sprite playerSprite(*selected.texture);
         playerSprite.setTextureRect(frame);
         const float frameHeight = static_cast<float>(frame.size.y);
         const float frameScale = playerSize / frameHeight;

@@ -166,6 +166,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MyRPG.rc" />
@@ -177,6 +178,14 @@
   <ItemGroup>
     <None Include=".github\copilot-instructions.md" />
     <None Include="Assets\Animations\Characters\player_walk.anim" />
+    <None Include="Assets\Animations\Characters\player_walk_down.anim" />
+    <None Include="Assets\Animations\Characters\player_walk_left.anim" />
+    <None Include="Assets\Animations\Characters\player_walk_northeast.anim" />
+    <None Include="Assets\Animations\Characters\player_walk_northwest.anim" />
+    <None Include="Assets\Animations\Characters\player_walk_right.anim" />
+    <None Include="Assets\Animations\Characters\player_walk_southeast.anim" />
+    <None Include="Assets\Animations\Characters\player_walk_southwest.anim" />
+    <None Include="Assets\Animations\Characters\player_walk_up.anim" />
     <None Include="DesignDocument.md" />
     <Content Include="Assets\**\*" />
   </ItemGroup>

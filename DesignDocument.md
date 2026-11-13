@@ -228,7 +228,9 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 - `.anim`-Format Version 1: `ANIM 1`, `texture <spritePath>`, `frame_duration <seconds>` und eine `frame <x> <y> <width> <height>`-Zeile pro Spritesheet-Ausschnitt. Die Anzahl und Reihenfolge der `frame`-Zeilen bestimmen die Animation; mindestens ein Frame ist erforderlich. Ein separates Anzahlfeld ist nicht nötig.
 - Asset-Ordner für Maps: `Assets/Maps/`
 - Sprite-Standardgröße: `64x64` Pixel (einheitliches Basisraster)
-- Spieler-Sprite `jump_man.png`: Animations-Spritesheet mit transparentem Hintergrund; `player_walk.anim` enthält die Frame-Koordinaten und die Dauer, jede Pose wird auf 64 Pixel Höhe skaliert
+- Spieler-Sprite: acht transparente HeroFox-Lauf-Spritesheets in `Assets/Sprites/Characters/`, je eines pro Bildschirmrichtung. Die zugehörigen `player_walk_<richtung>.anim`-Dateien legen die Frames und ihre Dauer fest.
+- Die aktuellen HeroFox-Sheets sind `512x512` Pixel groß und verwenden ein 4x4-Raster mit `128x128` Pixeln pro Frame. Die vier geraden Richtungen enthalten 16 Frames, die vier diagonalen jeweils 13; sie werden zeilenweise abgespielt und auf 64 Pixel Höhe skaliert.
+- Bei Stillstand bleibt der erste Frame der letzten Blickrichtung sichtbar. Gegenläufige Eingaben heben sich auf; bei Kollisionen bestimmt die tatsächliche Bewegung die Laufrichtung.
 - Map-Format (Prototyp): textbasiert, eine Datei pro Map (z. B. `0001_TestMap.map`)
 - Zeilenformat: `MAP`, `GROUND`, `OBJECT`, `TRIGGER`; `GROUND <spritePath>` füllt den sichtbaren Kartenbereich gekachelt als Standardboden
 - Abweichende Bodenkacheln werden als `OBJECT` vom Typ `untergrund` eingetragen; weitere Map-Objekte und Trigger bleiben separat
@@ -283,6 +285,8 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 | 11.11.2026 | Spieler-Spritesheet `jump_man.png` mit 23 Animationsposen | Die Hauptfigur erhält eine vollständige Bewegungsanimation; das Schachbrett des Sheets dient nicht als Spielhintergrund | Das Rendering entfernt den grauen Hintergrund, schneidet die Posen aus und spielt sie bei Bewegung pixelgenau in einer Schleife ab |
 | 11.11.2026 | Animationsdaten in versionierten `.anim`-Dateien statt im Renderer | Frames und Wiedergabeparameter sollen unabhängig von Engine-Code erweiterbar sein | `player_walk.anim` liefert Sheet-Pfad, Framedauer und Frame-Rechtecke an den Renderer |
 | 11.11.2026 | Schachbretthintergrund aus `jump_man.png` entfernt und als PNG-Transparenz gespeichert | Sprite-Assets sollen ohne Laufzeit-Farbfilter direkt verwendbar sein | Der Renderer lädt die Textur mit transparentem Hintergrund direkt aus der PNG |
+| 13.11.2026 | HeroFox-Lauf-Spritesheets auf 4x4 Frames à `64x64` Pixel normiert und Figurengrößen angeglichen | Einheitliches Basisraster und konsistente Figurengröße in allen Laufrichtungen | Die drei HeroFox-Sheets verwenden direkt passende 64x64-Framebereiche |
+| 13.11.2026 | Acht HeroFox-Lauf-Sheets ersetzen `jump_man.png` als Spieleranimation | Bewegungen sollen in allen acht Richtungen dargestellt werden | Separate Animationsdateien nutzen die tatsächlichen 128x128-Framebereiche der vorhandenen Sheets |
 
 ---
 
@@ -308,6 +312,7 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 | v1.0    | 11.11.2026 | Animiertes Spieler-Spritesheet `jump_man.png` mit 23 Posen eingebunden; Schachbretthintergrund wird beim Laden entfernt | Ihr Name |
 | v1.1    | 11.11.2026 | Spieler-Frame-Koordinaten und Framedauer in `Assets/Animations/Characters/player_walk.anim` ausgelagert | Ihr Name |
 | v1.2    | 11.11.2026 | Schachbretthintergrund direkt in `jump_man.png` transparent gemacht; Laufzeit-Farbfilter entfernt | Ihr Name |
+| v1.3    | 13.11.2026 | HeroFox-Lauf-Spritesheets auf einheitliche 64x64-Frames und Figurengröße angepasst | Ihr Name |
 
 ---
 

@@ -24,7 +24,7 @@ Das Design-Dokument enthält alle technischen Details zur Architektur und Implem
 - **Kartensystem** mit eigenem Text-Map-Format (`.map`): Boden, Objekte, Trigger-Zonen
 - **Trigger-Zonen** mit Event-Namen (z. B. `Trigger_SpawnArea`, `Load_0001_Forest`)
 - **Map-Transitions** mit Fade-Out/Fade-In und automatischem Kartenwechsel + Spawn-Position
-- **Sprite-Animationen** über einfache `.anim`-Dateien (Texture, Frame-Dauer, Frame-Rects)
+- **Sprite-Animationen** über einfache `.anim`-Dateien (Texture, Frame-Dauer, Frame-Rects); die Hauptfigur hat acht Laufrichtungen und behält im Stand ihre Blickrichtung
 - **Textur-Cache** für effizientes Rendern (keine redundanten Ladevorgänge)
 - **Letterbox-Viewport** (Basisauflösung 1024×768, Seitenverhältnis bleibt beim Resize erhalten)
 - **Kamera** folgt dem Spieler (Spieler als virtuelles Kamera-Zentrum)
@@ -86,7 +86,7 @@ Trigger-Events werden in `GameEngine.h` (`TryResolveMapTransitionTarget`) aufgel
 
 1. Integriere Gegner/Hindernisse (NPC-Typ im Map-Format bereits vorhanden)
 2. Implementiere Spielstände (Speichern/Laden)
-3. Erweitere das Animationssystem (weitere Richtungen/Animationen)
+3. Erweitere das Animationssystem (weitere Animationen)
 4. Füge Gameplay-Systeme hinzu (Kampf, Inventar, Dialoge)
 
 ## 🔧 Entwicklungshinweise

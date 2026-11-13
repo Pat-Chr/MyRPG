@@ -3,6 +3,11 @@
 #include <string>
 #include <vector>
 
+enum class PlayerDirection
+{
+	Down, Up, Left, Right, Northwest, Northeast, Southwest, Southeast
+};
+
 // Spieler-Informationen mit Position und Geschwindigkeit
 struct Player
 {
@@ -17,6 +22,9 @@ struct Player
 	
 	// Kollisionsradius oder Sprite-Größe in Pixeln
 	int size = 64;
+
+	PlayerDirection direction = PlayerDirection::Down;
+	bool moving = false;
 };
 
 // Tastatur/Zustand der Eingabe für die Steuerung
