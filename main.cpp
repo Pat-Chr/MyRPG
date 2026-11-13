@@ -53,6 +53,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     sf::RenderWindow window(sf::VideoMode(baseResolution), "MyRPG");
     window.setFramerateLimit(60);
+    window.setKeyRepeatEnabled(false);
 
     GameState game{};
     InitializeGameState(game);
@@ -66,6 +67,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             if (event->is<sf::Event::Closed>())
             {
                 window.close();
+            }
+            else if (const auto* key = event->getIf<sf::Event::KeyPressed>())
+            {
+                if (key->code == sf::Keyboard::Key::M && !IsMapTransitionActive(game))
+                {
+                    StartMagicEffect(game.magicEffects, "sparkle", game.player.x, game.player.y);
+                }
             }
         }
 

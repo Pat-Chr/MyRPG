@@ -13,6 +13,7 @@
 
 #include "AnimationLoader.h"
 #include "GameTypes.h"
+#include "MagicRenderer.h"
 
 /**
  * @brief Wandelt Weltkoordinaten in Bildschirmkoordinaten um.
@@ -250,8 +251,9 @@ inline void RenderTriggerDebug(sf::RenderTarget& target, const Viewport& viewpor
  * 4. Map-Objekte (Wände, NPCs, etc.)
  * 5. Trigger-Zonen (nur Debug-Build)
  * 6. Spieler-Charakter (Textur oder Fallback-Rechteck)
- * 7. Debug-UI: Koordinaten, FPS und letzte ausgelöste Ereignis-Nachricht (nur Debug-Build)
- * 8. Kartenübergangs-Overlay (Fade-In/Fade-Out Effekt)
+ * 7. Magieeffekte
+ * 8. Debug-UI: Koordinaten, FPS und letzte ausgelöste Ereignis-Nachricht (nur Debug-Build)
+ * 9. Kartenübergangs-Overlay (Fade-In/Fade-Out Effekt)
  * 
  * @param target SFML-Ziel für das Rendern
  * @param viewport Aktuelle Viewport-Dimensionen
@@ -365,6 +367,9 @@ inline void RenderGame(sf::RenderTarget& target, const Viewport& viewport, const
 
         target.draw(player);
     }
+
+    RenderMagicEffects(target, game.magicEffects, game.player.x, game.player.y,
+                       static_cast<float>(viewport.width), static_cast<float>(viewport.height));
 
     #ifdef _DEBUG
     // Debug-Font laden (versucht zuerst consola.ttf, falls nicht vorhanden: arial.ttf)

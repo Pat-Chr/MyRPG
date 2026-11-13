@@ -151,7 +151,7 @@ Mischung aus ernst und leicht humorvoll
 
 ## 8. UX, UI und Steuerung
 ### Eingabe
-- Tastatur/Maus: WASD + Pfeiltasten für Bewegung
+- Tastatur/Maus: WASD + Pfeiltasten für Bewegung; `M` startet testweise einen Magieeffekt an der aktuellen Spielerposition.
 - Controller: Später geplant
 
 ### HUD
@@ -227,6 +227,9 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 - Asset-Ordner für Animationen: `Assets/Animations/Characters/`; Animationen liegen getrennt vom Renderer als `.anim`-Dateien vor
 - `.anim`-Format Version 1: `ANIM 1`, `texture <spritePath>`, `frame_duration <seconds>` und eine `frame <x> <y> <width> <height>`-Zeile pro Spritesheet-Ausschnitt. Die Anzahl und Reihenfolge der `frame`-Zeilen bestimmen die Animation; mindestens ein Frame ist erforderlich. Ein separates Anzahlfeld ist nicht nötig.
 - Asset-Ordner für Maps: `Assets/Maps/`
+- Asset-Ordner für Shader: `Assets/Shaders/`, unterteilt nach Verwendung (aktuell `Effects/`; später z. B. `PostProcess/` für Wetter, Unschärfe). Shader werden beim Build wie alle Assets ins Ausgabeverzeichnis kopiert.
+- Magieeffekte: `MagicEffects.h` verwaltet auslöserunabhängig zeitlich begrenzte Effektinstanzen in Weltkoordinaten; `MagicRenderer.h` zeichnet sie. `StartMagicEffect` kann auch von zukünftigen Cutscenes oder anderen Systemen aufgerufen werden. Alle Effekte werden automatisch aus `Assets/Shaders/Effects/magic_<name>.frag` erkannt und mit dem gemeinsamen Vertex-Shader `magic_effect.vert` auf einem Quad mit additivem Blending berechnet; die CPU liefert nur Position und Fortschritt (`progress` als Uniform). Eine neue Effektdatei plus ein Map-Event `magic_<name>` genügen, ein Neu-Compile oder eine Engine-Zuordnung ist nicht nötig. `magic_effects.cfg` enthält optionale Quadgrößen; nicht aufgeführte Effekte verwenden 224 Pixel. Die Effekte benötigen keine Textur-Assets und sind keine Gameplay-Zauber. Lässt sich ein Shader nicht laden, wird dieser Effekt nicht gezeichnet und eine Meldung auf stderr ausgegeben. Beim erfolgreichen Kartenwechsel werden aktive Effekte entfernt.
+- Map-Events `magic_<name>` starten den gleichnamigen, vorhandenen Effekt beim Betreten an der Spielerposition; nach Verlassen und erneutem Betreten kann er erneut auslösen. Die Testmap enthält je eine 64x64-Zone bei y=-32, ab x=288 im Abstand von 160 Pixeln nach rechts (288, 448, 608, 768, 928, 1088, 1248).
 - Sprite-Standardgröße: `64x64` Pixel (einheitliches Basisraster)
 - Spieler-Sprite: acht transparente HeroFox-Lauf-Spritesheets in `Assets/Sprites/Characters/`, je eines pro Bildschirmrichtung. Die zugehörigen `player_walk_<richtung>.anim`-Dateien legen die Frames und ihre Dauer fest.
 - Die aktuellen HeroFox-Sheets sind `512x512` Pixel groß und verwenden ein 4x4-Raster mit `128x128` Pixeln pro Frame. Die vier geraden Richtungen enthalten 16 Frames, die vier diagonalen jeweils 13; sie werden zeilenweise abgespielt und auf 64 Pixel Höhe skaliert.
@@ -287,6 +290,7 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 | 11.11.2026 | Schachbretthintergrund aus `jump_man.png` entfernt und als PNG-Transparenz gespeichert | Sprite-Assets sollen ohne Laufzeit-Farbfilter direkt verwendbar sein | Der Renderer lädt die Textur mit transparentem Hintergrund direkt aus der PNG |
 | 13.11.2026 | HeroFox-Lauf-Spritesheets auf 4x4 Frames à `64x64` Pixel normiert und Figurengrößen angeglichen | Einheitliches Basisraster und konsistente Figurengröße in allen Laufrichtungen | Die drei HeroFox-Sheets verwenden direkt passende 64x64-Framebereiche |
 | 13.11.2026 | Acht HeroFox-Lauf-Sheets ersetzen `jump_man.png` als Spieleranimation | Bewegungen sollen in allen acht Richtungen dargestellt werden | Separate Animationsdateien nutzen die tatsächlichen 128x128-Framebereiche der vorhandenen Sheets |
+| 13.11.2026 | Sieben Magieeffekte als GPU-Shader unter `Assets/Shaders/Effects/`, je eine Testzone auf der Testmap | Grundlage für erweiterbare GPU-Effekte (später Wetter, Unschärfe) in eigenem Shader-Ordner | Effektlogik/Timing bleibt auf der CPU, Darstellung läuft im Fragment-Shader |
 
 ---
 

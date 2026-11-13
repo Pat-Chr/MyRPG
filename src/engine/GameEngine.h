@@ -1,10 +1,12 @@
 #pragma once
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <utility>
 
 #include "GameTypes.h"
+#include "MagicEffectRegistry.h"
 #include "MapLoader.h"
 
 // Prüft, ob ein gegebener Punkt innerhalb eines Trigger-Bereichs liegt.
@@ -43,6 +45,43 @@ inline bool TryResolveMapTransitionTarget(const std::string& eventName,
         outSpawnX = 0.0f;
         outSpawnY = -128.0f;
         return true;
+    }
+
+    return false;
+}
+
+// Löst einen Effekt über seinen Shader-Namen auf (z. B. "magic_fire").
+inline bool TryResolveMagicEffect(const std::string& eventName, MagicEffectType& outType)
+{
+    constexpr const char* prefix = "magic_";
+    if (eventName.starts_with(prefix))
+    {
+        const std::string id = eventName.substr(6);
+        if (FindMagicEffectDefinition(id) != nullptr)
+        {
+            outType = id;
+            return true;
+        }
+    }
+
+    constexpr const char* legacyPrefix = "Effect_";
+    if (eventName == "Effect_Magic" && FindMagicEffectDefinition("sparkle") != nullptr)
+    {
+        outType = "sparkle";
+        return true;
+    }
+    if (eventName.starts_with(legacyPrefix))
+    {
+        std::string id = eventName.substr(7);
+        std::transform(id.begin(), id.end(), id.begin(), [](unsigned char character)
+        {
+            return static_cast<char>(std::tolower(character));
+        });
+        if (FindMagicEffectDefinition(id) != nullptr)
+        {
+            outType = std::move(id);
+            return true;
+        }
     }
 
     return false;
@@ -92,6 +131,7 @@ inline void UpdateMapTransition(GameState& game, float deltaTime)
             game.activeMap = std::move(nextMap);
             game.player.x = game.mapTransition.targetPlayerX;
             game.player.y = game.mapTransition.targetPlayerY;
+            ClearMagicEffects(game.magicEffects);
             game.lastTriggeredEvent = "MapLoaded: " + game.activeMap.id;
         }
 
@@ -122,6 +162,12 @@ inline void UpdateTriggers(GameState& game)
         if (isInside && !trigger.isPlayerInside)
         {
             game.lastTriggeredEvent = trigger.eventName;
+
+            MagicEffectType magicEffect;
+            if (TryResolveMagicEffect(trigger.eventName, magicEffect))
+            {
+                StartMagicEffect(game.magicEffects, magicEffect, game.player.x, game.player.y);
+            }
 
             std::string targetMapPath;
             float targetPlayerX = 0.0f;
@@ -175,6 +221,7 @@ inline void InitializeGameState(GameState& game)
     game.player.direction = PlayerDirection::Down;
     game.player.moving = false;
     game.lastTriggeredEvent.clear();
+    ClearMagicEffects(game.magicEffects);
 
     if (!TryLoadMapFromFile("Assets/Maps/0001_TestMap.map", game.activeMap))
     {
@@ -236,6 +283,8 @@ inline bool IsSolidObjectBlockingPosition(const GameState& game, float playerX, 
 // Andernfalls wird die normale Spiellogik ausgeführt: Bewegung, Kollisionsprüfung und Trigger-Updates.
 inline void UpdateGame(GameState& game, float deltaTime)
 {
+    UpdateMagicEffects(game.magicEffects, deltaTime);
+
     if (IsMapTransitionActive(game))
     {
         game.player.moving = false;
