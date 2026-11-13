@@ -5,7 +5,14 @@
 
 enum class MagicEffectType
 {
-	Sparkle
+	Sparkle,
+	Fire,
+	Lightning,
+	Frost,
+	Vortex,
+	Heal,
+	Shockwave,
+	Count // Anzahl der Effekte, kein echter Effekt
 };
 
 struct MagicEffect

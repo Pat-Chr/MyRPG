@@ -48,6 +48,32 @@ inline bool TryResolveMapTransitionTarget(const std::string& eventName,
     return false;
 }
 
+// Ordnet einem Trigger-Event-Namen einen Magieeffekt zu (z. B. "Effect_Fire").
+inline bool TryResolveMagicEffect(const std::string& eventName, MagicEffectType& outType)
+{
+    struct Entry { const char* name; MagicEffectType type; };
+    static constexpr Entry entries[] = {
+        { "Effect_Magic", MagicEffectType::Sparkle },
+        { "Effect_Fire", MagicEffectType::Fire },
+        { "Effect_Lightning", MagicEffectType::Lightning },
+        { "Effect_Frost", MagicEffectType::Frost },
+        { "Effect_Vortex", MagicEffectType::Vortex },
+        { "Effect_Heal", MagicEffectType::Heal },
+        { "Effect_Shockwave", MagicEffectType::Shockwave }
+    };
+
+    for (const Entry& entry : entries)
+    {
+        if (eventName == entry.name)
+        {
+            outType = entry.type;
+            return true;
+        }
+    }
+
+    return false;
+}
+
 // Startet einen Map-Übergang zur angegebenen Ziel-Map.
 // Der Spieler wird während des Übergangs ausgeblendet und an der Zielposition wieder eingeblendet.
 // Wenn bereits ein aktiver Übergang läuft, wird keine Aktion ausgeführt.
@@ -124,9 +150,10 @@ inline void UpdateTriggers(GameState& game)
         {
             game.lastTriggeredEvent = trigger.eventName;
 
-            if (trigger.eventName == "Effect_Magic")
+            MagicEffectType magicEffect;
+            if (TryResolveMagicEffect(trigger.eventName, magicEffect))
             {
-                StartMagicEffect(game.magicEffects, MagicEffectType::Sparkle, game.player.x, game.player.y);
+                StartMagicEffect(game.magicEffects, magicEffect, game.player.x, game.player.y);
             }
 
             std::string targetMapPath;

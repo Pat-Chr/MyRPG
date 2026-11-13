@@ -42,10 +42,10 @@
     <ClInclude Include="src\engine\AnimationLoader.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="src\engine\MagicRenderer.h">
+    <ClInclude Include="src\engine\MagicEffects.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="src\engine\MagicEffects.h">
+    <ClInclude Include="src\engine\MagicRenderer.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>
@@ -242,5 +242,13 @@
     <None Include="Assets\Animations\Characters\player_walk_southwest.anim" />
     <None Include="Assets\Animations\Characters\player_walk_northeast.anim" />
     <None Include="Assets\Animations\Characters\player_walk_southeast.anim" />
+    <None Include="Assets\Shaders\Effects\magic_sparkle.frag" />
+    <None Include="Assets\Shaders\Effects\magic_effect.vert" />
+    <None Include="Assets\Shaders\Effects\magic_fire.frag" />
+    <None Include="Assets\Shaders\Effects\magic_lightning.frag" />
+    <None Include="Assets\Shaders\Effects\magic_frost.frag" />
+    <None Include="Assets\Shaders\Effects\magic_vortex.frag" />
+    <None Include="Assets\Shaders\Effects\magic_heal.frag" />
+    <None Include="Assets\Shaders\Effects\magic_shockwave.frag" />
   </ItemGroup>
 </Project>

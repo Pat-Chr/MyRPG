@@ -20,7 +20,7 @@ Das [DesignDocument.md](./DesignDocument.md) beschreibt die technische Architekt
 - **Trigger** für den visuellen Magieeffekt und für Kartenwechsel zwischen den vorhandenen Karten
 - **Kartenwechsel** mit Fade-out/Fade-in und festgelegter Spawn-Position
 - **Spieleranimationen** in acht Richtungen, beschrieben in `.anim`-Dateien; im Stillstand bleibt die letzte Blickrichtung erhalten
-- **Magieeffekt**: `M` startet den Sparkle-Effekt an der Spielerposition; derselbe Effekt kann über einen Map-Trigger gestartet werden
+- **Magieeffekte**: sieben GPU-Shader-Effekte (Sparkle, Fire, Lightning, Frost, Vortex, Heal, Shockwave) in `Assets/Shaders/Effects/`. `M` startet Sparkle an der Spielerposition; auf der Testkarte gibt es rechts vom Startpunkt für jeden Effekt eine Trigger-Zone (von links nach rechts in obiger Reihenfolge).
 - **Textur-Cache** zur Wiederverwendung geladener Texturen
 - **Kamera und Letterbox-Viewport** mit einer Basisauflösung von 1024 × 768; das Seitenverhältnis bleibt beim Ändern der Fenstergröße erhalten
 - **Debug-Anzeigen** für Karten-ID, Position, FPS, letztes Ereignis, Raster und Triggerbereiche nur im Debug-Build. Im Release-Build bleiben diese Anzeigen verborgen; die Trigger-Funktion selbst bleibt aktiv.
@@ -50,6 +50,7 @@ MyRPG/
 ├── Assets/
 │   ├── Animations/Characters/     # Spieleranimationen im .anim-Format
 │   ├── Maps/                      # 0001_TestMap.map und 0001_Forest.map
+│   ├── Shaders/Effects/           # GLSL-Shader der Magieeffekte
 │   └── Sprites/
 │       ├── Characters/            # Spieler-Spritesheets
 │       └── Environment/           # Umgebungs- und Wald-Sprites
@@ -69,7 +70,7 @@ OBJECT rock_01 scenery -192 -64 Assets/Sprites/Environment/Forest/forest_rock.pn
 TRIGGER north_path_to_forest -64 -260 220 120 Load_0001_Forest
 ```
 
-`OBJECT` verwendet die Felder `<id> <type> <x> <y> <spritePath> <solid(0|1)>`. Unterstützte Typen sind `untergrund`, `scenery`, `wall` und `npc`. `TRIGGER` verwendet `<id> <x> <y> <width> <height> <eventName>`. Aktuell sind `Effect_Magic`, `Load_0001_Forest` und `Load_0001_TestMap` in der Engine mit einer Aktion verknüpft; weitere Ereignisse benötigen noch eine Implementierung.
+`OBJECT` verwendet die Felder `<id> <type> <x> <y> <spritePath> <solid(0|1)>`. Unterstützte Typen sind `untergrund`, `scenery`, `wall` und `npc`. `TRIGGER` verwendet `<id> <x> <y> <width> <height> <eventName>`. Aktuell sind `Effect_Magic`, `Effect_Fire`, `Effect_Lightning`, `Effect_Frost`, `Effect_Vortex`, `Effect_Heal`, `Effect_Shockwave`, `Load_0001_Forest` und `Load_0001_TestMap` in der Engine mit einer Aktion verknüpft; weitere Ereignisse benötigen noch eine Implementierung.
 
 ## 🛠️ Technologie
 

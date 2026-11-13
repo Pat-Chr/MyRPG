@@ -187,6 +187,14 @@
     <None Include="Assets\Animations\Characters\player_walk_southeast.anim" />
     <None Include="Assets\Animations\Characters\player_walk_southwest.anim" />
     <None Include="Assets\Animations\Characters\player_walk_up.anim" />
+    <None Include="Assets\Shaders\Effects\magic_effect.vert" />
+    <None Include="Assets\Shaders\Effects\magic_fire.frag" />
+    <None Include="Assets\Shaders\Effects\magic_frost.frag" />
+    <None Include="Assets\Shaders\Effects\magic_heal.frag" />
+    <None Include="Assets\Shaders\Effects\magic_lightning.frag" />
+    <None Include="Assets\Shaders\Effects\magic_shockwave.frag" />
+    <None Include="Assets\Shaders\Effects\magic_sparkle.frag" />
+    <None Include="Assets\Shaders\Effects\magic_vortex.frag" />
     <None Include="DesignDocument.md" />
     <Content Include="Assets\**\*" />
   </ItemGroup>
