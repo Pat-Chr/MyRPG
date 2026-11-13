@@ -1,113 +1,93 @@
-# MyRPG - RPG Spiel Framework
+# MyRPG – eigene kleine RPG-Engine
 
-Ein minimalistisches Top-Down RPG-Spiel für Windows, geschrieben in C++ mit SFML (2D-Rendering).
+MyRPG ist ein Windows-Projekt, in dem ich meine eigene kleine RPG-Engine mit C++20 und SFML 3 entwickle. Der aktuelle Stand ist ein spielbarer Prototyp mit Bewegung, Karten, Animationen, Kollisionen und einfachen Effekten.
+
+> Ich schreibe meine eigene kleine RPG-Engine. Sie soll später auch ohne Programmierkenntnisse das Erstellen eines eigenen kleinen Adventures ermöglichen. Durch das Erstellen eigener Assets, Skripte und Maps soll man einfach seine eigene Welt erschaffen können.
+>
+> **Das ist das langfristige Ziel, noch nicht der aktuelle Funktionsumfang:** Der Prototyp hat derzeit weder einen visuellen Editor noch eine Skript-Laufzeit. Karten und Animationen werden momentan über Dateien erstellt; Trigger-Ereignisse müssen in der Engine unterstützt werden.
 
 ## 📚 Dokumentation
 
-Das Design-Dokument enthält alle technischen Details zur Architektur und Implementierung:
+Das [DesignDocument.md](./DesignDocument.md) beschreibt die technische Architektur, Spielsysteme, Daten- und Asset-Formate sowie die offenen Entwicklungsfragen.
 
-- **[DesignDocument.md](./DesignDocument.md)** - Vollständige technische Dokumentation
-  - Spielmechanik
-  - Datenstrukturen (GameState, Player, InputState, MapData, ...)
-  - Game Loop Implementation
-  - Update-Logik
-  - Rendering-Struktur
-  - Event Handling
-  - Erweiterungsmöglichkeiten
+## ✨ Aktueller Funktionsumfang
 
-## ✨ Features
-
-- **Game Loop** mit Delta-Time-basierter, zeitunabhängiger Bewegung (60 FPS, Framerate-Limit)
-- **Spieler-Steuerung** über WASD oder Pfeiltasten
-- **2D-Rendering** mit SFML: Spieler-Sprite, Kachelboden, Scenery-Objekte
-- **Kollisionsdetektion** gegen solide Map-Objekte (Wände, Felsen, ...)
-- **Kartensystem** mit eigenem Text-Map-Format (`.map`): Boden, Objekte, Trigger-Zonen
-- **Trigger-Zonen** mit Event-Namen (z. B. `Trigger_SpawnArea`, `Load_0001_Forest`)
-- **Magieeffekte**: `Effect_Magic` startet beim Betreten einer Testzone einen visuellen Effekt; `M` startet ihn an der Spielerposition. Beide funktionieren auch im Release-Build.
-- **Map-Transitions** mit Fade-Out/Fade-In und automatischem Kartenwechsel + Spawn-Position
-- **Sprite-Animationen** über einfache `.anim`-Dateien (Texture, Frame-Dauer, Frame-Rects); die Hauptfigur hat acht Laufrichtungen und behält im Stand ihre Blickrichtung
-- **Textur-Cache** für effizientes Rendern (keine redundanten Ladevorgänge)
-- **Letterbox-Viewport** (Basisauflösung 1024×768, Seitenverhältnis bleibt beim Resize erhalten)
-- **Kamera** folgt dem Spieler (Spieler als virtuelles Kamera-Zentrum)
+- **Spielschleife** mit Delta-Time-basierter Bewegung und einem Framerate-Limit von 60 FPS
+- **Steuerung** mit WASD oder Pfeiltasten; diagonale Bewegung wird normalisiert
+- **2D-Rendering** mit Spielerfigur, gekacheltem Kartenboden und Kartenobjekten
+- **Kollisionen** mit als solide markierten Kartenobjekten
+- **Karten** aus Textdateien im `.map`-Format; enthalten sind eine Testkarte und eine Waldkarte
+- **Trigger** für den visuellen Magieeffekt und für Kartenwechsel zwischen den vorhandenen Karten
+- **Kartenwechsel** mit Fade-out/Fade-in und festgelegter Spawn-Position
+- **Spieleranimationen** in acht Richtungen, beschrieben in `.anim`-Dateien; im Stillstand bleibt die letzte Blickrichtung erhalten
+- **Magieeffekt**: `M` startet den Sparkle-Effekt an der Spielerposition; derselbe Effekt kann über einen Map-Trigger gestartet werden
+- **Textur-Cache** zur Wiederverwendung geladener Texturen
+- **Kamera und Letterbox-Viewport** mit einer Basisauflösung von 1024 × 768; das Seitenverhältnis bleibt beim Ändern der Fenstergröße erhalten
+- **Debug-Anzeigen** für Karten-ID, Position, FPS, letztes Ereignis, Raster und Triggerbereiche nur im Debug-Build. Im Release-Build bleiben diese Anzeigen verborgen; die Trigger-Funktion selbst bleibt aktiv.
 
 ## 🚀 Quick Start
 
-1. Abhängigkeiten installieren (SFML via vcpkg): `vcpkg install`
-2. Öffne die Lösung in Visual Studio: `MyRPG.slnx`
-3. Stelle sicher, dass du Debug-Konfiguration verwendest
-4. Baue das Projekt: `Build → Build Solution`
-5. Führe aus im Debug-Modus
+1. Öffne `MyRPG.slnx` in Visual Studio.
+2. Stelle die vcpkg-Abhängigkeiten aus `vcpkg.json` wieder her (SFML 3). Bei Bedarf kannst du im Projektordner `vcpkg install` ausführen.
+3. Wähle die Konfiguration **Debug** und baue die Lösung über **Build → Build Solution**.
+4. Starte das Programm im Debug-Modus.
+
+Beim Build werden die Inhalte aus `Assets/` automatisch in das Ausgabeverzeichnis kopiert.
 
 ## 📁 Projektstruktur
 
 ```
 MyRPG/
-├── main.cpp                    # Entry Point, Game Loop, Input, Letterbox-Viewport
-├── src/
-│   └── engine/
-│       ├── GameTypes.h         # Kern-Datenstrukturen (Player, MapData, GameState, ...)
-│       ├── GameEngine.h        # Update-Logik, Kollision, Trigger, Map-Transitions
-│       ├── GameRenderer.h      # SFML-Rendering, Kamera, Textur-Cache
-│       ├── MagicEffects.h      # Effektzustand und unabhängige Start-API
-│       ├── MagicRenderer.h     # Darstellung der Magieeffekte
-│       ├── MapLoader.h         # Parser für das .map-Format
-│       └── AnimationLoader.h   # Parser für das .anim-Format
+├── main.cpp                       # Win32-Einstiegspunkt, Spielschleife, Eingabe und Viewport
+├── src/engine/
+│   ├── GameTypes.h                # Spielzustand und Datenstrukturen
+│   ├── GameEngine.h               # Bewegung, Kollisionen, Trigger und Kartenwechsel
+│   ├── GameRenderer.h              # Rendering, Kamera und Textur-Cache
+│   ├── MagicEffects.h              # Zustand und Start-API für visuelle Effekte
+│   ├── MagicRenderer.h             # Darstellung der Effekte
+│   ├── MapLoader.h                # Parser für .map-Dateien
+│   └── AnimationLoader.h          # Parser für .anim-Dateien
 ├── Assets/
-│   ├── Animations/Characters/  # .anim-Dateien (z. B. player_walk.anim)
-│   ├── Maps/                   # .map-Dateien (TestMap, Forest)
-│   └── Sprites/                # Charakter- und Umgebungs-Sprites (PNG)
-├── vcpkg.json                  # Paket-Abhängigkeiten (sfml)
-└── [Visual Studio Projektdateien]
+│   ├── Animations/Characters/     # Spieleranimationen im .anim-Format
+│   ├── Maps/                      # 0001_TestMap.map und 0001_Forest.map
+│   └── Sprites/
+│       ├── Characters/            # Spieler-Spritesheets
+│       └── Environment/           # Umgebungs- und Wald-Sprites
+├── MyRPG.vcxproj                  # Visual-Studio-Projekt und Asset-Kopierschritt
+├── MyRPG.slnx                     # Visual-Studio-Lösung
+└── vcpkg.json                     # Abhängigkeit: SFML
 ```
 
-## 🗺️ Map-Format (`.map`)
+## 🗺️ Karten erstellen (`.map`)
 
-Einfaches Textformat, das von `MapLoader.h` eingelesen wird:
+Der `MapLoader` liest einfache Textdateien mit den Anweisungen `MAP`, `GROUND`, `OBJECT` und `TRIGGER`. Ein Beispiel aus der Testkarte:
 
-```
-# MAP <mapId>
-# GROUND <defaultSpritePath>
-# OBJECT <id> <type> <x> <y> <spritePath> <solid(0|1)>
-# TRIGGER <id> <x> <y> <width> <height> <eventName>
-
+```text
 MAP 0001_TestMap
 GROUND Assets/Sprites/Environment/Forest/forest_ground.png
-OBJECT rock_01 scenery -192 -64 Assets/Sprites/Environment/basic_rock.png 1
+OBJECT rock_01 scenery -192 -64 Assets/Sprites/Environment/Forest/forest_rock.png 1
 TRIGGER north_path_to_forest -64 -260 220 120 Load_0001_Forest
 ```
 
-Objekt-Typen: `untergrund`, `scenery`, `wall`, `npc`.
-Trigger-Events werden in `GameEngine.h` verarbeitet – z. B. führt `Load_0001_Forest` zu einem Kartenwechsel mit Fade-Transition. `Effect_Magic` startet beim Betreten den visuellen Effekt an der Spielerposition. Die Testzone liegt auf der Startkarte östlich des Startpunkts (x=288 bis 352, y=-32 bis 32).
+`OBJECT` verwendet die Felder `<id> <type> <x> <y> <spritePath> <solid(0|1)>`. Unterstützte Typen sind `untergrund`, `scenery`, `wall` und `npc`. `TRIGGER` verwendet `<id> <x> <y> <width> <height> <eventName>`. Aktuell sind `Effect_Magic`, `Load_0001_Forest` und `Load_0001_TestMap` in der Engine mit einer Aktion verknüpft; weitere Ereignisse benötigen noch eine Implementierung.
 
-Andere Systeme, etwa zukünftige Cutscenes, können Effekte unabhängig von Triggern starten:
+## 🛠️ Technologie
 
-```cpp
-StartMagicEffect(game.magicEffects, MagicEffectType::Sparkle, worldX, worldY);
-```
+- **C++20** und **SFML 3** (über vcpkg)
+- **Windows** mit Win32-Einstiegspunkt
+- **Visual Studio**-Projektdatei `MyRPG.vcxproj`
 
-Die Position bleibt in Weltkoordinaten stehen, auch wenn sich der Spieler weiterbewegt. Mehrere Effekte können gleichzeitig laufen; nach 1,5 Sekunden werden sie entfernt. Beim erfolgreichen Kartenwechsel werden alle aktiven Effekte gelöscht. Der Effekt ist rein visuell und nutzt derzeit weder Shader noch externe Assets.
+## 🔭 Ausblick
 
-## 🛠️ Technologie-Stack
-
-- **C++17** oder neuer
-- **SFML** (2D-Rendering, Fenster, Input) – via vcpkg
-- **Windows** (Win32-Host)
-
-## 📝 Nächste Schritte
-
-1. Integriere Gegner/Hindernisse (NPC-Typ im Map-Format bereits vorhanden)
-2. Implementiere Spielstände (Speichern/Laden)
-3. Erweitere das Animationssystem (weitere Animationen)
-4. Füge Gameplay-Systeme hinzu (Kampf, Inventar, Dialoge)
+MyRPG ist noch im Prototyp-Stadium. Zum langfristigen Ziel gehören eine einfachere Erstellung von Inhalten ohne Programmierkenntnisse sowie weitere Adventure-Systeme wie Dialoge, Kampf und Spielstände. Neue Karten können bereits als `.map`-Dateien angelegt werden; Animationen und Sprites liegen ebenfalls getrennt von der Engine in `Assets/`.
 
 ## 🔧 Entwicklungshinweise
 
-- Alle Änderungen müssen mit dem Design-Dokument abgestimmt sein
-- Neue Features sollten in die Dokumentation aufgenommen werden
-- Verwende Delta-Time für zeitunabhängige Bewegung
-- Behalte Normalisierung bei diagonalen Bewegungen bei
-- Neue Karten einfach als `.map`-Datei unter `Assets/Maps/` anlegen und im Trigger-Resolver registrieren
+- Änderungen und neue Asset-Standards mit dem [Design-Dokument](./DesignDocument.md) abstimmen und dort dokumentieren.
+- Bewegung weiterhin Delta-Time-basiert halten und diagonale Eingaben normalisieren.
+- Debug-Informationen und Trigger-Markierungen ausschließlich im Debug-Build anzeigen.
+- Neue Assets unter `Assets/` ablegen; sie werden beim Build automatisch mitkopiert.
 
 ---
 
-*Für detaillierte technische Informationen: [DesignDocument.md](./DesignDocument.md)*
+*Für Details zu Architektur und Datenformaten siehe [DesignDocument.md](./DesignDocument.md).*
