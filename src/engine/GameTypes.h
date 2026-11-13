@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 
+#include "MagicEffects.h"
+
 enum class PlayerDirection
 {
 	Down, Up, Left, Right, Northwest, Northeast, Southwest, Southeast
@@ -172,4 +174,6 @@ struct GameState
 	
 	// Aktueller Karten-Übergangszustand
 	MapTransitionState mapTransition;
+
+	MagicEffects magicEffects;
 };

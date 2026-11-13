@@ -92,6 +92,7 @@ inline void UpdateMapTransition(GameState& game, float deltaTime)
             game.activeMap = std::move(nextMap);
             game.player.x = game.mapTransition.targetPlayerX;
             game.player.y = game.mapTransition.targetPlayerY;
+            ClearMagicEffects(game.magicEffects);
             game.lastTriggeredEvent = "MapLoaded: " + game.activeMap.id;
         }
 
@@ -122,6 +123,11 @@ inline void UpdateTriggers(GameState& game)
         if (isInside && !trigger.isPlayerInside)
         {
             game.lastTriggeredEvent = trigger.eventName;
+
+            if (trigger.eventName == "Effect_Magic")
+            {
+                StartMagicEffect(game.magicEffects, MagicEffectType::Sparkle, game.player.x, game.player.y);
+            }
 
             std::string targetMapPath;
             float targetPlayerX = 0.0f;
@@ -175,6 +181,7 @@ inline void InitializeGameState(GameState& game)
     game.player.direction = PlayerDirection::Down;
     game.player.moving = false;
     game.lastTriggeredEvent.clear();
+    ClearMagicEffects(game.magicEffects);
 
     if (!TryLoadMapFromFile("Assets/Maps/0001_TestMap.map", game.activeMap))
     {
@@ -236,6 +243,8 @@ inline bool IsSolidObjectBlockingPosition(const GameState& game, float playerX, 
 // Andernfalls wird die normale Spiellogik ausgeführt: Bewegung, Kollisionsprüfung und Trigger-Updates.
 inline void UpdateGame(GameState& game, float deltaTime)
 {
+    UpdateMagicEffects(game.magicEffects, deltaTime);
+
     if (IsMapTransitionActive(game))
     {
         game.player.moving = false;

@@ -17,4 +17,5 @@ OBJECT rock_07 scenery 128 128 Assets/Sprites/Environment/Forest/forest_rock.png
 OBJECT rock_08 scenery 256 192 Assets/Sprites/Environment/Forest/forest_rock.png 1
 
 TRIGGER spawn_area -80 -80 160 160 Trigger_SpawnArea
+TRIGGER magic_test 288 -32 64 64 Effect_Magic
 TRIGGER north_path_to_forest -64 -260 220 120 Load_0001_Forest

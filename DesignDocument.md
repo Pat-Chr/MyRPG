@@ -151,7 +151,7 @@ Mischung aus ernst und leicht humorvoll
 
 ## 8. UX, UI und Steuerung
 ### Eingabe
-- Tastatur/Maus: WASD + Pfeiltasten für Bewegung
+- Tastatur/Maus: WASD + Pfeiltasten für Bewegung; `M` startet testweise einen Magieeffekt an der aktuellen Spielerposition.
 - Controller: Später geplant
 
 ### HUD
@@ -227,6 +227,8 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 - Asset-Ordner für Animationen: `Assets/Animations/Characters/`; Animationen liegen getrennt vom Renderer als `.anim`-Dateien vor
 - `.anim`-Format Version 1: `ANIM 1`, `texture <spritePath>`, `frame_duration <seconds>` und eine `frame <x> <y> <width> <height>`-Zeile pro Spritesheet-Ausschnitt. Die Anzahl und Reihenfolge der `frame`-Zeilen bestimmen die Animation; mindestens ein Frame ist erforderlich. Ein separates Anzahlfeld ist nicht nötig.
 - Asset-Ordner für Maps: `Assets/Maps/`
+- Magieeffekte: `MagicEffects.h` verwaltet auslöserunabhängig zeitlich begrenzte Effektinstanzen in Weltkoordinaten; `MagicRenderer.h` zeichnet sie. `StartMagicEffect` kann auch von zukünftigen Cutscenes oder anderen Systemen aufgerufen werden. Der erste Effekt `Sparkle` verwendet prozedural gezeichneten Ring und Partikel, benötigt keine Assets oder Shader und ist kein Gameplay-Zauber. Beim erfolgreichen Kartenwechsel werden aktive Effekte entfernt.
+- Das Trigger-Event `Effect_Magic` startet `Sparkle` beim Betreten an der Spielerposition; nach Verlassen und erneutem Betreten kann es erneut auslösen. Die Testmap enthält eine entsprechende Zone.
 - Sprite-Standardgröße: `64x64` Pixel (einheitliches Basisraster)
 - Spieler-Sprite: acht transparente HeroFox-Lauf-Spritesheets in `Assets/Sprites/Characters/`, je eines pro Bildschirmrichtung. Die zugehörigen `player_walk_<richtung>.anim`-Dateien legen die Frames und ihre Dauer fest.
 - Die aktuellen HeroFox-Sheets sind `512x512` Pixel groß und verwenden ein 4x4-Raster mit `128x128` Pixeln pro Frame. Die vier geraden Richtungen enthalten 16 Frames, die vier diagonalen jeweils 13; sie werden zeilenweise abgespielt und auf 64 Pixel Höhe skaliert.

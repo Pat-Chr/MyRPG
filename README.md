@@ -23,6 +23,7 @@ Das Design-Dokument enthält alle technischen Details zur Architektur und Implem
 - **Kollisionsdetektion** gegen solide Map-Objekte (Wände, Felsen, ...)
 - **Kartensystem** mit eigenem Text-Map-Format (`.map`): Boden, Objekte, Trigger-Zonen
 - **Trigger-Zonen** mit Event-Namen (z. B. `Trigger_SpawnArea`, `Load_0001_Forest`)
+- **Magieeffekte**: `Effect_Magic` startet beim Betreten einer Testzone einen visuellen Effekt; `M` startet ihn an der Spielerposition. Beide funktionieren auch im Release-Build.
 - **Map-Transitions** mit Fade-Out/Fade-In und automatischem Kartenwechsel + Spawn-Position
 - **Sprite-Animationen** über einfache `.anim`-Dateien (Texture, Frame-Dauer, Frame-Rects); die Hauptfigur hat acht Laufrichtungen und behält im Stand ihre Blickrichtung
 - **Textur-Cache** für effizientes Rendern (keine redundanten Ladevorgänge)
@@ -47,6 +48,8 @@ MyRPG/
 │       ├── GameTypes.h         # Kern-Datenstrukturen (Player, MapData, GameState, ...)
 │       ├── GameEngine.h        # Update-Logik, Kollision, Trigger, Map-Transitions
 │       ├── GameRenderer.h      # SFML-Rendering, Kamera, Textur-Cache
+│       ├── MagicEffects.h      # Effektzustand und unabhängige Start-API
+│       ├── MagicRenderer.h     # Darstellung der Magieeffekte
 │       ├── MapLoader.h         # Parser für das .map-Format
 │       └── AnimationLoader.h   # Parser für das .anim-Format
 ├── Assets/
@@ -74,7 +77,15 @@ TRIGGER north_path_to_forest -64 -260 220 120 Load_0001_Forest
 ```
 
 Objekt-Typen: `untergrund`, `scenery`, `wall`, `npc`.
-Trigger-Events werden in `GameEngine.h` (`TryResolveMapTransitionTarget`) aufgelöst – z. B. führt `Load_0001_Forest` zu einem Kartenwechsel mit Fade-Transition.
+Trigger-Events werden in `GameEngine.h` verarbeitet – z. B. führt `Load_0001_Forest` zu einem Kartenwechsel mit Fade-Transition. `Effect_Magic` startet beim Betreten den visuellen Effekt an der Spielerposition. Die Testzone liegt auf der Startkarte östlich des Startpunkts (x=288 bis 352, y=-32 bis 32).
+
+Andere Systeme, etwa zukünftige Cutscenes, können Effekte unabhängig von Triggern starten:
+
+```cpp
+StartMagicEffect(game.magicEffects, MagicEffectType::Sparkle, worldX, worldY);
+```
+
+Die Position bleibt in Weltkoordinaten stehen, auch wenn sich der Spieler weiterbewegt. Mehrere Effekte können gleichzeitig laufen; nach 1,5 Sekunden werden sie entfernt. Beim erfolgreichen Kartenwechsel werden alle aktiven Effekte gelöscht. Der Effekt ist rein visuell und nutzt derzeit weder Shader noch externe Assets.
 
 ## 🛠️ Technologie-Stack
 
