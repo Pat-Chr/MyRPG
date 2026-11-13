@@ -72,7 +72,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             {
                 if (key->code == sf::Keyboard::Key::M && !IsMapTransitionActive(game))
                 {
-                    StartMagicEffect(game.magicEffects, MagicEffectType::Sparkle, game.player.x, game.player.y);
+                    StartMagicEffect(game.magicEffects, "sparkle", game.player.x, game.player.y);
                 }
             }
         }

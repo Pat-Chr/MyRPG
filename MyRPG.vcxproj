@@ -160,6 +160,7 @@
     <ClInclude Include="src\engine\GameEngine.h" />
     <ClInclude Include="src\engine\GameRenderer.h" />
     <ClInclude Include="src\engine\GameTypes.h" />
+    <ClInclude Include="src\engine\MagicEffectRegistry.h" />
     <ClInclude Include="src\engine\MagicEffects.h" />
     <ClInclude Include="src\engine\MagicRenderer.h" />
     <ClInclude Include="src\engine\MapLoader.h" />
@@ -188,6 +189,7 @@
     <None Include="Assets\Animations\Characters\player_walk_southwest.anim" />
     <None Include="Assets\Animations\Characters\player_walk_up.anim" />
     <None Include="Assets\Shaders\Effects\magic_effect.vert" />
+    <None Include="Assets\Shaders\Effects\magic_effects.cfg" />
     <None Include="Assets\Shaders\Effects\magic_fire.frag" />
     <None Include="Assets\Shaders\Effects\magic_frost.frag" />
     <None Include="Assets\Shaders\Effects\magic_heal.frag" />

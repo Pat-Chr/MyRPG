@@ -1,19 +1,10 @@
 #pragma once
 
 #include <algorithm>
+#include <string>
 #include <vector>
 
-enum class MagicEffectType
-{
-	Sparkle,
-	Fire,
-	Lightning,
-	Frost,
-	Vortex,
-	Heal,
-	Shockwave,
-	Count // Anzahl der Effekte, kein echter Effekt
-};
+using MagicEffectType = std::string;
 
 struct MagicEffect
 {

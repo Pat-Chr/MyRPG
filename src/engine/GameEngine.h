@@ -1,10 +1,12 @@
 #pragma once
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <utility>
 
 #include "GameTypes.h"
+#include "MagicEffectRegistry.h"
 #include "MapLoader.h"
 
 // Prüft, ob ein gegebener Punkt innerhalb eines Trigger-Bereichs liegt.
@@ -48,25 +50,36 @@ inline bool TryResolveMapTransitionTarget(const std::string& eventName,
     return false;
 }
 
-// Ordnet einem Trigger-Event-Namen einen Magieeffekt zu (z. B. "Effect_Fire").
+// Löst einen Effekt über seinen Shader-Namen auf (z. B. "magic_fire").
 inline bool TryResolveMagicEffect(const std::string& eventName, MagicEffectType& outType)
 {
-    struct Entry { const char* name; MagicEffectType type; };
-    static constexpr Entry entries[] = {
-        { "Effect_Magic", MagicEffectType::Sparkle },
-        { "Effect_Fire", MagicEffectType::Fire },
-        { "Effect_Lightning", MagicEffectType::Lightning },
-        { "Effect_Frost", MagicEffectType::Frost },
-        { "Effect_Vortex", MagicEffectType::Vortex },
-        { "Effect_Heal", MagicEffectType::Heal },
-        { "Effect_Shockwave", MagicEffectType::Shockwave }
-    };
-
-    for (const Entry& entry : entries)
+    constexpr const char* prefix = "magic_";
+    if (eventName.starts_with(prefix))
     {
-        if (eventName == entry.name)
+        const std::string id = eventName.substr(6);
+        if (FindMagicEffectDefinition(id) != nullptr)
         {
-            outType = entry.type;
+            outType = id;
+            return true;
+        }
+    }
+
+    constexpr const char* legacyPrefix = "Effect_";
+    if (eventName == "Effect_Magic" && FindMagicEffectDefinition("sparkle") != nullptr)
+    {
+        outType = "sparkle";
+        return true;
+    }
+    if (eventName.starts_with(legacyPrefix))
+    {
+        std::string id = eventName.substr(7);
+        std::transform(id.begin(), id.end(), id.begin(), [](unsigned char character)
+        {
+            return static_cast<char>(std::tolower(character));
+        });
+        if (FindMagicEffectDefinition(id) != nullptr)
+        {
+            outType = std::move(id);
             return true;
         }
     }

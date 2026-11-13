@@ -48,6 +48,9 @@
     <ClInclude Include="src\engine\MagicRenderer.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="src\engine\MagicEffectRegistry.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -92,10 +95,58 @@
     <None Include="Assets\Animations\Characters\player_walk_up.anim">
       <Filter>Ressourcendateien</Filter>
     </None>
+    <None Include="Assets\Animations\Characters\player_walk_down.anim">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Animations\Characters\player_walk_left.anim">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Animations\Characters\player_walk_northeast.anim">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Animations\Characters\player_walk_northwest.anim">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Animations\Characters\player_walk_right.anim">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Animations\Characters\player_walk_southeast.anim">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Animations\Characters\player_walk_southwest.anim">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Animations\Characters\player_walk_up.anim">
+      <Filter>Ressourcendateien</Filter>
+    </None>
     <None Include="Assets\Maps\0001_Forest.map">
       <Filter>Ressourcendateien</Filter>
     </None>
     <None Include="Assets\Maps\0001_TestMap.map">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_effect.vert">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_fire.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_frost.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_heal.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_lightning.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_shockwave.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_sparkle.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_vortex.frag">
       <Filter>Ressourcendateien</Filter>
     </None>
     <None Include="Assets\Sprites\Characters\HeroFox-iso_walk_down.png">
@@ -122,9 +173,6 @@
     <None Include="Assets\Sprites\Characters\HeroFox-iso_walk_up.png">
       <Filter>Ressourcendateien</Filter>
     </None>
-    <None Include="Assets\Sprites\Characters\jump_man.png">
-      <Filter>Ressourcendateien</Filter>
-    </None>
     <None Include="Assets\Sprites\Environment\Forest\forest_bush.png">
       <Filter>Ressourcendateien</Filter>
     </None>
@@ -144,9 +192,6 @@
       <Filter>Ressourcendateien</Filter>
     </None>
     <None Include="Assets\Sprites\Environment\Forest\forest_tree.png">
-      <Filter>Ressourcendateien</Filter>
-    </None>
-    <None Include="Assets\**\*">
       <Filter>Ressourcendateien</Filter>
     </None>
     <None Include="Assets\**\*">
@@ -215,8 +260,6 @@
       <Filter>Ressourcendateien</Filter>
     </None>
     <None Include="Assets\Maps\0001_TestMap.map" />
-    <None Include="Assets\Sprites\Characters\main_character.png" />
-    <None Include="Assets\Sprites\Environment\basic_rock.png" />
     <None Include="Assets\Sprites\Environment\Forest\forest_bush.png" />
     <None Include="Assets\Sprites\Environment\Forest\forest_flower.png" />
     <None Include="Assets\Sprites\Environment\Forest\forest_ground.png" />
@@ -250,5 +293,6 @@
     <None Include="Assets\Shaders\Effects\magic_vortex.frag" />
     <None Include="Assets\Shaders\Effects\magic_heal.frag" />
     <None Include="Assets\Shaders\Effects\magic_shockwave.frag" />
+    <None Include="Assets\Shaders\Effects\magic_effects.cfg" />
   </ItemGroup>
 </Project>
