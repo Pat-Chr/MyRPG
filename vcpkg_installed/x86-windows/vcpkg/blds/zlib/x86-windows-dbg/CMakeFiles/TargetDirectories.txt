@@ -1,0 +1,15 @@
+C:/Users/pat/source/repos/MyRPG/vcpkg_installed/x86-windows/vcpkg/blds/zlib/x86-windows-dbg/CMakeFiles/zlib.dir
+C:/Users/pat/source/repos/MyRPG/vcpkg_installed/x86-windows/vcpkg/blds/zlib/x86-windows-dbg/CMakeFiles/package.dir
+C:/Users/pat/source/repos/MyRPG/vcpkg_installed/x86-windows/vcpkg/blds/zlib/x86-windows-dbg/CMakeFiles/package_source.dir
+C:/Users/pat/source/repos/MyRPG/vcpkg_installed/x86-windows/vcpkg/blds/zlib/x86-windows-dbg/CMakeFiles/edit_cache.dir
+C:/Users/pat/source/repos/MyRPG/vcpkg_installed/x86-windows/vcpkg/blds/zlib/x86-windows-dbg/CMakeFiles/rebuild_cache.dir
+C:/Users/pat/source/repos/MyRPG/vcpkg_installed/x86-windows/vcpkg/blds/zlib/x86-windows-dbg/CMakeFiles/list_install_components.dir
+C:/Users/pat/source/repos/MyRPG/vcpkg_installed/x86-windows/vcpkg/blds/zlib/x86-windows-dbg/CMakeFiles/install.dir
+C:/Users/pat/source/repos/MyRPG/vcpkg_installed/x86-windows/vcpkg/blds/zlib/x86-windows-dbg/CMakeFiles/install/local.dir
+C:/Users/pat/source/repos/MyRPG/vcpkg_installed/x86-windows/vcpkg/blds/zlib/x86-windows-dbg/contrib/CMakeFiles/package.dir
+C:/Users/pat/source/repos/MyRPG/vcpkg_installed/x86-windows/vcpkg/blds/zlib/x86-windows-dbg/contrib/CMakeFiles/package_source.dir
+C:/Users/pat/source/repos/MyRPG/vcpkg_installed/x86-windows/vcpkg/blds/zlib/x86-windows-dbg/contrib/CMakeFiles/edit_cache.dir
+C:/Users/pat/source/repos/MyRPG/vcpkg_installed/x86-windows/vcpkg/blds/zlib/x86-windows-dbg/contrib/CMakeFiles/rebuild_cache.dir
+C:/Users/pat/source/repos/MyRPG/vcpkg_installed/x86-windows/vcpkg/blds/zlib/x86-windows-dbg/contrib/CMakeFiles/list_install_components.dir
+C:/Users/pat/source/repos/MyRPG/vcpkg_installed/x86-windows/vcpkg/blds/zlib/x86-windows-dbg/contrib/CMakeFiles/install.dir
+C:/Users/pat/source/repos/MyRPG/vcpkg_installed/x86-windows/vcpkg/blds/zlib/x86-windows-dbg/contrib/CMakeFiles/install/local.dir

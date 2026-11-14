@@ -1,0 +1,8 @@
+{
+	"InstallScripts" : 
+	[
+		"C:/Users/pat/source/repos/MyRPG/vcpkg_installed/x86-windows/vcpkg/blds/libvorbis/x86-windows-rel/cmake_install.cmake",
+		"C:/Users/pat/source/repos/MyRPG/vcpkg_installed/x86-windows/vcpkg/blds/libvorbis/x86-windows-rel/lib/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

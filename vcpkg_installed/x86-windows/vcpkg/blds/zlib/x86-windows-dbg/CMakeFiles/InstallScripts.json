@@ -1,0 +1,8 @@
+{
+	"InstallScripts" : 
+	[
+		"C:/Users/pat/source/repos/MyRPG/vcpkg_installed/x86-windows/vcpkg/blds/zlib/x86-windows-dbg/cmake_install.cmake",
+		"C:/Users/pat/source/repos/MyRPG/vcpkg_installed/x86-windows/vcpkg/blds/zlib/x86-windows-dbg/contrib/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
