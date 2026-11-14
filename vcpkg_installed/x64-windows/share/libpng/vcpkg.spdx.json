@@ -3,13 +3,13 @@
   "spdxVersion": "SPDX-2.3",
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
-  "documentNamespace": "https://spdx.org/spdxdocs/libpng-x64-windows-1.6.58-280180ac-b4ad-4a6f-b83a-0b82bf59a42e",
-  "name": "libpng:x64-windows@1.6.58 6f2ff1b981aa43df57ee83190c6c43cf98c24de93981c134271c15843b015224",
+  "documentNamespace": "https://spdx.org/spdxdocs/libpng-x64-windows-1.6.58-2de072a7-9ff7-48a5-a9e4-25349550a20d",
+  "name": "libpng:x64-windows@1.6.58 a59c213d7f1e24c6e763784c318b6f548bd70bdf2750187070a30fd66d83e3a0",
   "creationInfo": {
     "creators": [
-      "Tool: vcpkg-2026-07-27-98d7cb0cf1f4686a3e43aa5672b6230c1d56bce8"
+      "Tool: vcpkg-2026-09-26-51bf87ca6e9bf3e622d84ff323bd202ab1ca0c0b"
     ],
-    "created": "2026-11-10T19:14:35Z"
+    "created": "2026-11-14T08:25:49Z"
   },
   "relationships": [
     {
@@ -231,7 +231,7 @@
     {
       "name": "libpng:x64-windows",
       "SPDXID": "SPDXRef-binary",
-      "versionInfo": "6f2ff1b981aa43df57ee83190c6c43cf98c24de93981c134271c15843b015224",
+      "versionInfo": "a59c213d7f1e24c6e763784c318b6f548bd70bdf2750187070a30fd66d83e3a0",
       "downloadLocation": "NONE",
       "licenseConcluded": "libpng-2.0",
       "licenseDeclared": "NOASSERTION",
@@ -332,7 +332,7 @@
       "checksums": [
         {
           "algorithm": "SHA256",
-          "checksumValue": "18d5aad409492b890c90ea96494bdc31027c16b556cd8b3c5b5e42f6fb27c4b0"
+          "checksumValue": "faf42274f8d195d949802e139a0ee9aa739fbafad85dafe3b4f2306752145dd5"
         }
       ],
       "licenseConcluded": "NOASSERTION",
@@ -344,7 +344,7 @@
       "checksums": [
         {
           "algorithm": "SHA256",
-          "checksumValue": "4955184a2e63fee233229b04f567476d68e641bdeb8780fafa94097188419721"
+          "checksumValue": "b8c6b7005fcc3921cd86719c4106fbdb72216c06c84bb5990a6ca93706d5afbf"
         }
       ],
       "licenseConcluded": "NOASSERTION",
@@ -368,7 +368,7 @@
       "checksums": [
         {
           "algorithm": "SHA256",
-          "checksumValue": "a4ad6f24a1a4fb98d0b2d9f0bb2813c82bd9aed76993bbe1af4363a87630a69f"
+          "checksumValue": "4e5d8e1ebd4cf55ae77dbb657a8acf991c0b30fb16d4b3b9036bd02e685c5748"
         }
       ],
       "licenseConcluded": "NOASSERTION",
@@ -380,7 +380,7 @@
       "checksums": [
         {
           "algorithm": "SHA256",
-          "checksumValue": "6c847e77d4bab8f078144f3264243ea1fcaebf96eaaf0c216a1268ba80827541"
+          "checksumValue": "7b6d2af8137a27847f4dfa42f206c3e3c59e4755eb7ef2a2001685875933e000"
         }
       ],
       "licenseConcluded": "NOASSERTION",
@@ -392,7 +392,7 @@
       "checksums": [
         {
           "algorithm": "SHA256",
-          "checksumValue": "b4253af7a79eff8ab31264fcf93abfccb5ec21d21bc0d06485536c49584d6772"
+          "checksumValue": "56f04eeccdbaabf693d3f09d572636307717ef96f76c2011a8096fe6cebdb396"
         }
       ],
       "licenseConcluded": "NOASSERTION",
@@ -500,7 +500,7 @@
       "checksums": [
         {
           "algorithm": "SHA256",
-          "checksumValue": "facd71bf68c1b29fd9c7ca359d90b7a874233b34c2df508771a1b507ac2d87e6"
+          "checksumValue": "8ed03edcc4bf908cc6d1f249ecfef4fb8d1034004a2954912a3a3b42e5f23beb"
         }
       ],
       "licenseConcluded": "NOASSERTION",

@@ -4,5 +4,5 @@ Port-Version: 3
 Depends: opengl-registry
 Architecture: x64-windows
 Multi-Arch: same
-Abi: a43fcebfac23f875c14c224a98450c1fd277cb85a46b12afec1077a0d9597a64
+Abi: 30569572de4c8e417f79c654f49e713c1e7d1f71b81154b97af5b3112cd5fb2e
 Description: Open Graphics Library (OpenGL)[3][4][5] is a cross-language, cross-platform application programming interface (API) for rendering 2D and 3D vector graphics.

@@ -3,5 +3,5 @@ Version: 1.2.0
 Depends: vcpkg-cmake, vcpkg-cmake-config
 Architecture: x64-windows
 Multi-Arch: same
-Abi: ba6edb8e7f3144c8311c09e1bc37344f9f74266239b21ba68a74c238223544b5
+Abi: d0b071763e1ce7e9fc5f4f761747b37bb8e61896c836fb239aa1cd4303593cca
 Description: a generic-purpose lossless compression algorithm that compresses data using a combination of a modern variant of the LZ77 algorithm, Huffman coding and 2nd order context modeling.

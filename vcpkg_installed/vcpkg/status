@@ -2,7 +2,7 @@ Package: egl-registry
 Version: 2025-05-27
 Architecture: x64-windows
 Multi-Arch: same
-Abi: dfb709933b6ec1c64b062be1740d2b0c0e635c3868a574b31f14ac012c61d983
+Abi: 09c5f82af5e10d307f5b3e7a98736ca84c69785cab862d587e67a1f7f31d7408
 Description: EGL API and Extension Registry
 Status: install ok installed
 
@@ -11,7 +11,7 @@ Version: 2026-01-26
 Depends: egl-registry
 Architecture: x64-windows
 Multi-Arch: same
-Abi: 87c8c8557574d47674749c4b11a84b6e90b025db5e661753d0f98063255a75d0
+Abi: bf9863cebcb49a2257a6aefdaccad77de32d9cfda87330db9ecbfcce97b9e400
 Description: OpenGL, OpenGL ES, and OpenGL ES-SC API and Extension Registry
 Status: install ok installed
 
@@ -21,7 +21,7 @@ Port-Version: 3
 Depends: opengl-registry
 Architecture: x64-windows
 Multi-Arch: same
-Abi: a43fcebfac23f875c14c224a98450c1fd277cb85a46b12afec1077a0d9597a64
+Abi: 30569572de4c8e417f79c654f49e713c1e7d1f71b81154b97af5b3112cd5fb2e
 Description: Open Graphics Library (OpenGL)[3][4][5] is a cross-language, cross-platform application programming interface (API) for rendering 2D and 3D vector graphics.
 Status: install ok installed
 
@@ -30,7 +30,7 @@ Version: 2024-07-29
 Port-Version: 1
 Architecture: x64-windows
 Multi-Arch: same
-Abi: 9e34b610bba43247d9a0b6c64f96d744346bd2f909543c5329a687aadfb86437
+Abi: 5346c4fe9d6d33bea5f7e720fddfb85680c34ac79728e0abe38762277c5171d5
 Description: public domain header-only libraries
 Status: install ok installed
 
@@ -38,14 +38,14 @@ Package: vcpkg-cmake-config
 Version: 2026-07-21
 Architecture: x64-windows
 Multi-Arch: same
-Abi: b0b5f419e1b6d4ef6060267c9beb26078883ea83be1f1372125387c62b453a46
+Abi: 4b022bfc375f020539cbdbb7edd72c32195ba920e35274a00e19bbceb4511147
 Status: install ok installed
 
 Package: vcpkg-cmake
 Version: 2024-04-23
 Architecture: x64-windows
 Multi-Arch: same
-Abi: c93f3ece864f4a981ca5f2cdd3fa234db1e14974abfb27b1871ea49abd429721
+Abi: 48e532658ce82725e45d36295dd0c67f349498a753cdbed31b57442aa6fd7e54
 Status: install ok installed
 
 Package: zlib
@@ -54,7 +54,7 @@ Port-Version: 1
 Depends: vcpkg-cmake, vcpkg-cmake-config
 Architecture: x64-windows
 Multi-Arch: same
-Abi: f026d669e8b6c8dbb367089063f00b070822d12b5a76515e1f305f8bb0541884
+Abi: 4959f39f70038c38e30804808cbfaa26e013128d81aad95a6bfd6dc63aaf2c20
 Description: A compression library
 Status: install ok installed
 
@@ -63,7 +63,7 @@ Version: 1.6.58
 Depends: vcpkg-cmake, vcpkg-cmake-config, zlib
 Architecture: x64-windows
 Multi-Arch: same
-Abi: 6f2ff1b981aa43df57ee83190c6c43cf98c24de93981c134271c15843b015224
+Abi: a59c213d7f1e24c6e763784c318b6f548bd70bdf2750187070a30fd66d83e3a0
 Description: libpng is a library implementing an interface for reading and writing PNG (Portable Network Graphics) format files
 Status: install ok installed
 
@@ -73,7 +73,7 @@ Port-Version: 6
 Depends: vcpkg-cmake
 Architecture: x64-windows
 Multi-Arch: same
-Abi: 15bcceff57ad0c5fdb6e66d9a0ae2ca33c13d717ab610d4cb76c92c3dbe91a73
+Abi: 2804a22ed14108f58de11df50ef4e185ad7166f0f0d6cfbf53383c4511703b5f
 Description: bzip2 is a freely available, patent free, high-quality data compressor. It typically compresses files to within 10% to 15% of the best available techniques (the PPM family of statistical compressors), whilst being around twice as fast at compression and six times faster at decompression.
 Default-Features: tool
 Status: install ok installed
@@ -90,7 +90,7 @@ Version: 1.2.0
 Depends: vcpkg-cmake, vcpkg-cmake-config
 Architecture: x64-windows
 Multi-Arch: same
-Abi: ba6edb8e7f3144c8311c09e1bc37344f9f74266239b21ba68a74c238223544b5
+Abi: d0b071763e1ce7e9fc5f4f761747b37bb8e61896c836fb239aa1cd4303593cca
 Description: a generic-purpose lossless compression algorithm that compresses data using a combination of a modern variant of the LZ77 algorithm, Huffman coding and 2nd order context modeling.
 Status: install ok installed
 
@@ -99,7 +99,7 @@ Version: 2.14.3
 Depends: vcpkg-cmake, vcpkg-cmake-config
 Architecture: x64-windows
 Multi-Arch: same
-Abi: 247b304a997bafc7d8148ce55035c3f14d8e509383abbd141f0fd1ca80efa687
+Abi: 02f5ea14881434974ed102cfd0ab2ee97d814927ceef758d7446dde2b69430d4
 Description: A library to render fonts.
 Default-Features: brotli, bzip2, png, zlib
 Status: install ok installed
@@ -140,7 +140,7 @@ Package: miniaudio
 Version: 0.11.25
 Architecture: x64-windows
 Multi-Arch: same
-Abi: eec7bc7e6c4c58ab1d8882c6fbe32608835c3120728c6f1b213627873f912d13
+Abi: 7961b7978f761f1188ef5de6c2c6cf1c7ce2aeebdba0347ae52bf8470b96b516
 Description: Audio playback and capture library written in C, in a single source file
 Status: install ok installed
 
@@ -150,7 +150,7 @@ Port-Version: 1
 Depends: vcpkg-cmake, vcpkg-cmake-config
 Architecture: x64-windows
 Multi-Arch: same
-Abi: 8f6348996c44a87b28a5e00ce5fc25c8935d4bf2b5c5c0ae678a0caae44e9fff
+Abi: 6b0e62f4d4775c44f90c1688ff7c56fc7114c8412ee1d90766a07b81433cde72
 Description: Ogg is a multimedia container format, and the native file and stream format for the Xiph.org multimedia codecs.
 Status: install ok installed
 
@@ -160,7 +160,7 @@ Port-Version: 4
 Depends: libogg, vcpkg-cmake, vcpkg-cmake-config
 Architecture: x64-windows
 Multi-Arch: same
-Abi: bb6b1127813823a3f7225af4ce6bdfc937d2e5be91a41a12d370e1088509bcc6
+Abi: 3b8985c5c49e8a6fc10bbf14d35bffa20def9223f71ce0180756f35f32eea455
 Description: Ogg Vorbis is a fully open, non-proprietary, patent-and-royalty-free, general-purpose compressed audio format
 Status: install ok installed
 
@@ -169,7 +169,7 @@ Version: 1.5.0
 Depends: libogg, vcpkg-cmake, vcpkg-cmake-config
 Architecture: x64-windows
 Multi-Arch: same
-Abi: 33d2bd7a6d80506e76dd7989fe8b131e34cfd5cae50d0cfd760ad9d2bac935b0
+Abi: 2aac01bfbe1eaa8c69b5dd08a70e6f9d4b6ca145cec61d0364174240e2236189
 Description: Library for manipulating FLAC files
 Default-Features: stack-protector
 Status: install ok installed
@@ -186,7 +186,7 @@ Version: 3.0.2
 Depends: vcpkg-cmake, vcpkg-cmake-config
 Architecture: x64-windows
 Multi-Arch: same
-Abi: 2708591dff18e9724e451e6293ce02da0271d7ff80dbd013b65f382dfa68cf5c
+Abi: 255eded88fe0a38621c675ed8f0be60d54e213e1c06b3e0d2e41714485f4900a
 Description: Simple and fast multimedia library
 Default-Features: audio, graphics, network, window
 Status: install ok installed

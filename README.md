@@ -32,7 +32,7 @@ Das [DesignDocument.md](./DesignDocument.md) beschreibt die technische Architekt
 3. Wähle die Konfiguration **Debug** und baue die Lösung über **Build → Build Solution**.
 4. Starte das Programm im Debug-Modus.
 
-Beim Build werden die Inhalte aus `Assets/` automatisch in das Ausgabeverzeichnis kopiert.
+Beim Build werden die Inhalte aus `Assets/` sowie die zur Konfiguration passenden SFML-Laufzeit-DLLs automatisch neben die ausführbare Datei kopiert.
 
 ## 📁 Projektstruktur
 

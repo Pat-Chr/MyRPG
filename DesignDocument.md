@@ -209,6 +209,7 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 ## 11. Technik & Architektur
 ### Engine/Framework
 - SFML 3, C++20 (Custom Game Loop)
+- Beim Build werden die zur Konfiguration passenden SFML-Laufzeit-DLLs aus vcpkg neben die ausführbare Datei kopiert; so kann das Spiel direkt aus dem Build-Ausgabeverzeichnis gestartet werden.
 
 ### Ziel-Performance
 - FPS-Ziel: ~60 FPS (`window.setFramerateLimit(60)`)

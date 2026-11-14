@@ -4,5 +4,5 @@ Port-Version: 1
 Depends: vcpkg-cmake, vcpkg-cmake-config
 Architecture: x64-windows
 Multi-Arch: same
-Abi: f026d669e8b6c8dbb367089063f00b070822d12b5a76515e1f305f8bb0541884
+Abi: 4959f39f70038c38e30804808cbfaa26e013128d81aad95a6bfd6dc63aaf2c20
 Description: A compression library
