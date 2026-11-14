@@ -100,6 +100,7 @@
     <ClInclude Include="src\engine\MagicEffects.h" />
     <ClInclude Include="src\engine\MagicRenderer.h" />
     <ClInclude Include="src\engine\MapLoader.h" />
+    <ClInclude Include="src\engine\SettingsMenu.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="MyRPG.h" />
   </ItemGroup>

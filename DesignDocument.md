@@ -163,9 +163,9 @@ Mischung aus ernst und leicht humorvoll
 
 ### Menüs
 - Hauptmenü: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
-- Pause: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
+- Pause: Das Spiel pausiert, solange das Einstellungsmenü geöffnet ist; Bewegung, Trigger, Effekte und Kartenwechsel laufen in dieser Zeit nicht weiter.
 - Inventar: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
-- Settings: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
+- Settings: `Esc` öffnet und schließt ein einfaches Tastaturmenü. Hoch/Runter wählt VSync oder das FPS-Limit; Links/Rechts, Enter oder Leertaste ändern den Wert. Das FPS-Limit bietet 60, 120, 200 und unbegrenzt; standardmäßig ist VSync aus und das Limit unbegrenzt. Bei aktiviertem VSync ist das FPS-Limit ausgesetzt, ausgegraut und nicht auswählbar; der gewählte Wert bleibt gespeichert und gilt wieder bei VSync aus. Die Einstellungen gelten nur für die aktuelle Sitzung. Das Menü verwendet eine Windows-Systemschrift; falls diese nicht geladen werden kann, wird ein Fehler angezeigt und das Spiel läuft weiter.
 
 ### Feedback
 - Visuell: Rendering-Pipeline vorgesehen, Detailausgestaltung bewusst offen (Prototyp-Phase)
@@ -214,7 +214,7 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 - Beim Build werden die zur Konfiguration passenden SFML-Laufzeit-DLLs aus vcpkg neben die ausführbare Datei kopiert; so kann das Spiel direkt aus dem Build-Ausgabeverzeichnis gestartet werden.
 
 ### Ziel-Performance
-- FPS-Ziel: ~60 FPS (`window.setFramerateLimit(60)`)
+- FPS-Limit: Standardmäßig unbegrenzt; im Menü sind 60, 120 und 200 FPS wählbar. Bei aktiviertem VSync ist das Software-Limit ausgesetzt und die Bildrate richtet sich nach der Synchronisierung.
 - Auflösung: Fenstergröße 960x540
 - Hardware-Minimum: Aktueller Windows-PC mit einfacher Grafikkarte
 

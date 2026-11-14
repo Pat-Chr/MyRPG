@@ -12,8 +12,9 @@ Das [DesignDocument.md](./DesignDocument.md) beschreibt die technische Architekt
 
 ## ✨ Aktueller Funktionsumfang
 
-- **Spielschleife** mit Delta-Time-basierter Bewegung und einem Framerate-Limit von 60 FPS
+- **Spielschleife** mit Delta-Time-basierter Bewegung und standardmäßig unbegrenzter Bildrate
 - **Steuerung** mit WASD oder Pfeiltasten; diagonale Bewegung wird normalisiert
+- **Einstellungsmenü** mit `Esc` öffnen oder schließen; das Spiel pausiert. Hoch/Runter wählt VSync oder das FPS-Limit (60, 120, 200 oder unbegrenzt); Links/Rechts, Enter oder Leertaste ändern den Wert. Bei VSync an ist das Limit ausgegraut und nicht auswählbar; der Wert bleibt für VSync aus erhalten. Einstellungen gelten nur für die aktuelle Sitzung.
 - **2D-Rendering** mit Spielerfigur, gekacheltem Kartenboden und Kartenobjekten
 - **Kollisionen** mit als solide markierten Kartenobjekten
 - **Karten** aus Textdateien im `.map`-Format; enthalten sind eine Testkarte und eine Waldkarte
@@ -48,6 +49,7 @@ MyRPG/
 │   ├── MagicEffects.h              # Zustand und Start-API für visuelle Effekte
 │   ├── MagicRenderer.h             # Darstellung der Effekte
 │   ├── MapLoader.h                # Parser für .map-Dateien
+│   ├── SettingsMenu.h             # Einstellungsmenü und VSync
 │   └── AnimationLoader.h          # Parser für .anim-Dateien
 ├── Assets/
 │   ├── Animations/Characters/     # Spieleranimationen im .anim-Format
