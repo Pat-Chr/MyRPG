@@ -28,9 +28,11 @@ Das [DesignDocument.md](./DesignDocument.md) beschreibt die technische Architekt
 ## 🚀 Quick Start
 
 1. Öffne `MyRPG.slnx` in Visual Studio.
-2. Stelle die vcpkg-Abhängigkeiten aus `vcpkg.json` wieder her (SFML 3). Bei Bedarf kannst du im Projektordner `vcpkg install` ausführen.
-3. Wähle die Konfiguration **Debug** und baue die Lösung über **Build → Build Solution**.
+2. Stelle die vcpkg-Abhängigkeiten aus `vcpkg.json` wieder her (SFML 3). Führe dazu im Projektordner `vcpkg install --triplet x64-windows` aus.
+3. Wähle die Konfiguration **Debug** und die Plattform **x64** und baue die Lösung über **Build → Build Solution**.
 4. Starte das Programm im Debug-Modus.
+
+Das Projekt unterstützt ausschließlich Windows x64. `vcpkg_installed/` enthält lokal erzeugte Abhängigkeiten und vcpkg-Verwaltungsdaten und wird nicht versioniert. Die Dateien können aus dem Manifest wiederhergestellt werden.
 
 Beim Build werden die Inhalte aus `Assets/` sowie die zur Konfiguration passenden SFML-Laufzeit-DLLs automatisch neben die ausführbare Datei kopiert.
 

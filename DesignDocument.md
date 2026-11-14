@@ -209,6 +209,7 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 ## 11. Technik & Architektur
 ### Engine/Framework
 - SFML 3, C++20 (Custom Game Loop)
+- Die unterstützte Build-Plattform ist Windows x64; die vcpkg-Abhängigkeiten verwenden das Triplet `x64-windows`.
 - Beim Build werden die zur Konfiguration passenden SFML-Laufzeit-DLLs aus vcpkg neben die ausführbare Datei kopiert; so kann das Spiel direkt aus dem Build-Ausgabeverzeichnis gestartet werden.
 
 ### Ziel-Performance
