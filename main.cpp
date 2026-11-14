@@ -11,6 +11,7 @@
 
 #include "src/engine/GameEngine.h"
 #include "src/engine/GameRenderer.h"
+#include "src/engine/SettingsMenu.h"
 
 sf::FloatRect ComputeLetterboxViewport(sf::Vector2u windowSize, sf::Vector2u baseResolution)
 {
@@ -52,8 +53,19 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     constexpr sf::Vector2u baseResolution{ 1024u, 768u };
 
     sf::RenderWindow window(sf::VideoMode(baseResolution), "MyRPG");
-    window.setFramerateLimit(60);
     window.setKeyRepeatEnabled(false);
+
+    SettingsStore settingsStore;
+    GameSettings settings;
+    std::string settingsError;
+    if (!settingsStore.Load(settings, settingsError))
+    {
+        std::fprintf(stderr, "Failed to load settings: %s\n", settingsError.c_str());
+        const std::string message = settingsError + "\nStandardeinstellungen werden verwendet. Die Datei wird nicht ueberschrieben.";
+        MessageBoxA(window.getNativeHandle(), message.c_str(), "MyRPG - Einstellungen", MB_OK | MB_ICONERROR);
+    }
+    SettingsMenu settingsMenu;
+    settingsMenu.ApplySettings(settings, window);
 
     GameState game{};
     InitializeGameState(game);
@@ -71,14 +83,52 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             }
             else if (const auto* key = event->getIf<sf::Event::KeyPressed>())
             {
-                if (window.hasFocus() && key->code == sf::Keyboard::Key::M && !IsMapTransitionActive(game))
+                if (!window.hasFocus())
+                {
+                    continue;
+                }
+
+                if (key->code == sf::Keyboard::Key::Escape)
+                {
+                    if (settingsMenu.IsOpen())
+                    {
+                        settingsMenu.Close();
+                    }
+                    else if (settingsMenu.Open())
+                    {
+                        SetMovementState(game.input, false, false, false, false);
+                        game.player.moving = false;
+                    }
+                    else
+                    {
+                        MessageBoxW(window.getNativeHandle(), L"Die Schrift fuer das Einstellungsmenue konnte nicht geladen werden.",
+                                    L"MyRPG", MB_OK | MB_ICONERROR);
+                        frameClock.restart();
+                    }
+                }
+                else if (settingsMenu.IsOpen())
+                {
+                    if (settingsMenu.HandleKey(key->code, window) &&
+                        !settingsStore.Save(settingsMenu.GetSettings(), settingsError))
+                    {
+                        std::fprintf(stderr, "Failed to save settings: %s\n", settingsError.c_str());
+                        MessageBoxA(window.getNativeHandle(), settingsError.c_str(), "MyRPG - Einstellungen", MB_OK | MB_ICONERROR);
+                        frameClock.restart();
+                    }
+                }
+                else if (key->code == sf::Keyboard::Key::M && !IsMapTransitionActive(game))
                 {
                     StartMagicEffect(game.magicEffects, "sparkle", game.player.x, game.player.y);
                 }
             }
         }
 
-        const bool hasFocus = window.hasFocus();
+        if (!window.isOpen())
+        {
+            break;
+        }
+
+        const bool hasFocus = window.hasFocus() && !settingsMenu.IsOpen();
         SetMovementState(
             game.input,
             hasFocus && (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up)),
@@ -88,7 +138,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
         const float deltaTime = frameClock.restart().asSeconds();
         const float fps = deltaTime > 0.0f ? (1.0f / deltaTime) : 0.0f;
-        UpdateGame(game, deltaTime);
+        if (!settingsMenu.IsOpen())
+        {
+            UpdateGame(game, deltaTime);
+        }
 
         const Viewport viewport{
             static_cast<int>(baseResolution.x),
@@ -103,7 +156,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         letterboxView.setViewport(ComputeLetterboxViewport(windowSize, baseResolution));
         window.setView(letterboxView);
 
-        RenderGame(window, viewport, game, fps);
+        RenderGame(window, viewport, game, fps, settingsMenu.GetSettings().showFps);
+        if (settingsMenu.IsOpen())
+        {
+            settingsMenu.Draw(window, baseResolution);
+        }
         window.display();
     }
 
