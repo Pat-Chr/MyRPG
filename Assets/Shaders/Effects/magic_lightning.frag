@@ -3,7 +3,8 @@ uniform float progress; // 0..1 über die Effektdauer
 
 void main()
 {
-	vec2 p = gl_TexCoord[0].xy * 2.0 - 1.0;
+	vec2 p = (gl_TexCoord[0].xy * 2.0 - 1.0) * (380.0 / 288.0);
+	p.y += 0.32;
 
 	float fade = 1.0 - smoothstep(0.45, 1.0, progress);
 	float flicker = 0.65 + 0.35 * sin(progress * 90.0);
