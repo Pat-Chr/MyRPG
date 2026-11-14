@@ -16,6 +16,7 @@ public:
 	void ApplySettings(const GameSettings& settings, sf::RenderWindow& window)
 	{
 		verticalSync = settings.verticalSync;
+		showFps = settings.showFps;
 		const auto found = std::find(GameSettings::fpsLimits.begin(), GameSettings::fpsLimits.end(), settings.fpsLimit);
 		fpsLimitIndex = static_cast<std::size_t>(std::distance(GameSettings::fpsLimits.begin(), found));
 		window.setVerticalSyncEnabled(verticalSync);
@@ -24,7 +25,7 @@ public:
 
 	GameSettings GetSettings() const
 	{
-		return { verticalSync, GameSettings::fpsLimits[fpsLimitIndex] };
+		return { verticalSync, GameSettings::fpsLimits[fpsLimitIndex], showFps };
 	}
 
 	bool Open()
@@ -60,25 +61,36 @@ public:
 	{
 		if (key == sf::Keyboard::Key::Up || key == sf::Keyboard::Key::Down)
 		{
-			if (!verticalSync)
+			if (key == sf::Keyboard::Key::Down)
 			{
-				fpsLimitSelected = !fpsLimitSelected;
+				selected = selected == Selection::VSync ? (verticalSync ? Selection::ShowFps : Selection::FpsLimit) :
+					(selected == Selection::FpsLimit ? Selection::ShowFps : Selection::VSync);
+			}
+			else
+			{
+				selected = selected == Selection::VSync ? Selection::ShowFps :
+					(selected == Selection::ShowFps ? (verticalSync ? Selection::VSync : Selection::FpsLimit) : Selection::VSync);
 			}
 		}
 		else if (key == sf::Keyboard::Key::Left || key == sf::Keyboard::Key::Right ||
 			key == sf::Keyboard::Key::Enter || key == sf::Keyboard::Key::Space)
 		{
-			if (fpsLimitSelected)
+			if (selected == Selection::FpsLimit)
 			{
 				const std::size_t step = key == sf::Keyboard::Key::Left ? GameSettings::fpsLimits.size() - 1 : 1;
 				fpsLimitIndex = (fpsLimitIndex + step) % GameSettings::fpsLimits.size();
+				window.setFramerateLimit(GameSettings::fpsLimits[fpsLimitIndex]);
 			}
-			else
+			else if (selected == Selection::VSync)
 			{
 				verticalSync = !verticalSync;
 				window.setVerticalSyncEnabled(verticalSync);
+				window.setFramerateLimit(verticalSync ? 0u : GameSettings::fpsLimits[fpsLimitIndex]);
 			}
-			window.setFramerateLimit(verticalSync ? 0u : GameSettings::fpsLimits[fpsLimitIndex]);
+			else
+			{
+				showFps = !showFps;
+			}
 			return true;
 		}
 		return false;
@@ -93,8 +105,8 @@ public:
 		overlay.setFillColor(sf::Color(0, 0, 0, 170));
 		target.draw(overlay);
 
-		sf::RectangleShape panel({ 540.0f, 330.0f });
-		panel.setOrigin({ 270.0f, 165.0f });
+		sf::RectangleShape panel({ 540.0f, 390.0f });
+		panel.setOrigin({ 270.0f, 195.0f });
 		panel.setPosition({ width * 0.5f, height * 0.5f });
 		panel.setFillColor(sf::Color(35, 40, 35));
 		panel.setOutlineThickness(2.0f);
@@ -102,32 +114,39 @@ public:
 		target.draw(panel);
 
 		sf::Text title(font, "Einstellungen", 32);
-		title.setPosition({ width * 0.5f - 230.0f, height * 0.5f - 135.0f });
+		title.setPosition({ width * 0.5f - 230.0f, height * 0.5f - 165.0f });
 		target.draw(title);
 
 		sf::Text syncSetting(font, verticalSync ? "VSync: An" : "VSync: Aus", 24);
-		syncSetting.setFillColor(fpsLimitSelected ? sf::Color::White : sf::Color(255, 220, 140));
-		syncSetting.setPosition({ width * 0.5f - 230.0f, height * 0.5f - 75.0f });
+		syncSetting.setFillColor(selected == Selection::VSync ? sf::Color(255, 220, 140) : sf::Color::White);
+		syncSetting.setPosition({ width * 0.5f - 230.0f, height * 0.5f - 105.0f });
 		target.draw(syncSetting);
 
 		const std::string fpsLabel = GameSettings::fpsLimits[fpsLimitIndex] == 0u
 			? "FPS-Limit: Unbegrenzt" : "FPS-Limit: " + std::to_string(GameSettings::fpsLimits[fpsLimitIndex]);
 		sf::Text fpsSetting(font, fpsLabel, 24);
 		fpsSetting.setFillColor(verticalSync ? sf::Color(135, 135, 135) :
-			(fpsLimitSelected ? sf::Color(255, 220, 140) : sf::Color::White));
-		fpsSetting.setPosition({ width * 0.5f - 230.0f, height * 0.5f - 35.0f });
+			(selected == Selection::FpsLimit ? sf::Color(255, 220, 140) : sf::Color::White));
+		fpsSetting.setPosition({ width * 0.5f - 230.0f, height * 0.5f - 65.0f });
 		target.draw(fpsSetting);
 
+		sf::Text showFpsSetting(font, showFps ? "FPS-Anzeige: An" : "FPS-Anzeige: Aus", 24);
+		showFpsSetting.setFillColor(selected == Selection::ShowFps ? sf::Color(255, 220, 140) : sf::Color::White);
+		showFpsSetting.setPosition({ width * 0.5f - 230.0f, height * 0.5f - 25.0f });
+		target.draw(showFpsSetting);
+
 		sf::Text instructions(font, "FPS-Limit gilt bei VSync aus.\nHoch / Runter: Auswahl\nLinks / Rechts / Enter / Leertaste: Aendern\nEsc: Zurueck zum Spiel", 18);
-		instructions.setPosition({ width * 0.5f - 230.0f, height * 0.5f + 20.0f });
+		instructions.setPosition({ width * 0.5f - 230.0f, height * 0.5f + 30.0f });
 		target.draw(instructions);
 	}
 
 private:
+	enum class Selection { VSync, FpsLimit, ShowFps };
 	sf::Font font;
 	std::size_t fpsLimitIndex = GameSettings::fpsLimits.size() - 1;
+	Selection selected = Selection::VSync;
 	bool fontLoaded = false;
 	bool open = false;
 	bool verticalSync = false;
-	bool fpsLimitSelected = false;
+	bool showFps = true;
 };

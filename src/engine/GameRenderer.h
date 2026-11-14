@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Windows.h>
 #include <SFML/Graphics.hpp>
 
 #include <algorithm>
@@ -7,6 +8,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
+#include <filesystem>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -252,15 +254,17 @@ inline void RenderTriggerDebug(sf::RenderTarget& target, const Viewport& viewpor
  * 5. Trigger-Zonen (nur Debug-Build)
  * 6. Spieler-Charakter (Textur oder Fallback-Rechteck)
  * 7. Magieeffekte
- * 8. Debug-UI: Koordinaten, FPS und letzte ausgelöste Ereignis-Nachricht (nur Debug-Build)
+ * 8. Optionale FPS-Anzeige und Debug-UI (Koordinaten und Ereignisse nur im Debug-Build)
  * 9. Kartenübergangs-Overlay (Fade-In/Fade-Out Effekt)
  * 
  * @param target SFML-Ziel für das Rendern
  * @param viewport Aktuelle Viewport-Dimensionen
  * @param game Aktueller Spielszustand
  * @param fps Aktuelle Frames pro Sekunde für die UI-Anzeige
+ * @param showFps Ob die FPS-Anzeige sichtbar ist
  */
-inline void RenderGame(sf::RenderTarget& target, const Viewport& viewport, const GameState& game, [[maybe_unused]] float fps)
+inline void RenderGame(sf::RenderTarget& target, const Viewport& viewport, const GameState& game,
+                       float fps, bool showFps)
 {
     // Hintergrund mit dunkelgrünem Farbton löschen (Wald/Regenwald-Atmosphäre)
     target.clear(sf::Color(22, 34, 26));
@@ -372,37 +376,65 @@ inline void RenderGame(sf::RenderTarget& target, const Viewport& viewport, const
                        static_cast<float>(viewport.width), static_cast<float>(viewport.height));
 
     #ifdef _DEBUG
-    // Debug-Font laden (versucht zuerst consola.ttf, falls nicht vorhanden: arial.ttf)
-    static sf::Font debugFont;
-    static const bool debugFontLoaded = debugFont.openFromFile("C:/Windows/Fonts/consola.ttf") ||
-                                        debugFont.openFromFile("C:/Windows/Fonts/arial.ttf");
-
-    if (debugFontLoaded)
+    constexpr bool showDebug = true;
+#else
+    constexpr bool showDebug = false;
+#endif
+    if (showFps || showDebug)
     {
-        // Koordinaten und FPS in der oberen rechten Ecke anzeigen
-        char coordinateBuffer[96];
-        std::snprintf(coordinateBuffer, sizeof(coordinateBuffer), "Map: %s   X: %.1f  Y: %.1f   FPS: %.1f", game.activeMap.id.c_str(), game.player.x, game.player.y, fps);
-
-        sf::Text coordinateText(debugFont, coordinateBuffer, 16);
-        coordinateText.setFillColor(sf::Color(230, 230, 230));
-
-        const sf::FloatRect bounds = coordinateText.getLocalBounds();
-        // Positioniert den Text rechts oben (Viewport-Ende minus Textbreite)
-        coordinateText.setPosition({ static_cast<float>(viewport.width) - bounds.size.x - 12.0f, 8.0f });
-
-        target.draw(coordinateText);
-
-        // Gezeigtes Trigger-Ereignis in der oberen linken Ecke (falls vorhanden)
-        if (!game.lastTriggeredEvent.empty())
+        static sf::Font overlayFont;
+        static const bool fontLoaded = []
         {
-            std::string triggerLine = "Trigger: " + game.lastTriggeredEvent;
-            sf::Text triggerText(debugFont, triggerLine, 16);
-            triggerText.setFillColor(sf::Color(255, 230, 140)); // Hellgelb für hervorgehobene Ereignisse
-            triggerText.setPosition({ 12.0f, 8.0f });
-            target.draw(triggerText);
+            wchar_t windowsDirectory[MAX_PATH];
+            const UINT length = GetWindowsDirectoryW(windowsDirectory, MAX_PATH);
+            if (length == 0 || length >= MAX_PATH)
+            {
+                std::fprintf(stderr, "Failed to locate the Windows font directory for the FPS overlay.\n");
+                return false;
+            }
+            const std::filesystem::path fontDirectory = std::filesystem::path(windowsDirectory) / L"Fonts";
+            if (overlayFont.openFromFile(fontDirectory / L"consola.ttf") ||
+                overlayFont.openFromFile(fontDirectory / L"arial.ttf"))
+            {
+                return true;
+            }
+            std::fprintf(stderr, "Failed to load a font for the FPS overlay.\n");
+            return false;
+        }();
+
+        if (fontLoaded)
+        {
+            char overlayBuffer[96];
+#ifdef _DEBUG
+            if (showFps)
+            {
+                std::snprintf(overlayBuffer, sizeof(overlayBuffer), "Map: %s   X: %.1f  Y: %.1f   FPS: %.1f", game.activeMap.id.c_str(), game.player.x, game.player.y, fps);
+            }
+            else
+            {
+                std::snprintf(overlayBuffer, sizeof(overlayBuffer), "Map: %s   X: %.1f  Y: %.1f", game.activeMap.id.c_str(), game.player.x, game.player.y);
+            }
+#else
+            std::snprintf(overlayBuffer, sizeof(overlayBuffer), "FPS: %.1f", fps);
+#endif
+            sf::Text overlayText(overlayFont, overlayBuffer, 16);
+            overlayText.setFillColor(sf::Color(230, 230, 230));
+            const sf::FloatRect bounds = overlayText.getLocalBounds();
+            overlayText.setPosition({ static_cast<float>(viewport.width) - bounds.size.x - 12.0f, 8.0f });
+            target.draw(overlayText);
+
+#ifdef _DEBUG
+            if (!game.lastTriggeredEvent.empty())
+            {
+                std::string triggerLine = "Trigger: " + game.lastTriggeredEvent;
+                sf::Text triggerText(overlayFont, triggerLine, 16);
+                triggerText.setFillColor(sf::Color(255, 230, 140));
+                triggerText.setPosition({ 12.0f, 8.0f });
+                target.draw(triggerText);
+            }
+#endif
         }
     }
-#endif
 
     // Kartenübergangs-Overlay (Fade-In oder Fade-Out Effekt)
     if (game.mapTransition.phase != MapTransitionPhase::None)

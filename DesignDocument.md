@@ -158,14 +158,15 @@ Mischung aus ernst und leicht humorvoll
 ### HUD
 - Muss anzeigen: Health, Ausdauer, XP, Level
 - Optional: Weitere Elemente kommen später hinzu
-- Nur im Debug-Build: Karten-ID, Spielerkoordinaten, FPS und letztes Trigger-Ereignis; zusätzlich werden Trigger-Bereiche und das Debug-Raster sichtbar dargestellt. Im Release-Build entfallen diese Debug-Anzeigen, die Trigger-Funktion bleibt erhalten.
-- Diese Trennung ist eine dauerhafte Vorgabe und soll bei zukünftigen Änderungen beibehalten werden: Debug-Informationen und Trigger-Markierungen sind nur in Debug-Builds sichtbar; Release-Builds bleiben frei von diesen Anzeigen.
+- Die optionale FPS-Anzeige ist in Debug- und Release-Builds verfügbar und im Einstellungsmenü abschaltbar.
+- Nur im Debug-Build: Karten-ID, Spielerkoordinaten und letztes Trigger-Ereignis; zusätzlich werden Trigger-Bereiche und das Debug-Raster sichtbar dargestellt. Im Release-Build entfallen diese Debug-Anzeigen, die Trigger-Funktion bleibt erhalten.
+- Diese Trennung ist eine dauerhafte Vorgabe und soll bei zukünftigen Änderungen beibehalten werden: Debug-Informationen und Trigger-Markierungen sind nur in Debug-Builds sichtbar; Release-Builds bleiben frei von diesen Anzeigen. Die FPS-Anzeige ist eine Spieleroption und keine Debug-Anzeige.
 
 ### Menüs
 - Hauptmenü: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 - Pause: Das Spiel pausiert, solange das Einstellungsmenü geöffnet ist; Bewegung, Trigger, Effekte und Kartenwechsel laufen in dieser Zeit nicht weiter.
 - Inventar: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
-- Settings: `Esc` öffnet und schließt ein einfaches Tastaturmenü. Hoch/Runter wählt VSync oder das FPS-Limit; Links/Rechts, Enter oder Leertaste ändern den Wert. Das FPS-Limit bietet 60, 120, 200 und unbegrenzt; standardmäßig ist VSync aus und das Limit unbegrenzt. Bei aktiviertem VSync ist das FPS-Limit ausgesetzt, ausgegraut und nicht auswählbar; der gewählte Wert bleibt gespeichert und gilt wieder bei VSync aus. Änderungen werden dauerhaft gespeichert und beim Start geladen. Das Menü verwendet eine Windows-Systemschrift; falls diese nicht geladen werden kann, wird ein Fehler angezeigt und das Spiel läuft weiter.
+- Settings: `Esc` öffnet und schließt ein einfaches Tastaturmenü. Hoch/Runter wählt VSync, das FPS-Limit oder die FPS-Anzeige; Links/Rechts, Enter oder Leertaste ändern den Wert. Das FPS-Limit bietet 60, 120, 200 und unbegrenzt; standardmäßig ist VSync aus und das Limit unbegrenzt. Bei aktiviertem VSync ist das FPS-Limit ausgesetzt, ausgegraut und nicht auswählbar; der gewählte Wert bleibt gespeichert und gilt wieder bei VSync aus. Die FPS-Anzeige ist in beiden Builds standardmäßig an und unabhängig von den Debug-Anzeigen abschaltbar. Änderungen werden dauerhaft gespeichert und beim Start geladen. Das Menü verwendet eine Windows-Systemschrift; falls diese nicht geladen werden kann, wird ein Fehler angezeigt und das Spiel läuft weiter.
 
 ### Feedback
 - Visuell: Rendering-Pipeline vorgesehen, Detailausgestaltung bewusst offen (Prototyp-Phase)
@@ -220,7 +221,7 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 
 ### Speicher-/Ladeverhalten
 - Save-System: Bewusst offen (Prototyp-Phase), nach Rendering/Kollision geplant
-- Einstellungen: `%LOCALAPPDATA%\MyRPG\settings.json`, JSON-Objekt mit `version` (1), `vsync` (Boolean) und `fps_limit` (0 für unbegrenzt, sonst 60, 120 oder 200). Bei fehlender Datei gelten die Standardwerte; jede Änderung wird gespeichert. Fehler beim Laden oder Speichern werden angezeigt; eine fehlerhafte oder nicht unterstützte Datei wird nicht überschrieben. Unbekannte Felder bleiben beim Speichern erhalten.
+- Einstellungen: `%LOCALAPPDATA%\MyRPG\settings.json`, JSON-Objekt mit `version` (1), `vsync` (Boolean), `fps_limit` (0 für unbegrenzt, sonst 60, 120 oder 200) und `show_fps` (Boolean). Ältere Dateien ohne `show_fps` verwenden `true`. Bei fehlender Datei gelten die Standardwerte; jede Änderung wird gespeichert. Fehler beim Laden oder Speichern werden angezeigt; eine fehlerhafte oder nicht unterstützte Datei wird nicht überschrieben. Unbekannte Felder bleiben beim Speichern erhalten.
 - Ladezeiten: Noch kein Ziel
 
 ### Daten-/Dateistruktur (modular)

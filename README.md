@@ -14,7 +14,7 @@ Das [DesignDocument.md](./DesignDocument.md) beschreibt die technische Architekt
 
 - **Spielschleife** mit Delta-Time-basierter Bewegung und standardmäßig unbegrenzter Bildrate
 - **Steuerung** mit WASD oder Pfeiltasten; diagonale Bewegung wird normalisiert
-- **Einstellungsmenü** mit `Esc` öffnen oder schließen; das Spiel pausiert. Hoch/Runter wählt VSync oder das FPS-Limit (60, 120, 200 oder unbegrenzt); Links/Rechts, Enter oder Leertaste ändern den Wert. Bei VSync an ist das Limit ausgegraut und nicht auswählbar; der Wert bleibt für VSync aus erhalten. Änderungen werden in `%LOCALAPPDATA%\MyRPG\settings.json` gespeichert und beim Start geladen.
+- **Einstellungsmenü** mit `Esc` öffnen oder schließen; das Spiel pausiert. Hoch/Runter wählt VSync, das FPS-Limit (60, 120, 200 oder unbegrenzt) oder die FPS-Anzeige; Links/Rechts, Enter oder Leertaste ändern den Wert. Bei VSync an ist das Limit ausgegraut und nicht auswählbar; der Wert bleibt für VSync aus erhalten. Die FPS-Anzeige ist auch im Release verfügbar. Änderungen werden in `%LOCALAPPDATA%\MyRPG\settings.json` gespeichert und beim Start geladen.
 - **2D-Rendering** mit Spielerfigur, gekacheltem Kartenboden und Kartenobjekten
 - **Kollisionen** mit als solide markierten Kartenobjekten
 - **Karten** aus Textdateien im `.map`-Format; enthalten sind eine Testkarte und eine Waldkarte
@@ -24,7 +24,7 @@ Das [DesignDocument.md](./DesignDocument.md) beschreibt die technische Architekt
 - **Magieeffekte**: sieben GPU-Shader-Effekte (Sparkle, Fire, Lightning, Frost, Vortex, Heal, Shockwave) in `Assets/Shaders/Effects/`. `M` startet Sparkle an der Spielerposition; auf der Testkarte gibt es rechts vom Startpunkt für jeden Effekt eine Trigger-Zone (von links nach rechts in obiger Reihenfolge).
 - **Textur-Cache** zur Wiederverwendung geladener Texturen
 - **Kamera und Letterbox-Viewport** mit einer Basisauflösung von 1024 × 768; das Seitenverhältnis bleibt beim Ändern der Fenstergröße erhalten
-- **Debug-Anzeigen** für Karten-ID, Position, FPS, letztes Ereignis, Raster und Triggerbereiche nur im Debug-Build. Im Release-Build bleiben diese Anzeigen verborgen; die Trigger-Funktion selbst bleibt aktiv.
+- **Debug-Anzeigen** für Karten-ID, Position, letztes Ereignis, Raster und Triggerbereiche nur im Debug-Build. Im Release-Build bleiben diese Anzeigen verborgen; die Trigger-Funktion selbst bleibt aktiv.
 
 ## 🚀 Quick Start
 

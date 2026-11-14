@@ -156,7 +156,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         letterboxView.setViewport(ComputeLetterboxViewport(windowSize, baseResolution));
         window.setView(letterboxView);
 
-        RenderGame(window, viewport, game, fps);
+        RenderGame(window, viewport, game, fps, settingsMenu.GetSettings().showFps);
         if (settingsMenu.IsOpen())
         {
             settingsMenu.Draw(window, baseResolution);

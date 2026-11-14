@@ -16,6 +16,7 @@ struct GameSettings
 	inline static constexpr std::array<unsigned int, 4> fpsLimits{ 60u, 120u, 200u, 0u };
 	bool verticalSync = false;
 	unsigned int fpsLimit = 0u;
+	bool showFps = false;
 };
 
 class SettingsStore
@@ -75,7 +76,8 @@ public:
 		if (!document.is_object() || !document.contains("version") ||
 			!document["version"].is_number_integer() || document["version"] != 1 ||
 			!document.contains("vsync") || !document["vsync"].is_boolean() ||
-			!document.contains("fps_limit") || !document["fps_limit"].is_number_integer())
+			!document.contains("fps_limit") || !document["fps_limit"].is_number_integer() ||
+			(document.contains("show_fps") && !document["show_fps"].is_boolean()))
 		{
 			error = "Die Einstellungsdatei hat ein ungueltiges oder nicht unterstuetztes Format.";
 			return false;
@@ -90,6 +92,7 @@ public:
 		}
 		settings.verticalSync = document["vsync"].get<bool>();
 		settings.fpsLimit = *found;
+		settings.showFps = document.contains("show_fps") ? document["show_fps"].get<bool>() : true;
 		writable = true;
 		return true;
 	}
@@ -112,6 +115,7 @@ public:
 		document["version"] = 1;
 		document["vsync"] = settings.verticalSync;
 		document["fps_limit"] = settings.fpsLimit;
+		document["show_fps"] = settings.showFps;
 
 		wchar_t temporaryName[MAX_PATH];
 		if (!GetTempFileNameW(path.parent_path().c_str(), L"rpg", 0, temporaryName))
