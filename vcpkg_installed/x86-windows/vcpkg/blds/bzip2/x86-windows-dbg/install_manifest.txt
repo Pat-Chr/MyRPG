@@ -1,2 +1,0 @@
-C:/Users/pat/source/repos/MyRPG/vcpkg_installed/x86-windows/vcpkg/pkgs/bzip2_x86-windows/debug/lib/bz2d.lib
-C:/Users/pat/source/repos/MyRPG/vcpkg_installed/x86-windows/vcpkg/pkgs/bzip2_x86-windows/debug/bin/bz2d.dll

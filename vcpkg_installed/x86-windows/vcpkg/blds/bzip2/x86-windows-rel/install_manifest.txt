@@ -1,5 +1,0 @@
-C:/Users/pat/source/repos/MyRPG/vcpkg_installed/x86-windows/vcpkg/pkgs/bzip2_x86-windows/lib/bz2.lib
-C:/Users/pat/source/repos/MyRPG/vcpkg_installed/x86-windows/vcpkg/pkgs/bzip2_x86-windows/bin/bz2.dll
-C:/Users/pat/source/repos/MyRPG/vcpkg_installed/x86-windows/vcpkg/pkgs/bzip2_x86-windows/tools/bzip2/bzip2.exe
-C:/Users/pat/source/repos/MyRPG/vcpkg_installed/x86-windows/vcpkg/pkgs/bzip2_x86-windows/tools/bzip2/bzip2recover.exe
-C:/Users/pat/source/repos/MyRPG/vcpkg_installed/x86-windows/vcpkg/pkgs/bzip2_x86-windows/include/bzlib.h
