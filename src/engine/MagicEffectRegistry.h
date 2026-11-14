@@ -151,3 +151,11 @@ inline sf::Shader* GetMagicShader(const std::string& id)
 	const auto shader = shaders.find(id);
 	return shader == shaders.end() ? nullptr : shader->second.get();
 }
+
+inline void PreloadMagicShaders()
+{
+	for (const MagicEffectDefinition& definition : GetMagicEffectDefinitions())
+	{
+		GetMagicShader(definition.id);
+	}
+}
