@@ -3,14 +3,30 @@
 #include <Windows.h>
 #include <SFML/Graphics.hpp>
 
-#include <array>
 #include <cstdio>
 #include <filesystem>
+#include <iterator>
 #include <string>
+
+#include "SettingsStore.h"
 
 class SettingsMenu
 {
 public:
+	void ApplySettings(const GameSettings& settings, sf::RenderWindow& window)
+	{
+		verticalSync = settings.verticalSync;
+		const auto found = std::find(GameSettings::fpsLimits.begin(), GameSettings::fpsLimits.end(), settings.fpsLimit);
+		fpsLimitIndex = static_cast<std::size_t>(std::distance(GameSettings::fpsLimits.begin(), found));
+		window.setVerticalSyncEnabled(verticalSync);
+		window.setFramerateLimit(verticalSync ? 0u : settings.fpsLimit);
+	}
+
+	GameSettings GetSettings() const
+	{
+		return { verticalSync, GameSettings::fpsLimits[fpsLimitIndex] };
+	}
+
 	bool Open()
 	{
 		if (!fontLoaded)
@@ -40,7 +56,7 @@ public:
 	void Close() { open = false; }
 	bool IsOpen() const { return open; }
 
-	void HandleKey(sf::Keyboard::Key key, sf::RenderWindow& window)
+	bool HandleKey(sf::Keyboard::Key key, sf::RenderWindow& window)
 	{
 		if (key == sf::Keyboard::Key::Up || key == sf::Keyboard::Key::Down)
 		{
@@ -54,16 +70,18 @@ public:
 		{
 			if (fpsLimitSelected)
 			{
-				const std::size_t step = key == sf::Keyboard::Key::Left ? fpsLimits.size() - 1 : 1;
-				fpsLimitIndex = (fpsLimitIndex + step) % fpsLimits.size();
+				const std::size_t step = key == sf::Keyboard::Key::Left ? GameSettings::fpsLimits.size() - 1 : 1;
+				fpsLimitIndex = (fpsLimitIndex + step) % GameSettings::fpsLimits.size();
 			}
 			else
 			{
 				verticalSync = !verticalSync;
 				window.setVerticalSyncEnabled(verticalSync);
 			}
-			window.setFramerateLimit(verticalSync ? 0u : fpsLimits[fpsLimitIndex]);
+			window.setFramerateLimit(verticalSync ? 0u : GameSettings::fpsLimits[fpsLimitIndex]);
+			return true;
 		}
+		return false;
 	}
 
 	void Draw(sf::RenderTarget& target, sf::Vector2u resolution) const
@@ -92,8 +110,8 @@ public:
 		syncSetting.setPosition({ width * 0.5f - 230.0f, height * 0.5f - 75.0f });
 		target.draw(syncSetting);
 
-		const std::string fpsLabel = fpsLimits[fpsLimitIndex] == 0u
-			? "FPS-Limit: Unbegrenzt" : "FPS-Limit: " + std::to_string(fpsLimits[fpsLimitIndex]);
+		const std::string fpsLabel = GameSettings::fpsLimits[fpsLimitIndex] == 0u
+			? "FPS-Limit: Unbegrenzt" : "FPS-Limit: " + std::to_string(GameSettings::fpsLimits[fpsLimitIndex]);
 		sf::Text fpsSetting(font, fpsLabel, 24);
 		fpsSetting.setFillColor(verticalSync ? sf::Color(135, 135, 135) :
 			(fpsLimitSelected ? sf::Color(255, 220, 140) : sf::Color::White));
@@ -106,9 +124,8 @@ public:
 	}
 
 private:
-	inline static constexpr std::array<unsigned int, 4> fpsLimits{ 60u, 120u, 200u, 0u };
 	sf::Font font;
-	std::size_t fpsLimitIndex = fpsLimits.size() - 1;
+	std::size_t fpsLimitIndex = GameSettings::fpsLimits.size() - 1;
 	bool fontLoaded = false;
 	bool open = false;
 	bool verticalSync = false;

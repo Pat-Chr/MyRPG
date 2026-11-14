@@ -165,7 +165,7 @@ Mischung aus ernst und leicht humorvoll
 - Hauptmenü: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 - Pause: Das Spiel pausiert, solange das Einstellungsmenü geöffnet ist; Bewegung, Trigger, Effekte und Kartenwechsel laufen in dieser Zeit nicht weiter.
 - Inventar: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
-- Settings: `Esc` öffnet und schließt ein einfaches Tastaturmenü. Hoch/Runter wählt VSync oder das FPS-Limit; Links/Rechts, Enter oder Leertaste ändern den Wert. Das FPS-Limit bietet 60, 120, 200 und unbegrenzt; standardmäßig ist VSync aus und das Limit unbegrenzt. Bei aktiviertem VSync ist das FPS-Limit ausgesetzt, ausgegraut und nicht auswählbar; der gewählte Wert bleibt gespeichert und gilt wieder bei VSync aus. Die Einstellungen gelten nur für die aktuelle Sitzung. Das Menü verwendet eine Windows-Systemschrift; falls diese nicht geladen werden kann, wird ein Fehler angezeigt und das Spiel läuft weiter.
+- Settings: `Esc` öffnet und schließt ein einfaches Tastaturmenü. Hoch/Runter wählt VSync oder das FPS-Limit; Links/Rechts, Enter oder Leertaste ändern den Wert. Das FPS-Limit bietet 60, 120, 200 und unbegrenzt; standardmäßig ist VSync aus und das Limit unbegrenzt. Bei aktiviertem VSync ist das FPS-Limit ausgesetzt, ausgegraut und nicht auswählbar; der gewählte Wert bleibt gespeichert und gilt wieder bei VSync aus. Änderungen werden dauerhaft gespeichert und beim Start geladen. Das Menü verwendet eine Windows-Systemschrift; falls diese nicht geladen werden kann, wird ein Fehler angezeigt und das Spiel läuft weiter.
 
 ### Feedback
 - Visuell: Rendering-Pipeline vorgesehen, Detailausgestaltung bewusst offen (Prototyp-Phase)
@@ -220,6 +220,7 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 
 ### Speicher-/Ladeverhalten
 - Save-System: Bewusst offen (Prototyp-Phase), nach Rendering/Kollision geplant
+- Einstellungen: `%LOCALAPPDATA%\MyRPG\settings.json`, JSON-Objekt mit `version` (1), `vsync` (Boolean) und `fps_limit` (0 für unbegrenzt, sonst 60, 120 oder 200). Bei fehlender Datei gelten die Standardwerte; jede Änderung wird gespeichert. Fehler beim Laden oder Speichern werden angezeigt; eine fehlerhafte oder nicht unterstützte Datei wird nicht überschrieben. Unbekannte Felder bleiben beim Speichern erhalten.
 - Ladezeiten: Noch kein Ziel
 
 ### Daten-/Dateistruktur (modular)

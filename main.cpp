@@ -53,13 +53,23 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     constexpr sf::Vector2u baseResolution{ 1024u, 768u };
 
     sf::RenderWindow window(sf::VideoMode(baseResolution), "MyRPG");
-    window.setFramerateLimit(0);
     window.setKeyRepeatEnabled(false);
+
+    SettingsStore settingsStore;
+    GameSettings settings;
+    std::string settingsError;
+    if (!settingsStore.Load(settings, settingsError))
+    {
+        std::fprintf(stderr, "Failed to load settings: %s\n", settingsError.c_str());
+        const std::string message = settingsError + "\nStandardeinstellungen werden verwendet. Die Datei wird nicht ueberschrieben.";
+        MessageBoxA(window.getNativeHandle(), message.c_str(), "MyRPG - Einstellungen", MB_OK | MB_ICONERROR);
+    }
+    SettingsMenu settingsMenu;
+    settingsMenu.ApplySettings(settings, window);
 
     GameState game{};
     InitializeGameState(game);
     PreloadMagicShaders();
-    SettingsMenu settingsMenu;
 
     sf::Clock frameClock;
 
@@ -98,7 +108,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 }
                 else if (settingsMenu.IsOpen())
                 {
-                    settingsMenu.HandleKey(key->code, window);
+                    if (settingsMenu.HandleKey(key->code, window) &&
+                        !settingsStore.Save(settingsMenu.GetSettings(), settingsError))
+                    {
+                        std::fprintf(stderr, "Failed to save settings: %s\n", settingsError.c_str());
+                        MessageBoxA(window.getNativeHandle(), settingsError.c_str(), "MyRPG - Einstellungen", MB_OK | MB_ICONERROR);
+                        frameClock.restart();
+                    }
                 }
                 else if (key->code == sf::Keyboard::Key::M && !IsMapTransitionActive(game))
                 {

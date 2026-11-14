@@ -54,6 +54,9 @@
     <ClInclude Include="src\engine\SettingsMenu.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="src\engine\SettingsStore.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
