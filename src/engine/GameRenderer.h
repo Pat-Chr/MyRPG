@@ -306,19 +306,9 @@ inline void RenderGame(sf::RenderTarget& target, const Viewport& viewport, const
         SpriteAnimation animation;
         sf::Texture* texture = nullptr;
     };
-    static const auto playerAnimations = []()
+    const auto loadPlayerAnimations = []<std::size_t N>(const std::array<const char*, N>& paths)
     {
-        const std::array<const char*, 8> paths = {
-            "Assets/Animations/Characters/player_walk_down.anim",
-            "Assets/Animations/Characters/player_walk_up.anim",
-            "Assets/Animations/Characters/player_walk_left.anim",
-            "Assets/Animations/Characters/player_walk_right.anim",
-            "Assets/Animations/Characters/player_walk_northwest.anim",
-            "Assets/Animations/Characters/player_walk_northeast.anim",
-            "Assets/Animations/Characters/player_walk_southwest.anim",
-            "Assets/Animations/Characters/player_walk_southeast.anim"
-        };
-        std::array<PlayerAnimation, 8> animations;
+        std::array<PlayerAnimation, N> animations;
         for (std::size_t i = 0; i < paths.size(); ++i)
         {
             if (LoadAnimationFromFile(paths[i], animations[i].animation))
@@ -331,9 +321,31 @@ inline void RenderGame(sf::RenderTarget& target, const Viewport& viewport, const
             }
         }
         return animations;
-    }();
-
-    const PlayerAnimation& selected = playerAnimations[static_cast<std::size_t>(game.player.direction)];
+    };
+    static const auto walkAnimations = loadPlayerAnimations(std::array<const char*, 8>{
+        "Assets/Animations/Characters/player_walk_down.anim",
+        "Assets/Animations/Characters/player_walk_up.anim",
+        "Assets/Animations/Characters/player_walk_left.anim",
+        "Assets/Animations/Characters/player_walk_right.anim",
+        "Assets/Animations/Characters/player_walk_northwest.anim",
+        "Assets/Animations/Characters/player_walk_northeast.anim",
+        "Assets/Animations/Characters/player_walk_southwest.anim",
+        "Assets/Animations/Characters/player_walk_southeast.anim"
+    });
+    static const auto idleAnimations = loadPlayerAnimations(std::array<const char*, 4>{
+        "Assets/Animations/Characters/player_idle_down.anim",
+        "Assets/Animations/Characters/player_idle_up.anim",
+        "Assets/Animations/Characters/player_idle_left.anim",
+        "Assets/Animations/Characters/player_idle_right.anim"
+    });
+    static constexpr std::array<PlayerDirection, 8> idleDirections = {
+        PlayerDirection::Down, PlayerDirection::Up, PlayerDirection::Left, PlayerDirection::Right,
+        PlayerDirection::Left, PlayerDirection::Right, PlayerDirection::Left, PlayerDirection::Right
+    };
+    const std::size_t direction = static_cast<std::size_t>(game.player.direction);
+    const PlayerAnimation& selected = game.player.moving
+        ? walkAnimations[direction]
+        : idleAnimations[static_cast<std::size_t>(idleDirections[direction])];
     if (selected.texture != nullptr)
     {
         static sf::Clock playerAnimationClock;
@@ -347,15 +359,13 @@ inline void RenderGame(sf::RenderTarget& target, const Viewport& viewport, const
         }
 
         const SpriteAnimation& playerAnimation = selected.animation;
-        const std::size_t frameIndex = game.player.moving
-            ? static_cast<std::size_t>(playerAnimationClock.getElapsedTime().asSeconds() / playerAnimation.frameDuration) % playerAnimation.frames.size()
-            : 0;
+        const std::size_t frameIndex = static_cast<std::size_t>(playerAnimationClock.getElapsedTime().asSeconds() / playerAnimation.frameDuration) % playerAnimation.frames.size();
         const sf::IntRect& frame = playerAnimation.frames[frameIndex];
 
         sf::Sprite playerSprite(*selected.texture);
         playerSprite.setTextureRect(frame);
         const float frameHeight = static_cast<float>(frame.size.y);
-        const float frameScale = playerSize / frameHeight;
+        const float frameScale = (playerSize / frameHeight) * playerAnimation.scale;
         playerSprite.setOrigin({ static_cast<float>(frame.size.x) * 0.5f, frameHeight * 0.5f });
         playerSprite.setScale({ frameScale, frameScale });
         playerSprite.setPosition({ viewport.width * 0.5f, viewport.height * 0.5f });

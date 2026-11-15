@@ -14,6 +14,7 @@ struct SpriteAnimation
 {
 	std::string texturePath;
 	float frameDuration = 0.0f;
+	float scale = 1.0f;
 	std::vector<sf::IntRect> frames;
 };
 
@@ -30,6 +31,7 @@ inline bool LoadAnimationFromFile(const std::string& path, SpriteAnimation& anim
 	bool headerRead = false;
 	bool texturePathRead = false;
 	bool frameDurationRead = false;
+	bool scaleRead = false;
 	std::string line;
 	std::size_t lineNumber = 0;
 
@@ -76,6 +78,17 @@ inline bool LoadAnimationFromFile(const std::string& path, SpriteAnimation& anim
 			}
 
 			frameDurationRead = true;
+		}
+		else if (directive == "scale")
+		{
+			if (scaleRead || !(lineStream >> loadedAnimation.scale) ||
+				!std::isfinite(loadedAnimation.scale) || loadedAnimation.scale <= 0.0f)
+			{
+				std::fprintf(stderr, "Invalid or duplicate scale directive at %s:%zu\n", path.c_str(), lineNumber);
+				return false;
+			}
+
+			scaleRead = true;
 		}
 		else if (directive == "frame")
 		{

@@ -20,7 +20,7 @@ Das [DesignDocument.md](./DesignDocument.md) beschreibt die technische Architekt
 - **Karten** aus Textdateien im `.map`-Format; enthalten sind eine Testkarte und eine Waldkarte
 - **Trigger** für den visuellen Magieeffekt und für Kartenwechsel zwischen den vorhandenen Karten
 - **Kartenwechsel** mit Fade-out/Fade-in und festgelegter Spawn-Position
-- **Spieleranimationen** in acht Richtungen, beschrieben in `.anim`-Dateien; im Stillstand bleibt die letzte Blickrichtung erhalten
+- **Spieleranimationen**: Laufanimationen in acht Richtungen und Stillstandsanimationen in vier Richtungen, beschrieben in `.anim`-Dateien. Diagonale Blickrichtungen verwenden im Stillstand die linke bzw. rechte Animation.
 - **Magieeffekte**: sieben GPU-Shader-Effekte (Sparkle, Fire, Lightning, Frost, Vortex, Heal, Shockwave) in `Assets/Shaders/Effects/`. `M` startet Sparkle an der Spielerposition; auf der Testkarte gibt es rechts vom Startpunkt für jeden Effekt eine Trigger-Zone (von links nach rechts in obiger Reihenfolge).
 - **Textur-Cache** zur Wiederverwendung geladener Texturen
 - **Kamera und Letterbox-Viewport** mit einer Basisauflösung von 1024 × 768; das Seitenverhältnis bleibt beim Ändern der Fenstergröße erhalten
