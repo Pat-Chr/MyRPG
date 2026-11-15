@@ -213,6 +213,7 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 - SFML 3, C++20 (Custom Game Loop)
 - Die unterstützte Build-Plattform ist Windows x64; die vcpkg-Abhängigkeiten verwenden das Triplet `x64-windows`.
 - Beim Build werden die zur Konfiguration passenden SFML-Laufzeit-DLLs aus vcpkg neben die ausführbare Datei kopiert; so kann das Spiel direkt aus dem Build-Ausgabeverzeichnis gestartet werden.
+- Debug-Builds erzeugen PDB-Debugsymbole; Release-Builds erzeugen keine PDB-Datei.
 
 ### Ziel-Performance
 - FPS-Limit: Standardmäßig unbegrenzt; im Menü sind 60, 120 und 200 FPS wählbar. Bei aktiviertem VSync ist das Software-Limit ausgesetzt und die Bildrate richtet sich nach der Synchronisierung.
