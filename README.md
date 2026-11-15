@@ -12,9 +12,10 @@ Das [DesignDocument.md](./DesignDocument.md) beschreibt die technische Architekt
 
 ## ✨ Aktueller Funktionsumfang
 
+- **Hauptmenü** mit Titelbild, `Start Game` und `Exit Game`; Bedienung mit Hoch/Runter und Enter/Leertaste oder per Maus. `Start Game` beginnt ein neues Spiel.
 - **Spielschleife** mit Delta-Time-basierter Bewegung und standardmäßig unbegrenzter Bildrate
 - **Steuerung** mit WASD oder Pfeiltasten; diagonale Bewegung wird normalisiert
-- **Einstellungsmenü** mit `Esc` öffnen oder schließen; das Spiel pausiert. Hoch/Runter wählt VSync, das FPS-Limit (60, 120, 200 oder unbegrenzt) oder die FPS-Anzeige; Links/Rechts, Enter oder Leertaste ändern den Wert. Bei VSync an ist das Limit ausgegraut und nicht auswählbar; der Wert bleibt für VSync aus erhalten. Die FPS-Anzeige ist auch im Release verfügbar. Änderungen werden in `%LOCALAPPDATA%\MyRPG\settings.json` gespeichert und beim Start geladen.
+- **Einstellungsmenü** mit `Esc` öffnen oder schließen; das Spiel pausiert. `Zurück zum Hauptmenü` verwirft den aktuellen Spielzustand und ist per Enter/Leertaste oder Mausklick erreichbar. Hoch/Runter wählt VSync, das FPS-Limit (60, 120, 200 oder unbegrenzt) oder die FPS-Anzeige; Links/Rechts, Enter, Leertaste oder ein Linksklick ändern den Wert. Ein Klick schaltet das FPS-Limit zum nächsten Wert weiter. Bei VSync an ist das Limit ausgegraut und nicht auswählbar; der Wert bleibt für VSync aus erhalten. Die FPS-Anzeige ist auch im Release verfügbar. Änderungen werden in `%LOCALAPPDATA%\MyRPG\settings.json` gespeichert und beim Start geladen.
 - **2D-Rendering** mit Spielerfigur, gekacheltem Kartenboden und Kartenobjekten
 - **Kollisionen** mit als solide markierten Kartenobjekten
 - **Karten** aus Textdateien im `.map`-Format; enthalten sind eine Testkarte und eine Waldkarte
@@ -49,6 +50,8 @@ MyRPG/
 │   ├── MagicEffects.h              # Zustand und Start-API für visuelle Effekte
 │   ├── MagicRenderer.h             # Darstellung der Effekte
 │   ├── MapLoader.h                # Parser für .map-Dateien
+│   ├── MainMenu.h                 # Titelbildschirm und Hauptmenü
+│   ├── MenuFont.h                 # Gemeinsame Systemschrift für Menüs
 │   ├── SettingsMenu.h             # Einstellungsmenü und VSync
 │   ├── SettingsStore.h            # JSON-Einstellungen laden und speichern
 │   └── AnimationLoader.h          # Parser für .anim-Dateien
@@ -56,6 +59,7 @@ MyRPG/
 │   ├── Animations/Characters/     # Spieleranimationen im .anim-Format
 │   ├── Maps/                      # 0001_TestMap.map und 0001_Forest.map
 │   ├── Shaders/Effects/           # GLSL-Shader der Magieeffekte
+│   ├── UI/                        # Titelbildschirm
 │   └── Sprites/
 │       ├── Characters/            # Spieler-Spritesheets
 │       └── Environment/           # Umgebungs- und Wald-Sprites

@@ -3,16 +3,17 @@
 #include <Windows.h>
 #include <SFML/Graphics.hpp>
 
-#include <cstdio>
-#include <filesystem>
 #include <iterator>
 #include <string>
 
+#include "MenuFont.h"
 #include "SettingsStore.h"
 
 class SettingsMenu
 {
 public:
+	enum class Action { None, SettingsChanged, MainMenu };
+
 	void ApplySettings(const GameSettings& settings, sf::RenderWindow& window)
 	{
 		verticalSync = settings.verticalSync;
@@ -32,20 +33,9 @@ public:
 	{
 		if (!fontLoaded)
 		{
-			wchar_t windowsDirectory[MAX_PATH];
-			const UINT length = GetWindowsDirectoryW(windowsDirectory, MAX_PATH);
-			if (length == 0 || length >= MAX_PATH)
-			{
-				std::fprintf(stderr, "Failed to locate the Windows font directory.\n");
-				return false;
-			}
-
-			const std::filesystem::path fontDirectory = std::filesystem::path(windowsDirectory) / L"Fonts";
-			fontLoaded = font.openFromFile(fontDirectory / L"arial.ttf") ||
-						 font.openFromFile(fontDirectory / L"consola.ttf");
+			fontLoaded = LoadMenuFont(font);
 			if (!fontLoaded)
 			{
-				std::fprintf(stderr, "Failed to load a font for the settings menu.\n");
 				return false;
 			}
 		}
@@ -57,24 +47,30 @@ public:
 	void Close() { open = false; }
 	bool IsOpen() const { return open; }
 
-	bool HandleKey(sf::Keyboard::Key key, sf::RenderWindow& window)
+	Action HandleKey(sf::Keyboard::Key key, sf::RenderWindow& window)
 	{
 		if (key == sf::Keyboard::Key::Up || key == sf::Keyboard::Key::Down)
 		{
 			if (key == sf::Keyboard::Key::Down)
 			{
 				selected = selected == Selection::VSync ? (verticalSync ? Selection::ShowFps : Selection::FpsLimit) :
-					(selected == Selection::FpsLimit ? Selection::ShowFps : Selection::VSync);
+					(selected == Selection::FpsLimit ? Selection::ShowFps :
+					(selected == Selection::ShowFps ? Selection::MainMenu : Selection::VSync));
 			}
 			else
 			{
-				selected = selected == Selection::VSync ? Selection::ShowFps :
-					(selected == Selection::ShowFps ? (verticalSync ? Selection::VSync : Selection::FpsLimit) : Selection::VSync);
+				selected = selected == Selection::VSync ? Selection::MainMenu :
+					(selected == Selection::MainMenu ? Selection::ShowFps :
+					(selected == Selection::ShowFps ? (verticalSync ? Selection::VSync : Selection::FpsLimit) : Selection::VSync));
 			}
 		}
 		else if (key == sf::Keyboard::Key::Left || key == sf::Keyboard::Key::Right ||
 			key == sf::Keyboard::Key::Enter || key == sf::Keyboard::Key::Space)
 		{
+			if (selected == Selection::MainMenu)
+			{
+				return (key == sf::Keyboard::Key::Enter || key == sf::Keyboard::Key::Space) ? Action::MainMenu : Action::None;
+			}
 			if (selected == Selection::FpsLimit)
 			{
 				const std::size_t step = key == sf::Keyboard::Key::Left ? GameSettings::fpsLimits.size() - 1 : 1;
@@ -91,9 +87,31 @@ public:
 			{
 				showFps = !showFps;
 			}
-			return true;
+			return Action::SettingsChanged;
 		}
-		return false;
+		return Action::None;
+	}
+
+	Action HandleClick(sf::Vector2f position, sf::Vector2u resolution, sf::RenderWindow& window)
+	{
+		if (MainMenuButtonBounds(resolution).contains(position))
+		{
+			return Action::MainMenu;
+		}
+
+		for (int index = 0; index < 3; ++index)
+		{
+			if (SettingBounds(index, resolution).contains(position))
+			{
+				if (index == 1 && verticalSync)
+				{
+					return Action::None;
+				}
+				selected = index == 0 ? Selection::VSync : (index == 1 ? Selection::FpsLimit : Selection::ShowFps);
+				return HandleKey(sf::Keyboard::Key::Enter, window);
+			}
+		}
+		return Action::None;
 	}
 
 	void Draw(sf::RenderTarget& target, sf::Vector2u resolution) const
@@ -117,9 +135,18 @@ public:
 		title.setPosition({ width * 0.5f - 230.0f, height * 0.5f - 165.0f });
 		target.draw(title);
 
+		for (int index = 0; index < 3; ++index)
+		{
+			const sf::FloatRect bounds = SettingBounds(index, resolution);
+			sf::RectangleShape row(bounds.size);
+			row.setPosition(bounds.position);
+			row.setFillColor(sf::Color(50, 55, 45));
+			target.draw(row);
+		}
+
 		sf::Text syncSetting(font, verticalSync ? "VSync: An" : "VSync: Aus", 24);
 		syncSetting.setFillColor(selected == Selection::VSync ? sf::Color(255, 220, 140) : sf::Color::White);
-		syncSetting.setPosition({ width * 0.5f - 230.0f, height * 0.5f - 105.0f });
+		syncSetting.setPosition(SettingBounds(0, resolution).position);
 		target.draw(syncSetting);
 
 		const std::string fpsLabel = GameSettings::fpsLimits[fpsLimitIndex] == 0u
@@ -127,21 +154,46 @@ public:
 		sf::Text fpsSetting(font, fpsLabel, 24);
 		fpsSetting.setFillColor(verticalSync ? sf::Color(135, 135, 135) :
 			(selected == Selection::FpsLimit ? sf::Color(255, 220, 140) : sf::Color::White));
-		fpsSetting.setPosition({ width * 0.5f - 230.0f, height * 0.5f - 65.0f });
+		fpsSetting.setPosition(SettingBounds(1, resolution).position);
 		target.draw(fpsSetting);
 
 		sf::Text showFpsSetting(font, showFps ? "FPS-Anzeige: An" : "FPS-Anzeige: Aus", 24);
 		showFpsSetting.setFillColor(selected == Selection::ShowFps ? sf::Color(255, 220, 140) : sf::Color::White);
-		showFpsSetting.setPosition({ width * 0.5f - 230.0f, height * 0.5f - 25.0f });
+		showFpsSetting.setPosition(SettingBounds(2, resolution).position);
 		target.draw(showFpsSetting);
 
-		sf::Text instructions(font, "FPS-Limit gilt bei VSync aus.\nHoch / Runter: Auswahl\nLinks / Rechts / Enter / Leertaste: Aendern\nEsc: Zurueck zum Spiel", 18);
-		instructions.setPosition({ width * 0.5f - 230.0f, height * 0.5f + 30.0f });
+		const sf::FloatRect buttonBounds = MainMenuButtonBounds(resolution);
+		sf::RectangleShape button(buttonBounds.size);
+		button.setPosition(buttonBounds.position);
+		button.setFillColor(sf::Color(50, 55, 45));
+		button.setOutlineThickness(1.0f);
+		button.setOutlineColor(selected == Selection::MainMenu ? sf::Color(255, 220, 140) : sf::Color(160, 150, 115));
+		target.draw(button);
+
+		sf::Text buttonText(font, sf::String(L"Zurück zum Hauptmenü"), 22);
+		buttonText.setFillColor(selected == Selection::MainMenu ? sf::Color(255, 220, 140) : sf::Color::White);
+		buttonText.setPosition({ buttonBounds.position.x + 12.0f, buttonBounds.position.y + 7.0f });
+		target.draw(buttonText);
+
+		sf::Text instructions(font, "FPS-Limit gilt bei VSync aus.\nHoch / Runter: Auswahl\nLinks / Rechts / Enter / Leertaste / Klick: Aendern\nEsc: Zurueck zum Spiel", 18);
+		instructions.setPosition({ width * 0.5f - 230.0f, height * 0.5f + 75.0f });
 		target.draw(instructions);
 	}
 
 private:
-	enum class Selection { VSync, FpsLimit, ShowFps };
+	static sf::FloatRect SettingBounds(int index, sf::Vector2u resolution)
+	{
+		return { { static_cast<float>(resolution.x) * 0.5f - 230.0f,
+			static_cast<float>(resolution.y) * 0.5f - 105.0f + index * 40.0f }, { 460.0f, 35.0f } };
+	}
+
+	static sf::FloatRect MainMenuButtonBounds(sf::Vector2u resolution)
+	{
+		return { { static_cast<float>(resolution.x) * 0.5f - 230.0f,
+			static_cast<float>(resolution.y) * 0.5f + 20.0f }, { 300.0f, 42.0f } };
+	}
+
+	enum class Selection { VSync, FpsLimit, ShowFps, MainMenu };
 	sf::Font font;
 	std::size_t fpsLimitIndex = GameSettings::fpsLimits.size() - 1;
 	Selection selected = Selection::VSync;

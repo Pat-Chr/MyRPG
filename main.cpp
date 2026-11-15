@@ -15,6 +15,7 @@
 
 #include "src/engine/GameEngine.h"
 #include "src/engine/GameRenderer.h"
+#include "src/engine/MainMenu.h"
 #include "src/engine/SettingsMenu.h"
 
 sf::FloatRect ComputeLetterboxViewport(sf::Vector2u windowSize, sf::Vector2u baseResolution)
@@ -123,12 +124,55 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     SettingsMenu settingsMenu;
     settingsMenu.ApplySettings(settings, window);
 
+    MainMenu mainMenu;
+    if (!mainMenu.Load())
+    {
+        MessageBoxW(window.getNativeHandle(), L"Der Titelbildschirm oder die Menueschrift konnte nicht geladen werden.",
+                    L"MyRPG", MB_OK | MB_ICONERROR);
+        return 1;
+    }
+
     GameState game{};
-    InitializeGameState(game);
+    bool inMainMenu = true;
     PreloadMagicShaders();
 
     sf::Clock frameClock;
     sf::FloatRect debugCoordinatesBounds{};
+    const auto handleMainMenuAction = [&](MainMenu::Action action)
+    {
+        if (action == MainMenu::Action::StartGame)
+        {
+            game = GameState{};
+            InitializeGameState(game);
+            inMainMenu = false;
+            frameClock.restart();
+        }
+        else if (action == MainMenu::Action::ExitGame)
+        {
+            window.close();
+        }
+    };
+    const auto returnToMainMenu = [&]()
+    {
+        settingsMenu.Close();
+        mainMenu.Reset();
+        inMainMenu = true;
+        frameClock.restart();
+    };
+    const auto handleSettingsAction = [&](SettingsMenu::Action action)
+    {
+        if (action == SettingsMenu::Action::MainMenu)
+        {
+            returnToMainMenu();
+        }
+        else if (action == SettingsMenu::Action::SettingsChanged &&
+                 !settingsStore.Save(settingsMenu.GetSettings(), settingsError))
+        {
+            std::fprintf(stderr, "Failed to save settings: %s\n", settingsError.c_str());
+            MessageBoxA(window.getNativeHandle(), settingsError.c_str(), "MyRPG - Einstellungen", MB_OK | MB_ICONERROR);
+            frameClock.restart();
+        }
+    };
 
     while (window.isOpen())
     {
@@ -138,6 +182,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             {
                 window.close();
             }
+            else if (const auto* resized = event->getIf<sf::Event::Resized>())
+            {
+                sf::View view;
+                view.setSize({ static_cast<float>(baseResolution.x), static_cast<float>(baseResolution.y) });
+                view.setCenter({ static_cast<float>(baseResolution.x) * 0.5f, static_cast<float>(baseResolution.y) * 0.5f });
+                view.setViewport(ComputeLetterboxViewport(resized->size, baseResolution));
+                window.setView(view);
+            }
             else if (const auto* key = event->getIf<sf::Event::KeyPressed>())
             {
                 if (!window.hasFocus())
@@ -145,7 +197,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                     continue;
                 }
 
-                if (key->code == sf::Keyboard::Key::Escape)
+                if (inMainMenu)
+                {
+                    handleMainMenuAction(mainMenu.HandleKey(key->code));
+                }
+                else if (key->code == sf::Keyboard::Key::Escape)
                 {
                     if (settingsMenu.IsOpen())
                     {
@@ -165,13 +221,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 }
                 else if (settingsMenu.IsOpen())
                 {
-                    if (settingsMenu.HandleKey(key->code, window) &&
-                        !settingsStore.Save(settingsMenu.GetSettings(), settingsError))
-                    {
-                        std::fprintf(stderr, "Failed to save settings: %s\n", settingsError.c_str());
-                        MessageBoxA(window.getNativeHandle(), settingsError.c_str(), "MyRPG - Einstellungen", MB_OK | MB_ICONERROR);
-                        frameClock.restart();
-                    }
+                    handleSettingsAction(settingsMenu.HandleKey(key->code, window));
                 }
                 else if (key->code == sf::Keyboard::Key::M && !IsMapTransitionActive(game))
                 {
@@ -180,19 +230,27 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             }
             else if (const auto* mouseButton = event->getIf<sf::Event::MouseButtonPressed>())
             {
-#ifdef _DEBUG
-                if (mouseButton->button == sf::Mouse::Button::Left && window.hasFocus() && !settingsMenu.IsOpen())
+                if (mouseButton->button == sf::Mouse::Button::Left && window.hasFocus())
                 {
-                    const sf::Vector2f clickPosition = window.mapPixelToCoords(mouseButton->position);
-                    if (debugCoordinatesBounds.contains(clickPosition))
+                    const sf::Vector2f position = window.mapPixelToCoords(mouseButton->position);
+                    if (inMainMenu)
+                    {
+                        handleMainMenuAction(mainMenu.HandleClick(position, baseResolution));
+                    }
+                    else if (settingsMenu.IsOpen())
+                    {
+                        handleSettingsAction(settingsMenu.HandleClick(position, baseResolution, window));
+                    }
+#ifdef _DEBUG
+                    else if (debugCoordinatesBounds.contains(position))
                     {
                         char coordinates[64];
                         std::snprintf(coordinates, sizeof(coordinates), "X: %.1f  Y: %.1f", game.player.x, game.player.y);
                         const std::wstring clipboardText(coordinates, coordinates + std::strlen(coordinates));
                         CopyTextToClipboard(window.getNativeHandle(), clipboardText);
                     }
-                }
 #endif
+                }
             }
         }
 
@@ -201,7 +259,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             break;
         }
 
-        const bool hasFocus = window.hasFocus() && !settingsMenu.IsOpen();
+        const bool hasFocus = window.hasFocus() && !inMainMenu && !settingsMenu.IsOpen();
         SetMovementState(
             game.input,
             hasFocus && (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up)),
@@ -211,7 +269,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
         const float deltaTime = frameClock.restart().asSeconds();
         const float fps = deltaTime > 0.0f ? (1.0f / deltaTime) : 0.0f;
-        if (!settingsMenu.IsOpen())
+        if (!inMainMenu && !settingsMenu.IsOpen())
         {
             UpdateGame(game, deltaTime);
         }
@@ -229,10 +287,18 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         letterboxView.setViewport(ComputeLetterboxViewport(windowSize, baseResolution));
         window.setView(letterboxView);
 
-        debugCoordinatesBounds = RenderGame(window, viewport, game, fps, settingsMenu.GetSettings().showFps);
-        if (settingsMenu.IsOpen())
+        if (inMainMenu)
         {
-            settingsMenu.Draw(window, baseResolution);
+            window.clear(sf::Color::Black);
+            mainMenu.Draw(window, baseResolution);
+        }
+        else
+        {
+            debugCoordinatesBounds = RenderGame(window, viewport, game, fps, settingsMenu.GetSettings().showFps);
+            if (settingsMenu.IsOpen())
+            {
+                settingsMenu.Draw(window, baseResolution);
+            }
         }
         window.display();
     }
