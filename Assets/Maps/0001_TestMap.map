@@ -2,7 +2,7 @@
 # MAP <mapId>
 # GROUND <defaultSpritePath>
 # OBJECT <id> <type> <x> <y> <spritePath> solid=<0|1>
-# TRIGGER <id> <x> <y> <width> <height> <eventName> [glow=0|1]
+# TRIGGER <id> <x> <y> <width> <height> <eventName> [glow=0|1] [spawn_x=<x> spawn_y=<y>]
 
 MAP 0001_TestMap
 GROUND Assets/Sprites/Environment/Forest/forest_ground.png
@@ -24,4 +24,4 @@ TRIGGER magic_frost 768 -32 64 64 magic_frost glow=1
 TRIGGER magic_vortex 928 -32 64 64 magic_vortex glow=1
 TRIGGER magic_heal 1088 -32 64 64 magic_heal glow=1
 TRIGGER magic_shockwave 1248 -32 64 64 magic_shockwave glow=1
-TRIGGER north_path_to_forest -64 -260 220 120 Load_0001_Forest glow=1
+TRIGGER north_path_to_forest -64 -260 220 120 Load_0001_Forest glow=1 spawn_x=-128 spawn_y=1024

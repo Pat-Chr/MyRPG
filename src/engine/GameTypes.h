@@ -112,6 +112,9 @@ struct TriggerZone
 
 	// Ob sich der Spieler aktuell innerhalb dieser Zone befindet
 	bool isPlayerInside = false;
+
+	float spawnX = 0.0f;
+	float spawnY = 0.0f;
 };
 
 // Daten für eine einzelne Karte/Level

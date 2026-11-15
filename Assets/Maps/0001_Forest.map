@@ -1,7 +1,7 @@
 # Forest map format
 # GROUND <defaultSpritePath>
 # OBJECT <id> <type> <x> <y> <spritePath> solid=<0|1>
-# TRIGGER <id> <x> <y> <width> <height> <eventName>
+# TRIGGER <id> <x> <y> <width> <height> <eventName> [glow=0|1] [spawn_x=<x> spawn_y=<y>]
 
 MAP 0001_Forest
 GROUND Assets/Sprites/Environment/Forest/forest_ground.png
@@ -674,4 +674,4 @@ TRIGGER forest_entry -220 -1240 180 120 Trigger_ForestEntry
 TRIGGER forest_clearing -540 -360 260 220 Trigger_ForestClearing
 TRIGGER forest_ruins 500 300 280 220 Trigger_ForestRuins
 TRIGGER forest_pond -940 -780 300 300 Trigger_ForestPond
-TRIGGER forest_to_test -220 1120 180 120 Load_0001_TestMap
+TRIGGER forest_to_test -220 1120 180 120 Load_0001_TestMap spawn_x=0 spawn_y=-128

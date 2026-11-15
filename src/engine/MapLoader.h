@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cmath>
 #include <fstream>
+#include <iostream>
 #include <sstream>
 #include <string>
 
@@ -25,6 +26,25 @@ inline bool TryParseFlag(const std::string& token, const std::string& key, int& 
 	}
 
 	outValue = value - '0';
+	return true;
+}
+
+inline bool TryParseCoordinate(const std::string& token, const std::string& key, float& outValue)
+{
+	const std::string prefix = key + "=";
+	if (!token.starts_with(prefix))
+	{
+		return false;
+	}
+
+	std::istringstream valueStream(token.substr(prefix.size()));
+	float value = 0.0f;
+	if (!(valueStream >> value) || !valueStream.eof() || !std::isfinite(value))
+	{
+		return false;
+	}
+
+	outValue = value;
 	return true;
 }
 
@@ -82,7 +102,7 @@ inline float SnapToGrid(float value, float gridSize)
  * - MAP ID         : Setzt die Map-ID
  * - GROUND path    : Setzt den Pfad zum Boden-Sprite
  * - OBJECT id type x y spritePath solid=0|1 : Lädt ein Objekt (wird auf Grid gesnapped)
- * - TRIGGER id x y width height eventName [glow=0|1] : Definiert einen Trigger-Zone (optional leuchtend)
+ * - TRIGGER id x y width height eventName [glow=0|1] [spawn_x=x spawn_y=y] : Definiert eine Trigger-Zone
  * 
  * Zeilen, die leer sind oder mit '#' beginnen, werden ignoriert.
  * 
@@ -110,9 +130,11 @@ inline bool TryLoadMapFromFile(const std::string& filePath, MapData& outMap)
 
 	MapData loadedMap;
 	std::string line;
+	std::size_t lineNumber = 0;
 
 	while (std::getline(input, line))
 	{
+		++lineNumber;
 		// Leerzeilen und Kommentare ignorieren
 		if (line.empty() || line[0] == '#')
 		{
@@ -173,12 +195,44 @@ inline bool TryLoadMapFromFile(const std::string& filePath, MapData& outMap)
 
 			if (!lineStream.fail()) // Nur hinzufügen, wenn alle Werte erfolgreich gelesen wurden
 			{
-				// Optionales letztes Feld: Glow-Flag (0|1), Standard 0
-				std::string glowToken;
-				int glowFlag = 0;
-				if (lineStream >> glowToken && TryParseFlag(glowToken, "glow", glowFlag))
+				std::string token;
+				bool hasSpawnX = false;
+				bool hasSpawnY = false;
+				while (lineStream >> token)
 				{
-					trigger.glow = glowFlag != 0;
+					int glowFlag = 0;
+					if (token.starts_with("glow="))
+					{
+						if (!TryParseFlag(token, "glow", glowFlag))
+						{
+							std::cerr << filePath << ':' << lineNumber << ": Invalid trigger option: " << token << '\n';
+							return false;
+						}
+						trigger.glow = glowFlag != 0;
+					}
+					else if (token.starts_with("spawn_x="))
+					{
+						if (hasSpawnX || !TryParseCoordinate(token, "spawn_x", trigger.spawnX))
+						{
+							std::cerr << filePath << ':' << lineNumber << ": Invalid trigger option: " << token << '\n';
+							return false;
+						}
+						hasSpawnX = true;
+					}
+					else if (token.starts_with("spawn_y="))
+					{
+						if (hasSpawnY || !TryParseCoordinate(token, "spawn_y", trigger.spawnY))
+						{
+							std::cerr << filePath << ':' << lineNumber << ": Invalid trigger option: " << token << '\n';
+							return false;
+						}
+						hasSpawnY = true;
+					}
+				}
+				if (hasSpawnX != hasSpawnY)
+				{
+					std::cerr << filePath << ':' << lineNumber << ": Both spawn_x and spawn_y are required\n";
+					return false;
 				}
 
 				loadedMap.triggers.push_back(trigger);

@@ -18,8 +18,8 @@ Das [DesignDocument.md](./DesignDocument.md) beschreibt die technische Architekt
 - **2D-Rendering** mit Spielerfigur, gekacheltem Kartenboden und Kartenobjekten
 - **Kollisionen** mit als solide markierten Kartenobjekten
 - **Karten** aus Textdateien im `.map`-Format; enthalten sind eine Testkarte und eine Waldkarte
-- **Trigger** für den visuellen Magieeffekt und für Kartenwechsel zwischen den vorhandenen Karten
-- **Kartenwechsel** mit Fade-out/Fade-in und festgelegter Spawn-Position
+- **Trigger** für den visuellen Magieeffekt und für dynamische Kartenwechsel
+- **Kartenwechsel** mit Fade-out/Fade-in und pro Trigger festlegbarer Spawn-Position
 - **Spieleranimationen**: Laufanimationen in acht Richtungen und Stillstandsanimationen in vier Richtungen, beschrieben in `.anim`-Dateien. Diagonale Blickrichtungen verwenden im Stillstand die linke bzw. rechte Animation.
 - **Magieeffekte**: sieben GPU-Shader-Effekte (Sparkle, Fire, Lightning, Frost, Vortex, Heal, Shockwave) in `Assets/Shaders/Effects/`. `M` startet Sparkle an der Spielerposition; auf der Testkarte gibt es rechts vom Startpunkt für jeden Effekt eine Trigger-Zone (von links nach rechts in obiger Reihenfolge).
 - **Textur-Cache** zur Wiederverwendung geladener Texturen
@@ -72,7 +72,7 @@ Karten liegen als Textdateien unter `Assets/Maps/`. Leerzeilen und Zeilen, die m
 MAP <mapId>
 GROUND <spritePath>
 OBJECT <id> <type> <x> <y> <spritePath> solid=<0|1>
-TRIGGER <id> <x> <y> <width> <height> <eventName> [glow=0|1]
+TRIGGER <id> <x> <y> <width> <height> <eventName> [glow=0|1] [spawn_x=<x> spawn_y=<y>]
 ```
 
 - `MAP` setzt die erforderliche Karten-ID. `GROUND` legt das Standard-Bodensprite fest, das den sichtbaren Kartenbereich gekachelt ausfüllt.
@@ -88,10 +88,12 @@ GROUND Assets/Sprites/Environment/Forest/forest_ground.png
 OBJECT rock_01 scenery -192 -64 Assets/Sprites/Environment/Forest/forest_rock.png solid=1
 OBJECT path_01 untergrund -64 0 Assets/Sprites/Environment/Forest/forest_path.png solid=0
 TRIGGER magic_fire 448 -32 64 64 magic_fire glow=1
-TRIGGER north_path_to_forest -64 -260 220 120 Load_0001_Forest
+TRIGGER north_path_to_forest -64 -260 220 120 Load_0001_Forest glow=1 spawn_x=-128 spawn_y=1024
 ```
 
-`magic_<name>` startet beim Betreten den vorhandenen Effekt gleichen Namens an der Spielerposition, zum Beispiel `magic_fire` für `Assets/Shaders/Effects/magic_fire.frag`. Unterstützte Kartenwechsel sind derzeit `Load_0001_Forest` und `Load_0001_TestMap`; andere Ereignisnamen benötigen eine passende Implementierung in der Engine.
+`magic_<name>` startet beim Betreten den vorhandenen Effekt gleichen Namens an der Spielerposition, zum Beispiel `magic_fire` für `Assets/Shaders/Effects/magic_fire.frag`.
+
+`Load_<dateiname>` lädt `Assets/Maps/<dateiname>.map`, zum Beispiel lädt `Load_0002_Cave` die Datei `Assets/Maps/0002_Cave.map`. Der Dateiname ohne Endung darf keine Leerzeichen oder Pfadtrennzeichen enthalten; die `MAP`-ID in der Datei muss vorhanden sein, aber nicht dem Dateinamen entsprechen. Neue Karten benötigen keinen Codeeintrag. Die optionalen Trigger-Angaben `spawn_x` und `spawn_y` legen gemeinsam die Zielposition fest; ohne sie gilt `(0, 0)`. So können verschiedene Übergänge unterschiedliche Einstiegspunkte verwenden. Die Zielposition sollte frei von Hindernissen und nicht innerhalb eines sofort zurückführenden Triggers liegen. Wenn das Laden fehlschlägt, bleibt die bisherige Karte aktiv und ein Fehler wird auf stderr ausgegeben. Die Startkarte ist weiterhin in der Engine festgelegt.
 
 ## 🛠️ Technologie
 

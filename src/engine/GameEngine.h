@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <iostream>
 #include <utility>
 
 #include "GameTypes.h"
@@ -23,31 +24,24 @@ inline bool IsMapTransitionActive(const GameState& game)
     return game.mapTransition.phase != MapTransitionPhase::None;
 }
 
-// Versucht, ein Ziel für einen Map-Übergang basierend auf einem Event-Namen zu finden.
-// Wenn der Event-Namen in der Liste der bekannten Übergänge existiert, werden die Ziel-Map-Pfade und
-// das Spawn-Position zurückgegeben. Andernfalls wird false zurückgegeben.
-inline bool TryResolveMapTransitionTarget(const std::string& eventName, 
-                                          std::string& outMapPath, 
-                                          float& outSpawnX, 
-                                          float& outSpawnY)
+// Leitet den Dateinamen einer Zielkarte aus einem Load-Event ab.
+inline bool TryResolveMapTransitionTarget(const std::string& eventName, std::string& outMapPath)
 {
-    if (eventName == "Load_0001_Forest")
+    constexpr const char* prefix = "Load_";
+    if (!eventName.starts_with(prefix))
     {
-        outMapPath = "Assets/Maps/0001_Forest.map";
-        outSpawnX = -128.0f;
-        outSpawnY = 1024.0f;
-        return true;
+        return false;
     }
 
-    if (eventName == "Load_0001_TestMap")
+    const std::string mapName = eventName.substr(5);
+    if (mapName.empty() || mapName.find_first_of("\\/:*?\"<>|") != std::string::npos)
     {
-        outMapPath = "Assets/Maps/0001_TestMap.map";
-        outSpawnX = 0.0f;
-        outSpawnY = -128.0f;
-        return true;
+        std::cerr << "Invalid map transition event: " << eventName << '\n';
+        return false;
     }
 
-    return false;
+    outMapPath = "Assets/Maps/" + mapName + ".map";
+    return true;
 }
 
 // Löst einen Effekt über seinen Shader-Namen auf (z. B. "magic_fire").
@@ -134,6 +128,11 @@ inline void UpdateMapTransition(GameState& game, float deltaTime)
             ClearMagicEffects(game.magicEffects);
             game.lastTriggeredEvent = "MapLoaded: " + game.activeMap.id;
         }
+        else
+        {
+            std::cerr << "Failed to load map: " << game.mapTransition.targetMapPath << '\n';
+            game.lastTriggeredEvent = "MapLoadFailed: " + game.mapTransition.targetMapPath;
+        }
 
         game.mapTransition.phase = MapTransitionPhase::FadeIn;
         game.mapTransition.timer = 0.0f;
@@ -170,11 +169,9 @@ inline void UpdateTriggers(GameState& game)
             }
 
             std::string targetMapPath;
-            float targetPlayerX = 0.0f;
-            float targetPlayerY = 0.0f;
-            if (TryResolveMapTransitionTarget(trigger.eventName, targetMapPath, targetPlayerX, targetPlayerY))
+            if (TryResolveMapTransitionTarget(trigger.eventName, targetMapPath))
             {
-                BeginMapTransition(game, std::move(targetMapPath), targetPlayerX, targetPlayerY);
+                BeginMapTransition(game, std::move(targetMapPath), trigger.spawnX, trigger.spawnY);
             }
         }
 
