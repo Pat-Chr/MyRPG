@@ -107,6 +107,9 @@ struct TriggerZone
 	// Name des Ereignisses, das ausgelöst wird (z.B. "collect_coin", "open_door")
 	std::string eventName;
 	
+	// Ob die Zone sichtbar leuchtet (Glow-Shader, auch im Release-Build)
+	bool glow = false;
+
 	// Ob sich der Spieler aktuell innerhalb dieser Zone befindet
 	bool isPlayerInside = false;
 };

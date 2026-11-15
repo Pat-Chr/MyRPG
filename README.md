@@ -75,7 +75,7 @@ OBJECT rock_01 scenery -192 -64 Assets/Sprites/Environment/Forest/forest_rock.pn
 TRIGGER north_path_to_forest -64 -260 220 120 Load_0001_Forest
 ```
 
-`OBJECT` verwendet die Felder `<id> <type> <x> <y> <spritePath> <solid(0|1)>`. Unterstützte Typen sind `untergrund`, `scenery`, `wall` und `npc`. `TRIGGER` verwendet `<id> <x> <y> <width> <height> <eventName>`. Aktuell sind `Effect_Magic`, `Effect_Fire`, `Effect_Lightning`, `Effect_Frost`, `Effect_Vortex`, `Effect_Heal`, `Effect_Shockwave`, `Load_0001_Forest` und `Load_0001_TestMap` in der Engine mit einer Aktion verknüpft; weitere Ereignisse benötigen noch eine Implementierung.
+`OBJECT` verwendet die Felder `<id> <type> <x> <y> <spritePath> solid=<0|1>`. Unterstützte Typen sind `untergrund`, `scenery`, `wall` und `npc`. `TRIGGER` verwendet `<id> <x> <y> <width> <height> <eventName> [glow=0|1]`; mit `glow=1` leuchtet die Zone per Shader sichtbar. Aktuell sind `Effect_Magic`, `Effect_Fire`, `Effect_Lightning`, `Effect_Frost`, `Effect_Vortex`, `Effect_Heal`, `Effect_Shockwave`, `Load_0001_Forest` und `Load_0001_TestMap` in der Engine mit einer Aktion verknüpft; weitere Ereignisse benötigen noch eine Implementierung.
 
 ## 🛠️ Technologie
 

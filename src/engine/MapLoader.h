@@ -9,6 +9,25 @@
 
 #include "GameTypes.h"
 
+// Parst ein Flag der Form "<key>=0" oder "<key>=1".
+inline bool TryParseFlag(const std::string& token, const std::string& key, int& outValue)
+{
+	const std::string prefix = key + "=";
+	if (token.size() != prefix.size() + 1 || token.compare(0, prefix.size(), prefix) != 0)
+	{
+		return false;
+	}
+
+	const char value = token.back();
+	if (value != '0' && value != '1')
+	{
+		return false;
+	}
+
+	outValue = value - '0';
+	return true;
+}
+
 /**
  * @brief Wandelt einen String-Wert in ein MapObjectType-Enum um.
  * 
@@ -62,8 +81,8 @@ inline float SnapToGrid(float value, float gridSize)
  * Unterstützt folgende Keywords im Dateiformat:
  * - MAP ID         : Setzt die Map-ID
  * - GROUND path    : Setzt den Pfad zum Boden-Sprite
- * - OBJECT id type x y spritePath solidFlag : Lädt ein Objekt (wird auf Grid gesnapped)
- * - TRIGGER id x y width height eventName : Definiert einen Trigger-Zone
+ * - OBJECT id type x y spritePath solid=0|1 : Lädt ein Objekt (wird auf Grid gesnapped)
+ * - TRIGGER id x y width height eventName [glow=0|1] : Definiert einen Trigger-Zone (optional leuchtend)
  * 
  * Zeilen, die leer sind oder mit '#' beginnen, werden ignoriert.
  * 
@@ -76,9 +95,9 @@ inline float SnapToGrid(float value, float gridSize)
  * # This is a comment
  * MAP my_level_01
  * GROUND grass.png
- * OBJECT 1 npc 128 64 player_sprite.png 1
- * OBJECT 2 wall 320 480 stone_wall.png 1
- * OBJECT 3 untergrund 0 0 ground_tile.png 0
+ * OBJECT 1 npc 128 64 player_sprite.png solid=1
+ * OBJECT 2 wall 320 480 stone_wall.png solid=1
+ * OBJECT 3 untergrund 0 0 ground_tile.png solid=0
  * TRIGGER 5 100 200 150 on_level_complete
  */
 inline bool TryLoadMapFromFile(const std::string& filePath, MapData& outMap)
@@ -120,9 +139,14 @@ inline bool TryLoadMapFromFile(const std::string& filePath, MapData& outMap)
 		{
 			MapObject object;
 			std::string type;
-			int solidFlag = 0;
+			std::string solidToken;
 
-			lineStream >> object.id >> type >> object.x >> object.y >> object.spritePath >> solidFlag;
+			lineStream >> object.id >> type >> object.x >> object.y >> object.spritePath >> solidToken;
+			int solidFlag = 0;
+			if (!lineStream.fail() && !TryParseFlag(solidToken, "solid", solidFlag))
+			{
+				lineStream.setstate(std::ios::failbit);
+			}
 			if (!lineStream.fail()) // Nur parsen, wenn alle Werte erfolgreich gelesen wurden
 			{
 				object.type = ParseMapObjectType(type);
@@ -149,6 +173,14 @@ inline bool TryLoadMapFromFile(const std::string& filePath, MapData& outMap)
 
 			if (!lineStream.fail()) // Nur hinzufügen, wenn alle Werte erfolgreich gelesen wurden
 			{
+				// Optionales letztes Feld: Glow-Flag (0|1), Standard 0
+				std::string glowToken;
+				int glowFlag = 0;
+				if (lineStream >> glowToken && TryParseFlag(glowToken, "glow", glowFlag))
+				{
+					trigger.glow = glowFlag != 0;
+				}
+
 				loadedMap.triggers.push_back(trigger);
 			}
 		}

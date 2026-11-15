@@ -10,6 +10,7 @@
 #include <cstdio>
 #include <filesystem>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <utility>
 
@@ -212,6 +213,86 @@ inline void RenderMapObjects(sf::RenderTarget& target, const Viewport& viewport,
     }
 }
 
+/**
+ * @brief Rendert leuchtende Trigger-Zonen (Option `glow` im TRIGGER-Befehl) per Fragment-Shader.
+ *
+ * Funktioniert auch im Release-Build. Ohne Shader-Unterstützung wird ein einfaches
+ * additives Rechteck als Fallback gezeichnet.
+ */
+inline void RenderTriggerGlow(sf::RenderTarget& target, const Viewport& viewport, const GameState& game)
+{
+    static const char* fragmentSource = R"(
+        uniform vec2 size;
+        uniform float time;
+        uniform vec3 glowColor;
+        void main()
+        {
+            vec2 p = gl_TexCoord[0].xy;
+            vec2 d = abs(p - size * 0.5) - size * 0.5;
+            float sdf = length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
+            float pulse = 0.75 + 0.25 * sin(time * 3.0);
+            float a = sdf < 0.0
+                ? 0.18 + 0.45 * exp(sdf / 10.0)
+                : 0.7 * exp(-sdf / 9.0);
+            a *= pulse;
+            gl_FragColor = vec4(glowColor * a, a);
+        }
+    )";
+
+    static sf::Shader shader;
+    static const bool shaderReady = sf::Shader::isAvailable()
+        && shader.loadFromMemory(std::string_view(fragmentSource), sf::Shader::Type::Fragment);
+    static sf::Clock clock;
+
+    constexpr float pad = 28.0f;
+    sf::RenderStates states;
+    states.blendMode = sf::BlendAdd;
+    if (shaderReady)
+    {
+        shader.setUniform("time", clock.getElapsedTime().asSeconds());
+        shader.setUniform("glowColor", sf::Glsl::Vec3(1.0f, 0.82f, 0.35f));
+        states.shader = &shader;
+    }
+
+    for (const TriggerZone& trigger : game.activeMap.triggers)
+    {
+        if (!trigger.glow)
+        {
+            continue;
+        }
+
+        const sf::Vector2f origin = WorldToScreen(trigger.x, trigger.y, game, viewport);
+        if (!shaderReady)
+        {
+            sf::RectangleShape area({ trigger.width, trigger.height });
+            area.setPosition(origin);
+            area.setFillColor(sf::Color(255, 210, 90, 70));
+            target.draw(area, states);
+            continue;
+        }
+
+        const float w = trigger.width;
+        const float h = trigger.height;
+        const sf::Color white = sf::Color::White;
+        const sf::Vector2f tl{ origin.x - pad, origin.y - pad };
+        const sf::Vector2f tr{ origin.x + w + pad, origin.y - pad };
+        const sf::Vector2f bl{ origin.x - pad, origin.y + h + pad };
+        const sf::Vector2f br{ origin.x + w + pad, origin.y + h + pad };
+        const sf::Vector2f ttl{ -pad, -pad };
+        const sf::Vector2f ttr{ w + pad, -pad };
+        const sf::Vector2f tbl{ -pad, h + pad };
+        const sf::Vector2f tbr{ w + pad, h + pad };
+
+        const sf::Vertex quad[6] = {
+            { tl, white, ttl }, { tr, white, ttr }, { bl, white, tbl },
+            { tr, white, ttr }, { br, white, tbr }, { bl, white, tbl }
+        };
+
+        shader.setUniform("size", sf::Glsl::Vec2(w, h));
+        target.draw(quad, 6, sf::PrimitiveType::Triangles, states);
+    }
+}
+
 #ifdef _DEBUG
 /**
  * @brief Rendert Debug-Debugging-Overlays für Trigger-Zonen.
@@ -295,6 +376,7 @@ inline void RenderGame(sf::RenderTarget& target, const Viewport& viewport, const
 
     RenderDefaultGround(target, viewport, game);
     RenderMapObjects(target, viewport, game);
+    RenderTriggerGlow(target, viewport, game);
 #ifdef _DEBUG
     RenderTriggerDebug(target, viewport, game);
 #endif

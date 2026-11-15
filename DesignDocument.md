@@ -241,6 +241,8 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 - Bei Stillstand wird die zugehörige Stillstandsanimation der letzten Blickrichtung abgespielt; für diagonale Blickrichtungen wird die linke bzw. rechte Stillstandsanimation verwendet. Gegenläufige Eingaben heben sich auf; bei Kollisionen bestimmt die tatsächliche Bewegung die Laufrichtung.
 - Map-Format (Prototyp): textbasiert, eine Datei pro Map (z. B. `0001_TestMap.map`)
 - Zeilenformat: `MAP`, `GROUND`, `OBJECT`, `TRIGGER`; `GROUND <spritePath>` füllt den sichtbaren Kartenbereich gekachelt als Standardboden
+- `OBJECT <id> <type> <x> <y> <spritePath> solid=<0|1>`: `solid=1` blockiert den Spieler (Kollision), `solid=0` nicht. Flags werden ausschließlich als `key=value` geschrieben.
+- `TRIGGER <id> <x> <y> <width> <height> <eventName> [glow=0|1]`: Mit `glow=1` leuchtet die Zone sichtbar (pulsierender Glow-Fragment-Shader, additiv, auch im Release-Build; ohne Shader-Unterstützung Fallback auf ein einfaches Rechteck). Standard ist 0.
 - Abweichende Bodenkacheln werden als `OBJECT` vom Typ `untergrund` eingetragen; weitere Map-Objekte und Trigger bleiben separat
 - Aktuelle Platzhalter: `basic_rock.png` und `basic_grass.png`
 - Map-Objektkategorie `untergrund`: Bodenflächen ohne Kollision (z. B. Gras)
