@@ -31,14 +31,36 @@ Das [DesignDocument.md](./DesignDocument.md) beschreibt die technische Architekt
 
 ## 🚀 Quick Start
 
+### Voraussetzungen
+
+- Windows x64 und Visual Studio 2026 mit der Workload **Desktopentwicklung mit C++** (MSVC v145 und Windows SDK).
+- Git und [vcpkg](https://github.com/microsoft/vcpkg). Wenn vcpkg noch nicht installiert ist, klone und initialisiere es einmalig in einem Verzeichnis außerhalb des Projekts. Dieses Beispiel verwendet den Benutzerordner:
+
+```powershell
+git clone https://github.com/microsoft/vcpkg.git "$env:USERPROFILE\vcpkg"
+& "$env:USERPROFILE\vcpkg\bootstrap-vcpkg.bat"
+& "$env:USERPROFILE\vcpkg\vcpkg.exe" integrate install
+```
+
+`integrate install` ist einmalig nötig, damit Visual Studio die vcpkg-MSBuild-Integration verwenden kann. Wenn vcpkg bereits eingerichtet ist, überspringe das Klonen und Bootstrap und führe den Integrationsschritt gegebenenfalls noch aus.
+
+### Abhängigkeiten installieren und Projekt starten
+
 1. Öffne `MyRPG.slnx` in Visual Studio.
-2. Stelle die vcpkg-Abhängigkeiten aus `vcpkg.json` wieder her (SFML 3 und nlohmann-json). Führe dazu im Projektordner `vcpkg install --triplet x64-windows` aus.
-3. Wähle die Konfiguration **Debug** und die Plattform **x64** und baue die Lösung über **Build → Build Solution**.
-4. Starte das Programm im Debug-Modus.
+2. Öffne ein PowerShell-Terminal im Projektordner (neben `vcpkg.json`) und führe `& "$env:USERPROFILE\vcpkg\vcpkg.exe" install --triplet x64-windows` aus. Wenn `vcpkg.exe` im `PATH` liegt, genügt `vcpkg install --triplet x64-windows`. vcpkg liest das Manifest und installiert SFML 3 sowie nlohmann-json in `vcpkg_installed/`.
+3. Wähle in Visual Studio die Konfiguration **Debug** und die Plattform **x64**, baue über **Build → Build Solution** und starte das Programm.
 
-Das Projekt unterstützt ausschließlich Windows x64. `vcpkg_installed/` enthält lokal erzeugte Abhängigkeiten und vcpkg-Verwaltungsdaten und wird nicht versioniert. Die Dateien können aus dem Manifest wiederhergestellt werden.
+Das Projekt unterstützt ausschließlich Windows x64. `vcpkg_installed/` enthält lokal erzeugte Abhängigkeiten und wird nicht versioniert. Nach Änderungen an `vcpkg.json` denselben Installationsbefehl erneut ausführen.
 
-Beim Build werden die Inhalte aus `Assets/` sowie die zur Konfiguration passenden SFML-Laufzeit-DLLs automatisch neben die ausführbare Datei kopiert.
+### So bindet das Projekt SFML ein
+
+Die Abhängigkeiten sind im Manifest `vcpkg.json` deklariert; SFML muss nicht separat heruntergeladen oder manuell in den Visual-Studio-Projekteigenschaften eingetragen werden. Die Projektdatei aktiviert den vcpkg-Manifestmodus und verwendet die installierten Dateien unter `vcpkg_installed/x64-windows/`:
+
+- Header werden aus `include/` eingebunden, zum Beispiel mit `#include <SFML/Graphics.hpp>`.
+- Im **Debug**-Build werden die Debug-Bibliotheken aus `debug/lib/` gelinkt (`sfml-graphics-d.lib`, `sfml-window-d.lib` und `sfml-system-d.lib`). Im **Release**-Build werden die entsprechenden Release-Bibliotheken aus `lib/` verwendet.
+- Nach dem Build kopiert ein MSBuild-Schritt automatisch die passenden SFML-Laufzeit-DLLs aus `debug/bin/` (Debug) beziehungsweise `bin/` (Release) neben die ausführbare Datei. Auch die Inhalte von `Assets/` werden in das Ausgabeverzeichnis kopiert.
+
+Damit lässt sich das Programm direkt aus dem jeweiligen Build-Ausgabeverzeichnis starten. Für eine andere vcpkg-Architektur oder ein anderes Triplet müsste neben der Installation auch die derzeit auf `x64-windows` festgelegte Projektkonfiguration angepasst werden.
 
 ## 📁 Projektstruktur
 
