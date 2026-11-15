@@ -66,16 +66,32 @@ MyRPG/
 
 ## 🗺️ Karten erstellen (`.map`)
 
-Der `MapLoader` liest einfache Textdateien mit den Anweisungen `MAP`, `GROUND`, `OBJECT` und `TRIGGER`. Ein Beispiel aus der Testkarte:
+Karten liegen als Textdateien unter `Assets/Maps/`. Leerzeilen und Zeilen, die mit `#` beginnen, werden ignoriert. Die Karte besteht aus diesen Anweisungen:
+
+```text
+MAP <mapId>
+GROUND <spritePath>
+OBJECT <id> <type> <x> <y> <spritePath> solid=<0|1>
+TRIGGER <id> <x> <y> <width> <height> <eventName> [glow=0|1]
+```
+
+- `MAP` setzt die erforderliche Karten-ID. `GROUND` legt das Standard-Bodensprite fest, das den sichtbaren Kartenbereich gekachelt ausfüllt.
+- `OBJECT` platziert ein Sprite in Weltkoordinaten. Typen sind `untergrund`, `scenery`, `wall` und `npc`; Positionen von `untergrund` und `scenery` werden auf das 64-Pixel-Raster gerundet.
+- `solid` legt fest, ob das Objekt den Spieler blockiert: `solid=1` aktiviert die Kollision, `solid=0` lässt den Spieler hindurch. Das Flag ist erforderlich und unabhängig vom Typ – auch ein `scenery`-Objekt kann also entweder blockieren oder nicht. Für Boden- und Deko-Objekte, die begehbar sein sollen, wird üblicherweise `solid=0` verwendet.
+- `TRIGGER` definiert ein rechteckiges Ereignisgebiet in Weltkoordinaten. Das Ereignis wird beim Betreten ausgelöst; nach Verlassen kann es bei erneutem Betreten wieder ausgelöst werden. `glow` ist optional und standardmäßig `0`. Mit `glow=1` erhält das Gebiet einen pulsierenden, additiven Shader-Glow. Das ist nur Darstellung und ändert weder Auslösung noch Kollision; der Glow ist auch im Release-Build sichtbar. Wenn Shader nicht unterstützt werden, wird stattdessen ein einfaches Rechteck gezeichnet. Debug-Markierungen der Trigger bleiben auf Debug-Builds beschränkt.
+
+Beispiel:
 
 ```text
 MAP 0001_TestMap
 GROUND Assets/Sprites/Environment/Forest/forest_ground.png
-OBJECT rock_01 scenery -192 -64 Assets/Sprites/Environment/Forest/forest_rock.png 1
+OBJECT rock_01 scenery -192 -64 Assets/Sprites/Environment/Forest/forest_rock.png solid=1
+OBJECT path_01 untergrund -64 0 Assets/Sprites/Environment/Forest/forest_path.png solid=0
+TRIGGER magic_fire 448 -32 64 64 magic_fire glow=1
 TRIGGER north_path_to_forest -64 -260 220 120 Load_0001_Forest
 ```
 
-`OBJECT` verwendet die Felder `<id> <type> <x> <y> <spritePath> solid=<0|1>`. Unterstützte Typen sind `untergrund`, `scenery`, `wall` und `npc`. `TRIGGER` verwendet `<id> <x> <y> <width> <height> <eventName> [glow=0|1]`; mit `glow=1` leuchtet die Zone per Shader sichtbar. Aktuell sind `Effect_Magic`, `Effect_Fire`, `Effect_Lightning`, `Effect_Frost`, `Effect_Vortex`, `Effect_Heal`, `Effect_Shockwave`, `Load_0001_Forest` und `Load_0001_TestMap` in der Engine mit einer Aktion verknüpft; weitere Ereignisse benötigen noch eine Implementierung.
+`magic_<name>` startet beim Betreten den vorhandenen Effekt gleichen Namens an der Spielerposition, zum Beispiel `magic_fire` für `Assets/Shaders/Effects/magic_fire.frag`. Unterstützte Kartenwechsel sind derzeit `Load_0001_Forest` und `Load_0001_TestMap`; andere Ereignisnamen benötigen eine passende Implementierung in der Engine.
 
 ## 🛠️ Technologie
 
