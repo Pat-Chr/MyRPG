@@ -94,6 +94,10 @@ inline void BeginMapTransition(GameState& game,
         return;
     }
 
+    #ifdef _DEBUG
+    std::cout << "[Map] Transition requested to '" << targetMapPath << "' at spawn ("
+        << targetPlayerX << ", " << targetPlayerY << ").\n";
+#endif
     game.mapTransition.phase = MapTransitionPhase::FadeOut;
     game.mapTransition.timer = 0.0f;
     game.mapTransition.targetMapPath = std::move(targetMapPath);
@@ -192,6 +196,11 @@ inline void UpdateTriggers(GameState& game)
 
         if (isInside && !trigger.isPlayerInside)
         {
+#ifdef _DEBUG
+            std::cout << "[Trigger] Map '" << game.activeMap.id << "', trigger '" << trigger.id
+                << "' activated event '" << trigger.eventName << "' at ("
+                << game.player.x << ", " << game.player.y << ").\n";
+#endif
             game.lastTriggeredEvent = trigger.eventName;
 
             if (trigger.eventName.starts_with("weather_"))
@@ -215,8 +224,13 @@ inline void UpdateTriggers(GameState& game)
             MagicEffectType magicEffect;
             if (TryResolveMagicEffect(trigger.eventName, magicEffect))
             {
+#ifdef _DEBUG
+                std::cout << "[Magic] Starting effect '" << magicEffect << "' at ("
+                    << game.player.x << ", " << game.player.y << ").\n";
+#endif
                 StartMagicEffect(game.magicEffects, magicEffect, game.player.x, game.player.y);
-                if (magicEffect == "lightning")
+                const MagicEffectDefinition* definition = FindMagicEffectDefinition(magicEffect);
+                if (definition != nullptr && definition->screenShake)
                 {
                     StartCameraShake(game.cameraShake, shakeIntensity, shakeDuration);
                 }

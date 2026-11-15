@@ -144,6 +144,7 @@
     <None Include="Assets\Shaders\Effects\magic_frost.frag" />
     <None Include="Assets\Shaders\Effects\magic_heal.frag" />
     <None Include="Assets\Shaders\Effects\magic_lightning.frag" />
+    <None Include="Assets\Shaders\Effects\magic_screen_test.frag" />
     <None Include="Assets\Shaders\Effects\magic_shockwave.frag" />
     <None Include="Assets\Shaders\Effects\magic_sparkle.frag" />
     <None Include="Assets\Shaders\Effects\magic_vortex.frag" />

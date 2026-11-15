@@ -27,6 +27,7 @@ TRIGGER magic_vortex 928 -32 64 64 magic_vortex glow=1
 TRIGGER magic_heal 1088 -32 64 64 magic_heal glow=1
 TRIGGER magic_shockwave 1248 -32 64 64 magic_shockwave glow=1
 TRIGGER screen_shake_test 1408 -32 64 64 screen_shake glow=1
+TRIGGER magic_screen_test 1568 -32 64 64 magic_screen_test glow=1
 TRIGGER weather_rain -32 224 64 64 weather_rain glow=1
 TRIGGER weather_fog -32 384 64 64 weather_fog glow=1
 TRIGGER weather_none -32 544 64 64 weather_none glow=1

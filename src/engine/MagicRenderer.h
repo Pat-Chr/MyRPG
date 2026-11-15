@@ -24,18 +24,27 @@ inline void RenderMagicEffects(sf::RenderTarget& target, const MagicEffects& eff
 			continue;
 		}
 
+		const bool screenMode = definition->mode == MagicEffectMode::Screen;
 		const float half = definition->quadSize * 0.5f;
-		const float progress = std::clamp(effect.elapsed / effect.duration, 0.0f, 1.0f);
 		const float cx = effect.x - cameraX + viewportWidth * 0.5f;
 		const float cy = effect.y - cameraY + viewportHeight * 0.5f;
+		const float left = screenMode ? 0.0f : cx - half;
+		const float top = screenMode ? 0.0f : cy - half;
+		const float right = screenMode ? viewportWidth : cx + half;
+		const float bottom = screenMode ? viewportHeight : cy + half;
+		const float progress = std::clamp(effect.elapsed / effect.duration, 0.0f, 1.0f);
 
 		sf::VertexArray quad(sf::PrimitiveType::TriangleStrip, 4);
-		quad[0] = sf::Vertex({ cx - half, cy - half }, sf::Color::White, { 0.0f, 0.0f });
-		quad[1] = sf::Vertex({ cx + half, cy - half }, sf::Color::White, { 1.0f, 0.0f });
-		quad[2] = sf::Vertex({ cx - half, cy + half }, sf::Color::White, { 0.0f, 1.0f });
-		quad[3] = sf::Vertex({ cx + half, cy + half }, sf::Color::White, { 1.0f, 1.0f });
+		quad[0] = sf::Vertex({ left, top }, sf::Color::White, { 0.0f, 0.0f });
+		quad[1] = sf::Vertex({ right, top }, sf::Color::White, { 1.0f, 0.0f });
+		quad[2] = sf::Vertex({ left, bottom }, sf::Color::White, { 0.0f, 1.0f });
+		quad[3] = sf::Vertex({ right, bottom }, sf::Color::White, { 1.0f, 1.0f });
 
 		shader->setUniform("progress", progress);
+		if (screenMode)
+		{
+			shader->setUniform("resolution", sf::Glsl::Vec2(viewportWidth, viewportHeight));
+		}
 
 		sf::RenderStates states;
 		states.shader = shader;

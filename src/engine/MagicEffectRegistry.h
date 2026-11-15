@@ -3,6 +3,7 @@
 #include <SFML/Graphics.hpp>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
@@ -14,11 +15,19 @@
 #include <unordered_set>
 #include <vector>
 
+enum class MagicEffectMode
+{
+	World,
+	Screen
+};
+
 struct MagicEffectDefinition
 {
 	std::string id;
 	std::string fragmentPath;
 	float quadSize = 224.0f;
+	bool screenShake = false;
+	MagicEffectMode mode = MagicEffectMode::World;
 };
 
 inline const std::vector<MagicEffectDefinition>& GetMagicEffectDefinitions()
@@ -84,7 +93,37 @@ inline const std::vector<MagicEffectDefinition>& GetMagicEffectDefinitions()
 			std::istringstream row(line);
 			std::string id;
 			float quadSize = 0.0f;
-			if (!(row >> id >> quadSize) || quadSize <= 0.0f)
+			if (!(row >> id >> quadSize) || !std::isfinite(quadSize) || quadSize <= 0.0f)
+			{
+				std::fprintf(stderr, "Invalid magic effect settings row: %s\n", line.c_str());
+				continue;
+			}
+
+			bool screenShake = false;
+			MagicEffectMode mode = MagicEffectMode::World;
+			bool hasScreenShake = false;
+			bool hasMode = false;
+			bool valid = true;
+			std::string option;
+			while (row >> option)
+			{
+				if (!hasScreenShake && (option == "screen_shake=0" || option == "screen_shake=1"))
+				{
+					screenShake = option == "screen_shake=1";
+					hasScreenShake = true;
+				}
+				else if (!hasMode && (option == "mode=world" || option == "mode=screen"))
+				{
+					mode = option == "mode=screen" ? MagicEffectMode::Screen : MagicEffectMode::World;
+					hasMode = true;
+				}
+				else
+				{
+					valid = false;
+					break;
+				}
+			}
+			if (!valid)
 			{
 				std::fprintf(stderr, "Invalid magic effect settings row: %s\n", line.c_str());
 				continue;
@@ -100,6 +139,8 @@ inline const std::vector<MagicEffectDefinition>& GetMagicEffectDefinitions()
 				continue;
 			}
 			definition->quadSize = quadSize;
+			definition->screenShake = screenShake;
+			definition->mode = mode;
 		}
 
 		return found;

@@ -107,6 +107,25 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(lpCmdLine);
     UNREFERENCED_PARAMETER(nCmdShow);
 
+#ifdef _DEBUG
+    if (!AllocConsole())
+    {
+        OutputDebugStringA("MyRPG: Failed to create the debug console.\n");
+    }
+    else
+    {
+        FILE* consoleStream = nullptr;
+        if (freopen_s(&consoleStream, "CONOUT$", "w", stdout) != 0)
+        {
+            OutputDebugStringA("MyRPG: Failed to redirect stdout to the debug console.\n");
+        }
+        if (freopen_s(&consoleStream, "CONOUT$", "w", stderr) != 0)
+        {
+            OutputDebugStringA("MyRPG: Failed to redirect stderr to the debug console.\n");
+        }
+    }
+#endif
+
     constexpr sf::Vector2u baseResolution{ 1024u, 768u };
 
     sf::RenderWindow window(sf::VideoMode(baseResolution), "MyRPG");

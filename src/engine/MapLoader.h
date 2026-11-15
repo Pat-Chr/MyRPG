@@ -123,9 +123,15 @@ inline float SnapToGrid(float value, float gridSize)
  */
 inline bool TryLoadMapFromFile(const std::string& filePath, MapData& outMap)
 {
+#ifdef _DEBUG
+	std::cout << "[Map] Loading '" << filePath << "'...\n";
+#endif
 	std::ifstream input(filePath);
 	if (!input.is_open())
 	{
+#ifdef _DEBUG
+		std::cout << "[Map] Failed to open '" << filePath << "'.\n";
+#endif
 		return false; // Datei konnte nicht geöffnet werden
 	}
 
@@ -258,9 +264,16 @@ inline bool TryLoadMapFromFile(const std::string& filePath, MapData& outMap)
 	// Map ohne ID ist ungültig - keine leeren Maps zurückgeben
 	if (loadedMap.id.empty())
 	{
+#ifdef _DEBUG
+		std::cout << "[Map] Failed to load '" << filePath << "': map ID is missing.\n";
+#endif
 		return false;
 	}
 
 	outMap = std::move(loadedMap);
+#ifdef _DEBUG
+	std::cout << "[Map] Loaded '" << outMap.id << "' from '" << filePath << "' ("
+		<< outMap.objects.size() << " objects, " << outMap.triggers.size() << " triggers).\n";
+#endif
 	return true;
 }
