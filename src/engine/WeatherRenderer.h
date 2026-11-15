@@ -3,50 +3,63 @@
 #include <SFML/Graphics.hpp>
 
 #include <cstdio>
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
 
 #include "Weather.h"
 
-inline sf::Shader* GetWeatherShader(WeatherType type)
+inline sf::Shader* GetWeatherShader(const std::string& effectId)
 {
-	if (type == WeatherType::None)
+	if (effectId == "none")
 	{
 		return nullptr;
 	}
 
-	struct WeatherShaders
+	const WeatherEffectDefinition* definition = FindWeatherEffectDefinition(effectId);
+	if (definition == nullptr)
 	{
-		sf::Shader rain;
-		sf::Shader fog;
-		bool rainReady = false;
-		bool fogReady = false;
+		return nullptr;
+	}
 
-		WeatherShaders()
+	static std::unordered_map<std::string, std::unique_ptr<sf::Shader>> shaders;
+	static std::unordered_set<std::string> loadAttempted;
+	if (loadAttempted.insert(effectId).second)
+	{
+		if (!sf::Shader::isAvailable())
 		{
-			if (!sf::Shader::isAvailable())
-			{
-				std::fprintf(stderr, "Weather shaders are not available on this system.\n");
-				return;
-			}
-			rainReady = rain.loadFromFile("Assets/Shaders/Weather/weather.vert", "Assets/Shaders/Weather/rain.frag");
-			fogReady = fog.loadFromFile("Assets/Shaders/Weather/weather.vert", "Assets/Shaders/Weather/fog.frag");
-			if (!rainReady) std::fprintf(stderr, "Failed to load rain shader.\n");
-			if (!fogReady) std::fprintf(stderr, "Failed to load fog shader.\n");
+			std::fprintf(stderr, "Weather shaders are not available on this system.\n");
 		}
-	};
-	static WeatherShaders shaders;
-	if (type == WeatherType::Rain) return shaders.rainReady ? &shaders.rain : nullptr;
-	if (type == WeatherType::Fog) return shaders.fogReady ? &shaders.fog : nullptr;
-	return nullptr;
+		else
+		{
+			auto loaded = std::make_unique<sf::Shader>();
+			if (loaded->loadFromFile("Assets/Shaders/Weather/weather.vert", definition->fragmentPath))
+			{
+				shaders.emplace(effectId, std::move(loaded));
+			}
+			else
+			{
+				std::fprintf(stderr, "Failed to load weather shader: %s\n", definition->fragmentPath.c_str());
+			}
+		}
+	}
+
+	const auto shader = shaders.find(effectId);
+	return shader == shaders.end() ? nullptr : shader->second.get();
 }
 
 inline void PreloadWeatherShaders()
 {
-	GetWeatherShader(WeatherType::Rain);
+	for (const WeatherEffectDefinition& definition : GetWeatherEffectDefinitions())
+	{
+		GetWeatherShader(definition.id);
+	}
 }
 
 inline void RenderWeather(sf::RenderTarget& target, const WeatherState& weather, float width, float height)
 {
-	sf::Shader* shader = GetWeatherShader(weather.type);
+	sf::Shader* shader = GetWeatherShader(weather.effectId);
 	if (shader == nullptr) return;
 
 	const sf::Color white = sf::Color::White;

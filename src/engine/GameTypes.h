@@ -127,7 +127,7 @@ struct MapData
 	// Standard-Pfad zum Hintergrund-Boden-Sprite
 	std::string defaultGroundPath;
 
-	WeatherType defaultWeather = WeatherType::None;
+	std::string defaultWeather = "none";
 
 	// Liste aller Objekte in der Karte (Wände, Dekoration, NPCs)
 	std::vector<MapObject> objects;

@@ -165,7 +165,7 @@ inline void UpdateTriggers(GameState& game)
 
             if (trigger.eventName.starts_with("weather_"))
             {
-                WeatherType weather;
+                std::string weather;
                 if (TryParseWeather(trigger.eventName.substr(8), weather))
                 {
                     SetWeather(game.weather, weather);
@@ -200,7 +200,7 @@ inline void InitializeFallbackMap(GameState& game)
 {
     game.activeMap.id = "fallback_map";
     game.activeMap.defaultGroundPath = "Assets/Sprites/Environment/basic_grass.png";
-    game.activeMap.defaultWeather = WeatherType::None;
+    game.activeMap.defaultWeather = "none";
     game.activeMap.objects.clear();
     game.activeMap.triggers.clear();
 

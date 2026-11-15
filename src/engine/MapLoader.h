@@ -101,7 +101,7 @@ inline float SnapToGrid(float value, float gridSize)
  * Unterstützt folgende Keywords im Dateiformat:
  * - MAP ID         : Setzt die Map-ID
  * - GROUND path    : Setzt den Pfad zum Boden-Sprite
- * - WEATHER none|rain|fog : Setzt das Standardwetter
+ * - WEATHER none|<shaderName> : Setzt das Standardwetter
  * - OBJECT id type x y spritePath solid=0|1 : Lädt ein Objekt (wird auf Grid gesnapped)
  * - TRIGGER id x y width height eventName [glow=0|1] [spawn_x=x spawn_y=y] : Definiert eine Trigger-Zone
  * 
