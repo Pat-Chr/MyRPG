@@ -8,7 +8,8 @@ float hash(float n)
 
 void main()
 {
-	vec2 p = (gl_TexCoord[0].xy * 2.0 - 1.0) * (320.0 / 224.0) + (96.0 / 224.0);
+	vec2 p = (gl_TexCoord[0].xy * 2.0 - 1.0) * (320.0 / 224.0);
+	p.y += 0.6 - (0.45 - 0.32) * (288.0 / 224.0);
 	float env = sin(progress * 3.14159);
 
 	vec2 q = vec2(p.x, (p.y - 0.6) / 0.3);
