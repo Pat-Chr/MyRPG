@@ -23,6 +23,7 @@ Das [DesignDocument.md](./DesignDocument.md) beschreibt die technische Architekt
 - **Kartenwechsel** mit Fade-out/Fade-in und pro Trigger festlegbarer Spawn-Position
 - **Spieleranimationen**: Laufanimationen in acht Richtungen und Stillstandsanimationen in vier Richtungen, beschrieben in `.anim`-Dateien. Diagonale Blickrichtungen verwenden im Stillstand die linke bzw. rechte Animation.
 - **Magieeffekte**: sieben GPU-Shader-Effekte (Sparkle, Fire, Lightning, Frost, Vortex, Heal, Shockwave) in `Assets/Shaders/Effects/`. `M` startet Sparkle an der Spielerposition; auf der Testkarte gibt es rechts vom Startpunkt für jeden Effekt eine Trigger-Zone (von links nach rechts in obiger Reihenfolge).
+- **Screen Shake**: Ein eigenständiges Trigger-Ereignis erschüttert kurz die Spielwelt. Die Testzone liegt rechts hinter den Magie-Testzonen; auch der Lightning-Trigger löst den Shake aus.
 - **Wetter**: Regen und Nebel als Shader-Overlays in `Assets/Shaders/Weather/`; das Standardwetter ist pro Karte festlegbar und kann über Trigger geändert oder ausgeschaltet werden. Die Waldkarte startet mit Nebel; auf der Testkarte liegen drei Wetter-Testzonen südlich des Startpunkts.
 - **Textur-Cache** zur Wiederverwendung geladener Texturen
 - **Kamera und Letterbox-Viewport** mit einer Basisauflösung von 1024 × 768; das Seitenverhältnis bleibt beim Ändern der Fenstergröße erhalten
@@ -99,11 +100,14 @@ WEATHER rain
 OBJECT rock_01 scenery -192 -64 Assets/Sprites/Environment/Forest/forest_rock.png solid=1
 OBJECT path_01 untergrund -64 0 Assets/Sprites/Environment/Forest/forest_path.png solid=0
 TRIGGER magic_fire 448 -32 64 64 magic_fire glow=1
+TRIGGER screen_shake_test 1408 -32 64 64 screen_shake glow=1
 TRIGGER clear_weather -32 544 64 64 weather_none glow=1
 TRIGGER north_path_to_forest -64 -260 220 120 Load_0001_Forest glow=1 spawn_x=-128 spawn_y=1024
 ```
 
-`magic_<name>` startet beim Betreten den vorhandenen Effekt gleichen Namens an der Spielerposition, zum Beispiel `magic_fire` für `Assets/Shaders/Effects/magic_fire.frag`.
+`magic_<name>` startet beim Betreten den vorhandenen Effekt gleichen Namens an der Spielerposition, zum Beispiel `magic_fire` für `Assets/Shaders/Effects/magic_fire.frag`. Der Lightning-Trigger startet zusätzlich einen Screen Shake.
+
+`screen_shake` startet unabhängig von einem Magieeffekt einen kurzen Screen Shake (Stärke 8 Pixel, Dauer 0,32 Sekunden). Nach Verlassen und erneutem Betreten der Zone wird er erneut ausgelöst. Die Testzone liegt bei x=1408, y=-32. Wetter-Overlay und UI bleiben bildschirmfest.
 
 Trigger-Ereignisse der Form `weather_<shaderName>` schalten auf den gleichnamigen automatisch erkannten Shader um; `weather_none` schaltet das Wetter aus. Beispielsweise aktiviert `weather_rain` die Datei `rain.frag`. Das Wetter bleibt bis zur nächsten Änderung aktiv. Beim erfolgreichen Kartenwechsel übernimmt die Zielkarte ihr eigenes Standardwetter; schlägt der Wechsel fehl, bleibt das bisherige Wetter erhalten. Auf der Testkarte liegen die Wetterzonen südlich des Startpunkts bei x=-32 und y=224, 384 und 544 (Regen, Nebel, aus).
 

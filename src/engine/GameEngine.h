@@ -101,6 +101,33 @@ inline void BeginMapTransition(GameState& game,
     game.mapTransition.targetPlayerY = targetPlayerY;
 }
 
+inline void StartCameraShake(CameraShakeState& shake, float intensity, float duration)
+{
+    shake = CameraShakeState{};
+    shake.intensity = intensity;
+    shake.duration = duration;
+}
+
+inline void UpdateCameraShake(CameraShakeState& shake, float deltaTime)
+{
+    if (shake.intensity <= 0.0f || shake.duration <= 0.0f)
+    {
+        return;
+    }
+
+    shake.elapsed += deltaTime;
+    if (shake.elapsed >= shake.duration)
+    {
+        shake = CameraShakeState{};
+        return;
+    }
+
+    const float progress = shake.elapsed / shake.duration;
+    const float envelope = 1.0f - progress;
+    shake.offsetX = std::sin(shake.elapsed * 75.0f) * shake.intensity * envelope;
+    shake.offsetY = std::sin(shake.elapsed * 91.0f) * shake.intensity * 0.75f * envelope;
+}
+
 // Aktualisiert den Map-Übergangsstatus.
 // Verarbeitet die Zeit für das Ausblenden der aktuellen Map und das Einblenden der nächsten Map.
 // Wenn der Übergang abgeschlossen ist, wird die neue Map geladen und der Spieler an die Zielposition versetzt.
@@ -127,6 +154,7 @@ inline void UpdateMapTransition(GameState& game, float deltaTime)
             game.player.y = game.mapTransition.targetPlayerY;
             game.weather = WeatherState{ game.activeMap.defaultWeather };
             ClearMagicEffects(game.magicEffects);
+            game.cameraShake = CameraShakeState{};
             game.lastTriggeredEvent = "MapLoaded: " + game.activeMap.id;
         }
         else
@@ -155,6 +183,9 @@ inline void UpdateTriggers(GameState& game)
         return;
     }
 
+    constexpr float shakeIntensity = 8.0f;
+    constexpr float shakeDuration = 0.32f;
+
     for (TriggerZone& trigger : game.activeMap.triggers)
     {
         const bool isInside = IsInsideTrigger(trigger, game.player.x, game.player.y);
@@ -176,10 +207,19 @@ inline void UpdateTriggers(GameState& game)
                 }
             }
 
+            if (trigger.eventName == "screen_shake")
+            {
+                StartCameraShake(game.cameraShake, shakeIntensity, shakeDuration);
+            }
+
             MagicEffectType magicEffect;
             if (TryResolveMagicEffect(trigger.eventName, magicEffect))
             {
                 StartMagicEffect(game.magicEffects, magicEffect, game.player.x, game.player.y);
+                if (magicEffect == "lightning")
+                {
+                    StartCameraShake(game.cameraShake, shakeIntensity, shakeDuration);
+                }
             }
 
             std::string targetMapPath;
@@ -234,6 +274,7 @@ inline void InitializeGameState(GameState& game)
     game.player.moving = false;
     game.lastTriggeredEvent.clear();
     ClearMagicEffects(game.magicEffects);
+    game.cameraShake = CameraShakeState{};
 
     if (!TryLoadMapFromFile("Assets/Maps/0001_TestMap.map", game.activeMap))
     {
@@ -297,6 +338,7 @@ inline bool IsSolidObjectBlockingPosition(const GameState& game, float playerX, 
 inline void UpdateGame(GameState& game, float deltaTime)
 {
     UpdateMagicEffects(game.magicEffects, deltaTime);
+    UpdateCameraShake(game.cameraShake, deltaTime);
     UpdateWeather(game.weather, deltaTime);
 
     if (IsMapTransitionActive(game))
