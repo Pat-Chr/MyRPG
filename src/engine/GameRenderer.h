@@ -17,6 +17,7 @@
 #include "AnimationLoader.h"
 #include "GameTypes.h"
 #include "MagicRenderer.h"
+#include "WeatherRenderer.h"
 
 /**
  * @brief Wandelt Weltkoordinaten in Bildschirmkoordinaten um.
@@ -334,7 +335,7 @@ inline void RenderTriggerDebug(sf::RenderTarget& target, const Viewport& viewpor
  * 4. Map-Objekte (Wände, NPCs, etc.)
  * 5. Trigger-Zonen (nur Debug-Build)
  * 6. Spieler-Charakter (Textur oder Fallback-Rechteck)
- * 7. Magieeffekte
+ * 7. Magieeffekte und Wetter
  * 8. Optionale FPS-Anzeige und Debug-UI (Koordinaten und Ereignisse nur im Debug-Build)
  * 9. Kartenübergangs-Overlay (Fade-In/Fade-Out Effekt)
  * 
@@ -468,6 +469,7 @@ inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewpo
 
     RenderMagicEffects(target, game.magicEffects, game.player.x, game.player.y,
                        static_cast<float>(viewport.width), static_cast<float>(viewport.height));
+    RenderWeather(target, game.weather, static_cast<float>(viewport.width), static_cast<float>(viewport.height));
 
     #ifdef _DEBUG
     constexpr bool showDebug = true;

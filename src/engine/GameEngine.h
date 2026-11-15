@@ -125,6 +125,7 @@ inline void UpdateMapTransition(GameState& game, float deltaTime)
             game.activeMap = std::move(nextMap);
             game.player.x = game.mapTransition.targetPlayerX;
             game.player.y = game.mapTransition.targetPlayerY;
+            game.weather = WeatherState{ game.activeMap.defaultWeather };
             ClearMagicEffects(game.magicEffects);
             game.lastTriggeredEvent = "MapLoaded: " + game.activeMap.id;
         }
@@ -162,6 +163,19 @@ inline void UpdateTriggers(GameState& game)
         {
             game.lastTriggeredEvent = trigger.eventName;
 
+            if (trigger.eventName.starts_with("weather_"))
+            {
+                WeatherType weather;
+                if (TryParseWeather(trigger.eventName.substr(8), weather))
+                {
+                    SetWeather(game.weather, weather);
+                }
+                else
+                {
+                    std::cerr << "Invalid weather event: " << trigger.eventName << '\n';
+                }
+            }
+
             MagicEffectType magicEffect;
             if (TryResolveMagicEffect(trigger.eventName, magicEffect))
             {
@@ -186,6 +200,7 @@ inline void InitializeFallbackMap(GameState& game)
 {
     game.activeMap.id = "fallback_map";
     game.activeMap.defaultGroundPath = "Assets/Sprites/Environment/basic_grass.png";
+    game.activeMap.defaultWeather = WeatherType::None;
     game.activeMap.objects.clear();
     game.activeMap.triggers.clear();
 
@@ -224,6 +239,7 @@ inline void InitializeGameState(GameState& game)
     {
         InitializeFallbackMap(game);
     }
+    game.weather = WeatherState{ game.activeMap.defaultWeather };
 }
 
 // Stellt den Bewegungszustand des Spielers basierend auf Tastatureingaben ein.
@@ -281,6 +297,7 @@ inline bool IsSolidObjectBlockingPosition(const GameState& game, float playerX, 
 inline void UpdateGame(GameState& game, float deltaTime)
 {
     UpdateMagicEffects(game.magicEffects, deltaTime);
+    UpdateWeather(game.weather, deltaTime);
 
     if (IsMapTransitionActive(game))
     {

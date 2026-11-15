@@ -23,6 +23,7 @@ Das [DesignDocument.md](./DesignDocument.md) beschreibt die technische Architekt
 - **Kartenwechsel** mit Fade-out/Fade-in und pro Trigger festlegbarer Spawn-Position
 - **Spieleranimationen**: Laufanimationen in acht Richtungen und Stillstandsanimationen in vier Richtungen, beschrieben in `.anim`-Dateien. Diagonale Blickrichtungen verwenden im Stillstand die linke bzw. rechte Animation.
 - **Magieeffekte**: sieben GPU-Shader-Effekte (Sparkle, Fire, Lightning, Frost, Vortex, Heal, Shockwave) in `Assets/Shaders/Effects/`. `M` startet Sparkle an der Spielerposition; auf der Testkarte gibt es rechts vom Startpunkt für jeden Effekt eine Trigger-Zone (von links nach rechts in obiger Reihenfolge).
+- **Wetter**: Regen und Nebel als Shader-Overlays in `Assets/Shaders/Weather/`; das Standardwetter ist pro Karte festlegbar und kann über Trigger geändert oder ausgeschaltet werden. Die Waldkarte startet mit Nebel; auf der Testkarte liegen drei Wetter-Testzonen südlich des Startpunkts.
 - **Textur-Cache** zur Wiederverwendung geladener Texturen
 - **Kamera und Letterbox-Viewport** mit einer Basisauflösung von 1024 × 768; das Seitenverhältnis bleibt beim Ändern der Fenstergröße erhalten
 - **Debug-Anzeigen** für Karten-ID, Position, letztes Ereignis, Raster und Triggerbereiche nur im Debug-Build. Ein Linksklick auf die Koordinaten kopiert X und Y in die Zwischenablage. Im Release-Build bleiben diese Anzeigen verborgen; die Trigger-Funktion selbst bleibt aktiv.
@@ -49,6 +50,8 @@ MyRPG/
 │   ├── GameRenderer.h              # Rendering, Kamera und Textur-Cache
 │   ├── MagicEffects.h              # Zustand und Start-API für visuelle Effekte
 │   ├── MagicRenderer.h             # Darstellung der Effekte
+│   ├── Weather.h                   # Wetterzustand und Steuerung
+│   ├── WeatherRenderer.h           # Wetter-Shader-Overlay
 │   ├── MapLoader.h                # Parser für .map-Dateien
 │   ├── MainMenu.h                 # Titelbildschirm und Hauptmenü
 │   ├── MenuFont.h                 # Gemeinsame Systemschrift für Menüs
@@ -59,6 +62,7 @@ MyRPG/
 │   ├── Animations/Characters/     # Spieleranimationen im .anim-Format
 │   ├── Maps/                      # 0001_TestMap.map und 0001_Forest.map
 │   ├── Shaders/Effects/           # GLSL-Shader der Magieeffekte
+│   ├── Shaders/Weather/           # GLSL-Shader für Regen und Nebel
 │   ├── UI/                        # Titelbildschirm
 │   └── Sprites/
 │       ├── Characters/            # Spieler-Spritesheets
@@ -75,11 +79,13 @@ Karten liegen als Textdateien unter `Assets/Maps/`. Leerzeilen und Zeilen, die m
 ```text
 MAP <mapId>
 GROUND <spritePath>
+WEATHER <none|rain|fog>
 OBJECT <id> <type> <x> <y> <spritePath> solid=<0|1>
 TRIGGER <id> <x> <y> <width> <height> <eventName> [glow=0|1] [spawn_x=<x> spawn_y=<y>]
 ```
 
 - `MAP` setzt die erforderliche Karten-ID. `GROUND` legt das Standard-Bodensprite fest, das den sichtbaren Kartenbereich gekachelt ausfüllt.
+- `WEATHER` ist optional und setzt das Standardwetter auf `none`, `rain` oder `fog`; ohne Angabe gilt `none`. Ungültige oder mehrfache Angaben verhindern das Laden der Karte. Das Wetter wird über der Spielwelt, aber unter UI und Kartenübergang gezeichnet und pausiert im Einstellungsmenü. Wenn ein Shader nicht verfügbar ist, wird der Fehler auf stderr gemeldet und der Effekt nicht gezeichnet.
 - `OBJECT` platziert ein Sprite in Weltkoordinaten. Typen sind `untergrund`, `scenery`, `wall` und `npc`; Positionen von `untergrund` und `scenery` werden auf das 64-Pixel-Raster gerundet.
 - `solid` legt fest, ob das Objekt den Spieler blockiert: `solid=1` aktiviert die Kollision, `solid=0` lässt den Spieler hindurch. Das Flag ist erforderlich und unabhängig vom Typ – auch ein `scenery`-Objekt kann also entweder blockieren oder nicht. Für Boden- und Deko-Objekte, die begehbar sein sollen, wird üblicherweise `solid=0` verwendet.
 - `TRIGGER` definiert ein rechteckiges Ereignisgebiet in Weltkoordinaten. Das Ereignis wird beim Betreten ausgelöst; nach Verlassen kann es bei erneutem Betreten wieder ausgelöst werden. `glow` ist optional und standardmäßig `0`. Mit `glow=1` erhält das Gebiet einen pulsierenden, additiven Shader-Glow. Das ist nur Darstellung und ändert weder Auslösung noch Kollision; der Glow ist auch im Release-Build sichtbar. Wenn Shader nicht unterstützt werden, wird stattdessen ein einfaches Rechteck gezeichnet. Debug-Markierungen der Trigger bleiben auf Debug-Builds beschränkt.
@@ -89,13 +95,17 @@ Beispiel:
 ```text
 MAP 0001_TestMap
 GROUND Assets/Sprites/Environment/Forest/forest_ground.png
+WEATHER rain
 OBJECT rock_01 scenery -192 -64 Assets/Sprites/Environment/Forest/forest_rock.png solid=1
 OBJECT path_01 untergrund -64 0 Assets/Sprites/Environment/Forest/forest_path.png solid=0
 TRIGGER magic_fire 448 -32 64 64 magic_fire glow=1
+TRIGGER clear_weather -32 544 64 64 weather_none glow=1
 TRIGGER north_path_to_forest -64 -260 220 120 Load_0001_Forest glow=1 spawn_x=-128 spawn_y=1024
 ```
 
 `magic_<name>` startet beim Betreten den vorhandenen Effekt gleichen Namens an der Spielerposition, zum Beispiel `magic_fire` für `Assets/Shaders/Effects/magic_fire.frag`.
+
+Die Trigger-Ereignisse `weather_rain`, `weather_fog` und `weather_none` schalten das Wetter um bzw. aus. Es bleibt bis zur nächsten Änderung aktiv. Beim erfolgreichen Kartenwechsel übernimmt die Zielkarte ihr eigenes Standardwetter; schlägt der Wechsel fehl, bleibt das bisherige Wetter erhalten. Auf der Testkarte liegen die Wetterzonen südlich des Startpunkts bei x=-32 und y=224, 384 und 544 (Regen, Nebel, aus).
 
 `Load_<dateiname>` lädt `Assets/Maps/<dateiname>.map`, zum Beispiel lädt `Load_0002_Cave` die Datei `Assets/Maps/0002_Cave.map`. Der Dateiname ohne Endung darf keine Leerzeichen oder Pfadtrennzeichen enthalten; die `MAP`-ID in der Datei muss vorhanden sein, aber nicht dem Dateinamen entsprechen. Neue Karten benötigen keinen Codeeintrag. Die optionalen Trigger-Angaben `spawn_x` und `spawn_y` legen gemeinsam die Zielposition fest; ohne sie gilt `(0, 0)`. So können verschiedene Übergänge unterschiedliche Einstiegspunkte verwenden. Die Zielposition sollte frei von Hindernissen und nicht innerhalb eines sofort zurückführenden Triggers liegen. Wenn das Laden fehlschlägt, bleibt die bisherige Karte aktiv und ein Fehler wird auf stderr ausgegeben. Die Startkarte ist weiterhin in der Engine festgelegt.
 

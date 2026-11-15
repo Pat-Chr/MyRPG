@@ -1,11 +1,13 @@
 # Simple map format
 # MAP <mapId>
 # GROUND <defaultSpritePath>
+# WEATHER <none|rain|fog>
 # OBJECT <id> <type> <x> <y> <spritePath> solid=<0|1>
 # TRIGGER <id> <x> <y> <width> <height> <eventName> [glow=0|1] [spawn_x=<x> spawn_y=<y>]
 
 MAP 0001_TestMap
 GROUND Assets/Sprites/Environment/Forest/forest_ground.png
+WEATHER none
 
 OBJECT rock_01 scenery -192 -64 Assets/Sprites/Environment/Forest/forest_rock.png solid=1
 OBJECT rock_02 scenery -128 -64 Assets/Sprites/Environment/Forest/forest_rock.png solid=1
@@ -24,4 +26,7 @@ TRIGGER magic_frost 768 -32 64 64 magic_frost glow=1
 TRIGGER magic_vortex 928 -32 64 64 magic_vortex glow=1
 TRIGGER magic_heal 1088 -32 64 64 magic_heal glow=1
 TRIGGER magic_shockwave 1248 -32 64 64 magic_shockwave glow=1
+TRIGGER weather_rain -32 224 64 64 weather_rain glow=1
+TRIGGER weather_fog -32 384 64 64 weather_fog glow=1
+TRIGGER weather_none -32 544 64 64 weather_none glow=1
 TRIGGER north_path_to_forest -64 -260 220 120 Load_0001_Forest glow=1 spawn_x=-128 spawn_y=1024

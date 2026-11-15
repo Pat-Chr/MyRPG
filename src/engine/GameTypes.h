@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "MagicEffects.h"
+#include "Weather.h"
 
 enum class PlayerDirection
 {
@@ -125,7 +126,9 @@ struct MapData
 	
 	// Standard-Pfad zum Hintergrund-Boden-Sprite
 	std::string defaultGroundPath;
-	
+
+	WeatherType defaultWeather = WeatherType::None;
+
 	// Liste aller Objekte in der Karte (Wände, Dekoration, NPCs)
 	std::vector<MapObject> objects;
 	
@@ -182,4 +185,5 @@ struct GameState
 	MapTransitionState mapTransition;
 
 	MagicEffects magicEffects;
+	WeatherState weather;
 };

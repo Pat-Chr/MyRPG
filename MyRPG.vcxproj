@@ -105,6 +105,8 @@
     <ClInclude Include="src\engine\MenuFont.h" />
     <ClInclude Include="src\engine\SettingsMenu.h" />
     <ClInclude Include="src\engine\SettingsStore.h" />
+    <ClInclude Include="src\engine\Weather.h" />
+    <ClInclude Include="src\engine\WeatherRenderer.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="MyRPG.h" />
   </ItemGroup>
@@ -142,6 +144,9 @@
     <None Include="Assets\Shaders\Effects\magic_shockwave.frag" />
     <None Include="Assets\Shaders\Effects\magic_sparkle.frag" />
     <None Include="Assets\Shaders\Effects\magic_vortex.frag" />
+    <None Include="Assets\Shaders\Weather\fog.frag" />
+    <None Include="Assets\Shaders\Weather\rain.frag" />
+    <None Include="Assets\Shaders\Weather\weather.vert" />
     <None Include="DesignDocument.md" />
     <Content Include="Assets\**\*" />
   </ItemGroup>

@@ -135,6 +135,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     GameState game{};
     bool inMainMenu = true;
     PreloadMagicShaders();
+    PreloadWeatherShaders();
 
     sf::Clock frameClock;
     sf::FloatRect debugCoordinatesBounds{};

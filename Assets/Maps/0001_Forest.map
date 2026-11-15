@@ -1,10 +1,12 @@
 # Forest map format
 # GROUND <defaultSpritePath>
+# WEATHER <none|rain|fog>
 # OBJECT <id> <type> <x> <y> <spritePath> solid=<0|1>
 # TRIGGER <id> <x> <y> <width> <height> <eventName> [glow=0|1] [spawn_x=<x> spawn_y=<y>]
 
 MAP 0001_Forest
 GROUND Assets/Sprites/Environment/Forest/forest_ground.png
+WEATHER fog
 
 OBJECT fg_0018 untergrund -192 -1280 Assets/Sprites/Environment/Forest/forest_path.png solid=0
 OBJECT fg_0019 untergrund -128 -1280 Assets/Sprites/Environment/Forest/forest_path.png solid=0
