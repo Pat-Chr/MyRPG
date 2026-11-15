@@ -3,11 +3,15 @@
 
 #include <Windows.h>
 
+#include <cstdio>
+#include <cstring>
 #include <optional>
+#include <string>
 
 #include <SFML/Graphics.hpp>
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/Keyboard.hpp>
+#include <SFML/Window/Mouse.hpp>
 
 #include "src/engine/GameEngine.h"
 #include "src/engine/GameRenderer.h"
@@ -38,6 +42,58 @@ sf::FloatRect ComputeLetterboxViewport(sf::Vector2u windowSize, sf::Vector2u bas
     }
 
     return { { 0.0f, 0.0f }, { 1.0f, 1.0f } };
+}
+
+bool CopyTextToClipboard(HWND owner, const std::wstring& text)
+{
+    const SIZE_T byteCount = static_cast<SIZE_T>((text.size() + 1) * sizeof(wchar_t));
+    HGLOBAL clipboardMemory = GlobalAlloc(GMEM_MOVEABLE, byteCount);
+    if (clipboardMemory == nullptr)
+    {
+        std::fprintf(stderr, "Failed to allocate clipboard memory (Win32 error %lu).\n", GetLastError());
+        return false;
+    }
+
+    void* memory = GlobalLock(clipboardMemory);
+    if (memory == nullptr)
+    {
+        const DWORD error = GetLastError();
+        GlobalFree(clipboardMemory);
+        std::fprintf(stderr, "Failed to lock clipboard memory (Win32 error %lu).\n", error);
+        return false;
+    }
+
+    std::memcpy(memory, text.c_str(), byteCount);
+    GlobalUnlock(clipboardMemory);
+
+    if (!OpenClipboard(owner))
+    {
+        const DWORD error = GetLastError();
+        GlobalFree(clipboardMemory);
+        std::fprintf(stderr, "Failed to open the clipboard (Win32 error %lu).\n", error);
+        return false;
+    }
+
+    if (!EmptyClipboard())
+    {
+        const DWORD error = GetLastError();
+        CloseClipboard();
+        GlobalFree(clipboardMemory);
+        std::fprintf(stderr, "Failed to clear the clipboard (Win32 error %lu).\n", error);
+        return false;
+    }
+
+    if (SetClipboardData(CF_UNICODETEXT, clipboardMemory) == nullptr)
+    {
+        const DWORD error = GetLastError();
+        CloseClipboard();
+        GlobalFree(clipboardMemory);
+        std::fprintf(stderr, "Failed to set clipboard text (Win32 error %lu).\n", error);
+        return false;
+    }
+
+    CloseClipboard();
+    return true;
 }
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -72,6 +128,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     PreloadMagicShaders();
 
     sf::Clock frameClock;
+    sf::FloatRect debugCoordinatesBounds{};
 
     while (window.isOpen())
     {
@@ -121,6 +178,22 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                     StartMagicEffect(game.magicEffects, "sparkle", game.player.x, game.player.y);
                 }
             }
+            else if (const auto* mouseButton = event->getIf<sf::Event::MouseButtonPressed>())
+            {
+#ifdef _DEBUG
+                if (mouseButton->button == sf::Mouse::Button::Left && window.hasFocus() && !settingsMenu.IsOpen())
+                {
+                    const sf::Vector2f clickPosition = window.mapPixelToCoords(mouseButton->position);
+                    if (debugCoordinatesBounds.contains(clickPosition))
+                    {
+                        char coordinates[64];
+                        std::snprintf(coordinates, sizeof(coordinates), "X: %.1f  Y: %.1f", game.player.x, game.player.y);
+                        const std::wstring clipboardText(coordinates, coordinates + std::strlen(coordinates));
+                        CopyTextToClipboard(window.getNativeHandle(), clipboardText);
+                    }
+                }
+#endif
+            }
         }
 
         if (!window.isOpen())
@@ -156,7 +229,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         letterboxView.setViewport(ComputeLetterboxViewport(windowSize, baseResolution));
         window.setView(letterboxView);
 
-        RenderGame(window, viewport, game, fps, settingsMenu.GetSettings().showFps);
+        debugCoordinatesBounds = RenderGame(window, viewport, game, fps, settingsMenu.GetSettings().showFps);
         if (settingsMenu.IsOpen())
         {
             settingsMenu.Draw(window, baseResolution);

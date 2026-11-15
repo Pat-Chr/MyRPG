@@ -159,7 +159,7 @@ Mischung aus ernst und leicht humorvoll
 - Muss anzeigen: Health, Ausdauer, XP, Level
 - Optional: Weitere Elemente kommen später hinzu
 - Die optionale FPS-Anzeige ist in Debug- und Release-Builds verfügbar und im Einstellungsmenü abschaltbar.
-- Nur im Debug-Build: Karten-ID, Spielerkoordinaten und letztes Trigger-Ereignis; zusätzlich werden Trigger-Bereiche und das Debug-Raster sichtbar dargestellt. Im Release-Build entfallen diese Debug-Anzeigen, die Trigger-Funktion bleibt erhalten.
+- Nur im Debug-Build: Karten-ID, Spielerkoordinaten und letztes Trigger-Ereignis; zusätzlich werden Trigger-Bereiche und das Debug-Raster sichtbar dargestellt. Ein Linksklick auf die angezeigten Spielerkoordinaten kopiert X und Y in die Zwischenablage. Im Release-Build entfallen diese Debug-Anzeigen und die Kopierfunktion, die Trigger-Funktion bleibt erhalten.
 - Diese Trennung ist eine dauerhafte Vorgabe und soll bei zukünftigen Änderungen beibehalten werden: Debug-Informationen und Trigger-Markierungen sind nur in Debug-Builds sichtbar; Release-Builds bleiben frei von diesen Anzeigen. Die FPS-Anzeige ist eine Spieleroption und keine Debug-Anzeige.
 
 ### Menüs

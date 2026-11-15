@@ -344,9 +344,11 @@ inline void RenderTriggerDebug(sf::RenderTarget& target, const Viewport& viewpor
  * @param fps Aktuelle Frames pro Sekunde für die UI-Anzeige
  * @param showFps Ob die FPS-Anzeige sichtbar ist
  */
-inline void RenderGame(sf::RenderTarget& target, const Viewport& viewport, const GameState& game,
-                       float fps, bool showFps)
+inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewport, const GameState& game,
+                                float fps, bool showFps)
 {
+    sf::FloatRect debugCoordinatesBounds{};
+
     // Hintergrund mit dunkelgrünem Farbton löschen (Wald/Regenwald-Atmosphäre)
     target.clear(sf::Color(22, 34, 26));
 
@@ -500,11 +502,11 @@ inline void RenderGame(sf::RenderTarget& target, const Viewport& viewport, const
 #ifdef _DEBUG
             if (showFps)
             {
-                std::snprintf(overlayBuffer, sizeof(overlayBuffer), "Map: %s   X: %.1f  Y: %.1f   FPS: %.1f", game.activeMap.id.c_str(), game.player.x, game.player.y, fps);
+                std::snprintf(overlayBuffer, sizeof(overlayBuffer), "Map: %s   FPS: %.1f", game.activeMap.id.c_str(), fps);
             }
             else
             {
-                std::snprintf(overlayBuffer, sizeof(overlayBuffer), "Map: %s   X: %.1f  Y: %.1f", game.activeMap.id.c_str(), game.player.x, game.player.y);
+                std::snprintf(overlayBuffer, sizeof(overlayBuffer), "Map: %s", game.activeMap.id.c_str());
             }
 #else
             std::snprintf(overlayBuffer, sizeof(overlayBuffer), "FPS: %.1f", fps);
@@ -516,6 +518,15 @@ inline void RenderGame(sf::RenderTarget& target, const Viewport& viewport, const
             target.draw(overlayText);
 
 #ifdef _DEBUG
+            char coordinatesBuffer[64];
+            std::snprintf(coordinatesBuffer, sizeof(coordinatesBuffer), "X: %.1f  Y: %.1f", game.player.x, game.player.y);
+            sf::Text coordinatesText(overlayFont, coordinatesBuffer, 16);
+            coordinatesText.setFillColor(sf::Color(230, 230, 230));
+            const sf::FloatRect coordinatesTextBounds = coordinatesText.getLocalBounds();
+            coordinatesText.setPosition({ static_cast<float>(viewport.width) - coordinatesTextBounds.size.x - 12.0f, 30.0f });
+            debugCoordinatesBounds = coordinatesText.getGlobalBounds();
+            target.draw(coordinatesText);
+
             if (!game.lastTriggeredEvent.empty())
             {
                 std::string triggerLine = "Trigger: " + game.lastTriggeredEvent;
@@ -542,4 +553,6 @@ inline void RenderGame(sf::RenderTarget& target, const Viewport& viewport, const
         fadeOverlay.setFillColor(sf::Color(0, 0, 0, alpha)); // Schwarzes Overlay mit variabler Opazität
         target.draw(fadeOverlay);
     }
+
+    return debugCoordinatesBounds;
 }
