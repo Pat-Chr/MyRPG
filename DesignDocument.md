@@ -212,6 +212,7 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 ### Engine/Framework
 - SFML 3, C++20 (Custom Game Loop)
 - Die unterstützte Build-Plattform ist Windows x64; die vcpkg-Abhängigkeiten verwenden das Triplet `x64-windows`.
+- Ein MSBuild-Schritt installiert vor dem Kompilieren die im vcpkg-Manifest angegebenen Abhängigkeiten automatisch in `vcpkg_installed/`. Ein initialisiertes vcpkg und beim ersten Build eine Internetverbindung sind erforderlich; eine globale vcpkg-Integration ist nicht nötig.
 - Beim Build werden die zur Konfiguration passenden SFML-Laufzeit-DLLs aus vcpkg neben die ausführbare Datei kopiert; so kann das Spiel direkt aus dem Build-Ausgabeverzeichnis gestartet werden.
 - Debug-Builds erzeugen PDB-Debugsymbole; Release-Builds erzeugen keine PDB-Datei.
 

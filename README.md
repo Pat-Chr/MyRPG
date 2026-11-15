@@ -34,27 +34,27 @@ Das [DesignDocument.md](./DesignDocument.md) beschreibt die technische Architekt
 ### Voraussetzungen
 
 - Windows x64 und Visual Studio 2026 mit der Workload **Desktopentwicklung mit C++** (MSVC v145 und Windows SDK).
-- Git und [vcpkg](https://github.com/microsoft/vcpkg). Wenn vcpkg noch nicht installiert ist, klone und initialisiere es einmalig in einem Verzeichnis außerhalb des Projekts. Dieses Beispiel verwendet den Benutzerordner:
+- Git, eine Internetverbindung für den ersten Build und ein initialisiertes [vcpkg](https://github.com/microsoft/vcpkg). Das mit Visual Studio mitgelieferte vcpkg kann verwendet werden; eine globale vcpkg-Integration ist nicht nötig.
+
+### Projekt starten
+
+1. Öffne `MyRPG.slnx` in Visual Studio.
+2. Wähle **Debug** und **x64**, baue über **Build → Build Solution** und starte das Programm.
+
+Vor dem Kompilieren installiert der Build SFML 3, nlohmann-json und deren Abhängigkeiten aus dem Manifest automatisch für `x64-windows` in `vcpkg_installed/`. Der erste Build kann wegen Downloads und Kompilierung länger dauern. Bei späteren Builds prüft vcpkg die Abhängigkeiten erneut und übernimmt auch Änderungen am Manifest oder an der Registry-Konfiguration; bereits aktuelle Pakete werden nicht erneut installiert. `vcpkg_installed/` wird nicht versioniert.
+
+Das Projekt sucht vcpkg zuerst unter `VCPKG_ROOT`, dann in der Visual-Studio-Installation und unter `%USERPROFILE%\vcpkg`; andernfalls muss `vcpkg.exe` im `PATH` liegen. Für MSBuild kann der Pfad zur ausführbaren Datei auch mit `/p:MyRPGVcpkgExe="C:\Pfad\zu\vcpkg.exe"` angegeben werden. Ist kein initialisiertes vcpkg vorhanden, kann es einmalig außerhalb des Projekts eingerichtet werden:
 
 ```powershell
 git clone https://github.com/microsoft/vcpkg.git "$env:USERPROFILE\vcpkg"
 & "$env:USERPROFILE\vcpkg\bootstrap-vcpkg.bat"
-& "$env:USERPROFILE\vcpkg\vcpkg.exe" integrate install
 ```
 
-`integrate install` ist einmalig nötig, damit Visual Studio die vcpkg-MSBuild-Integration verwenden kann. Wenn vcpkg bereits eingerichtet ist, überspringe das Klonen und Bootstrap und führe den Integrationsschritt gegebenenfalls noch aus.
-
-### Abhängigkeiten installieren und Projekt starten
-
-1. Öffne `MyRPG.slnx` in Visual Studio.
-2. Öffne ein PowerShell-Terminal im Projektordner (neben `vcpkg.json`) und führe `& "$env:USERPROFILE\vcpkg\vcpkg.exe" install --triplet x64-windows` aus. Wenn `vcpkg.exe` im `PATH` liegt, genügt `vcpkg install --triplet x64-windows`. vcpkg liest das Manifest und installiert SFML 3 sowie nlohmann-json in `vcpkg_installed/`.
-3. Wähle in Visual Studio die Konfiguration **Debug** und die Plattform **x64**, baue über **Build → Build Solution** und starte das Programm.
-
-Das Projekt unterstützt ausschließlich Windows x64. `vcpkg_installed/` enthält lokal erzeugte Abhängigkeiten und wird nicht versioniert. Nach Änderungen an `vcpkg.json` denselben Installationsbefehl erneut ausführen.
+Schlägt die Installation fehl, zeigt die Build-Ausgabe den vcpkg-Fehler; prüfe insbesondere Internetverbindung, Git und den gewählten vcpkg-Pfad und starte den Build erneut. Das Projekt unterstützt ausschließlich Windows x64.
 
 ### So bindet das Projekt SFML ein
 
-Die Abhängigkeiten sind im Manifest `vcpkg.json` deklariert; SFML muss nicht separat heruntergeladen oder manuell in den Visual-Studio-Projekteigenschaften eingetragen werden. Die Projektdatei aktiviert den vcpkg-Manifestmodus und verwendet die installierten Dateien unter `vcpkg_installed/x64-windows/`:
+Die Abhängigkeiten sind im Manifest `vcpkg.json` deklariert; SFML muss nicht separat heruntergeladen oder manuell in den Visual-Studio-Projekteigenschaften eingetragen werden. Ein MSBuild-Schritt installiert das Manifest vor dem Kompilieren; die Projektdatei verwendet die installierten Dateien unter `vcpkg_installed/x64-windows/`:
 
 - Header werden aus `include/` eingebunden, zum Beispiel mit `#include <SFML/Graphics.hpp>`.
 - Im **Debug**-Build werden die Debug-Bibliotheken aus `debug/lib/` gelinkt (`sfml-graphics-d.lib`, `sfml-window-d.lib` und `sfml-system-d.lib`). Im **Release**-Build werden die entsprechenden Release-Bibliotheken aus `lib/` verwendet.

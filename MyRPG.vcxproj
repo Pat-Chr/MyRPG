@@ -16,6 +16,7 @@
     <ProjectGuid>{b9a73280-ab1d-47b1-96cb-6a62af2bdb5b}</ProjectGuid>
     <RootNamespace>MyRPG</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <VcpkgEnabled>false</VcpkgEnabled>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -44,8 +45,10 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <VcpkgEnableManifest>true</VcpkgEnableManifest>
-    <VcpkgInstalledDir>$(MSBuildProjectDirectory)\vcpkg_installed</VcpkgInstalledDir>
+    <MyRPGVcpkgExe Condition="'$(MyRPGVcpkgExe)' == '' and '$(VCPKG_ROOT)' != ''">$(VCPKG_ROOT)\vcpkg.exe</MyRPGVcpkgExe>
+    <MyRPGVcpkgExe Condition="'$(MyRPGVcpkgExe)' == '' and Exists('$(VCInstallDir)vcpkg\vcpkg.exe')">$(VCInstallDir)vcpkg\vcpkg.exe</MyRPGVcpkgExe>
+    <MyRPGVcpkgExe Condition="'$(MyRPGVcpkgExe)' == '' and Exists('$(USERPROFILE)\vcpkg\vcpkg.exe')">$(USERPROFILE)\vcpkg\vcpkg.exe</MyRPGVcpkgExe>
+    <MyRPGVcpkgExe Condition="'$(MyRPGVcpkgExe)' == ''">vcpkg.exe</MyRPGVcpkgExe>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -150,6 +153,10 @@
     <None Include="DesignDocument.md" />
     <Content Include="Assets\**\*" />
   </ItemGroup>
+  <Target Name="InstallManifestDependencies" BeforeTargets="PrepareForBuild;ClCompile" Condition="'$(DesignTimeBuild)' != 'true'">
+    <Message Importance="High" Text="Installing vcpkg manifest dependencies (x64-windows) using $(MyRPGVcpkgExe)." />
+    <Exec Command="&quot;$(MyRPGVcpkgExe)&quot; install --triplet x64-windows --x-wait-for-lock &quot;--x-manifest-root=$(MSBuildProjectDirectory)&quot; &quot;--x-install-root=$(MSBuildProjectDirectory)\vcpkg_installed&quot;" WorkingDirectory="$(MSBuildProjectDirectory)" />
+  </Target>
   <Target Name="CopyAssetsToOutput" AfterTargets="Build">
     <ItemGroup>
       <AssetFiles Include="Assets\**\*" />
