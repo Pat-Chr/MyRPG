@@ -23,20 +23,44 @@ Das [DesignDocument.md](./DesignDocument.md) beschreibt die technische Architekt
 - **Kartenwechsel** mit Fade-out/Fade-in und pro Trigger festlegbarer Spawn-Position
 - **Spieleranimationen**: Laufanimationen in acht Richtungen und Stillstandsanimationen in vier Richtungen, beschrieben in `.anim`-Dateien. Diagonale Blickrichtungen verwenden im Stillstand die linke bzw. rechte Animation.
 - **Magieeffekte**: sieben GPU-Shader-Effekte (Sparkle, Fire, Lightning, Frost, Vortex, Heal, Shockwave) in `Assets/Shaders/Effects/`. `M` startet Sparkle an der Spielerposition; auf der Testkarte gibt es rechts vom Startpunkt für jeden Effekt eine Trigger-Zone (von links nach rechts in obiger Reihenfolge).
+- **Screen Shake**: Ein eigenständiges Trigger-Ereignis erschüttert kurz die Spielwelt. Die Testzone liegt rechts hinter den Magie-Testzonen; auch der Lightning-Trigger löst den Shake aus.
+- **Wetter**: Regen und Nebel als Shader-Overlays in `Assets/Shaders/Weather/`; das Standardwetter ist pro Karte festlegbar und kann über Trigger geändert oder ausgeschaltet werden. Die Waldkarte startet mit Nebel; auf der Testkarte liegen drei Wetter-Testzonen südlich des Startpunkts.
 - **Textur-Cache** zur Wiederverwendung geladener Texturen
 - **Kamera und Letterbox-Viewport** mit einer Basisauflösung von 1024 × 768; das Seitenverhältnis bleibt beim Ändern der Fenstergröße erhalten
 - **Debug-Anzeigen** für Karten-ID, Position, letztes Ereignis, Raster und Triggerbereiche nur im Debug-Build. Ein Linksklick auf die Koordinaten kopiert X und Y in die Zwischenablage. Im Release-Build bleiben diese Anzeigen verborgen; die Trigger-Funktion selbst bleibt aktiv.
 
 ## 🚀 Quick Start
 
+### Voraussetzungen
+
+- Windows x64 und Visual Studio 2026 mit der Workload **Desktopentwicklung mit C++** (MSVC v145 und Windows SDK).
+- Git und [vcpkg](https://github.com/microsoft/vcpkg). Wenn vcpkg noch nicht installiert ist, klone und initialisiere es einmalig in einem Verzeichnis außerhalb des Projekts. Dieses Beispiel verwendet den Benutzerordner:
+
+```powershell
+git clone https://github.com/microsoft/vcpkg.git "$env:USERPROFILE\vcpkg"
+& "$env:USERPROFILE\vcpkg\bootstrap-vcpkg.bat"
+& "$env:USERPROFILE\vcpkg\vcpkg.exe" integrate install
+```
+
+`integrate install` ist einmalig nötig, damit Visual Studio die vcpkg-MSBuild-Integration verwenden kann. Wenn vcpkg bereits eingerichtet ist, überspringe das Klonen und Bootstrap und führe den Integrationsschritt gegebenenfalls noch aus.
+
+### Abhängigkeiten installieren und Projekt starten
+
 1. Öffne `MyRPG.slnx` in Visual Studio.
-2. Stelle die vcpkg-Abhängigkeiten aus `vcpkg.json` wieder her (SFML 3 und nlohmann-json). Führe dazu im Projektordner `vcpkg install --triplet x64-windows` aus.
-3. Wähle die Konfiguration **Debug** und die Plattform **x64** und baue die Lösung über **Build → Build Solution**.
-4. Starte das Programm im Debug-Modus.
+2. Öffne ein PowerShell-Terminal im Projektordner (neben `vcpkg.json`) und führe `& "$env:USERPROFILE\vcpkg\vcpkg.exe" install --triplet x64-windows` aus. Wenn `vcpkg.exe` im `PATH` liegt, genügt `vcpkg install --triplet x64-windows`. vcpkg liest das Manifest und installiert SFML 3 sowie nlohmann-json in `vcpkg_installed/`.
+3. Wähle in Visual Studio die Konfiguration **Debug** und die Plattform **x64**, baue über **Build → Build Solution** und starte das Programm.
 
-Das Projekt unterstützt ausschließlich Windows x64. `vcpkg_installed/` enthält lokal erzeugte Abhängigkeiten und vcpkg-Verwaltungsdaten und wird nicht versioniert. Die Dateien können aus dem Manifest wiederhergestellt werden.
+Das Projekt unterstützt ausschließlich Windows x64. `vcpkg_installed/` enthält lokal erzeugte Abhängigkeiten und wird nicht versioniert. Nach Änderungen an `vcpkg.json` denselben Installationsbefehl erneut ausführen.
 
-Beim Build werden die Inhalte aus `Assets/` sowie die zur Konfiguration passenden SFML-Laufzeit-DLLs automatisch neben die ausführbare Datei kopiert.
+### So bindet das Projekt SFML ein
+
+Die Abhängigkeiten sind im Manifest `vcpkg.json` deklariert; SFML muss nicht separat heruntergeladen oder manuell in den Visual-Studio-Projekteigenschaften eingetragen werden. Die Projektdatei aktiviert den vcpkg-Manifestmodus und verwendet die installierten Dateien unter `vcpkg_installed/x64-windows/`:
+
+- Header werden aus `include/` eingebunden, zum Beispiel mit `#include <SFML/Graphics.hpp>`.
+- Im **Debug**-Build werden die Debug-Bibliotheken aus `debug/lib/` gelinkt (`sfml-graphics-d.lib`, `sfml-window-d.lib` und `sfml-system-d.lib`). Im **Release**-Build werden die entsprechenden Release-Bibliotheken aus `lib/` verwendet.
+- Nach dem Build kopiert ein MSBuild-Schritt automatisch die passenden SFML-Laufzeit-DLLs aus `debug/bin/` (Debug) beziehungsweise `bin/` (Release) neben die ausführbare Datei. Auch die Inhalte von `Assets/` werden in das Ausgabeverzeichnis kopiert.
+
+Damit lässt sich das Programm direkt aus dem jeweiligen Build-Ausgabeverzeichnis starten. Für eine andere vcpkg-Architektur oder ein anderes Triplet müsste neben der Installation auch die derzeit auf `x64-windows` festgelegte Projektkonfiguration angepasst werden.
 
 ## 📁 Projektstruktur
 
@@ -49,6 +73,8 @@ MyRPG/
 │   ├── GameRenderer.h              # Rendering, Kamera und Textur-Cache
 │   ├── MagicEffects.h              # Zustand und Start-API für visuelle Effekte
 │   ├── MagicRenderer.h             # Darstellung der Effekte
+│   ├── Weather.h                   # Wetterzustand und Steuerung
+│   ├── WeatherRenderer.h           # Wetter-Shader-Overlay
 │   ├── MapLoader.h                # Parser für .map-Dateien
 │   ├── MainMenu.h                 # Titelbildschirm und Hauptmenü
 │   ├── MenuFont.h                 # Gemeinsame Systemschrift für Menüs
@@ -59,6 +85,7 @@ MyRPG/
 │   ├── Animations/Characters/     # Spieleranimationen im .anim-Format
 │   ├── Maps/                      # 0001_TestMap.map und 0001_Forest.map
 │   ├── Shaders/Effects/           # GLSL-Shader der Magieeffekte
+│   ├── Shaders/Weather/           # GLSL-Shader für Regen und Nebel
 │   ├── UI/                        # Titelbildschirm
 │   └── Sprites/
 │       ├── Characters/            # Spieler-Spritesheets
@@ -75,11 +102,13 @@ Karten liegen als Textdateien unter `Assets/Maps/`. Leerzeilen und Zeilen, die m
 ```text
 MAP <mapId>
 GROUND <spritePath>
+WEATHER <none|shaderName>
 OBJECT <id> <type> <x> <y> <spritePath> solid=<0|1>
 TRIGGER <id> <x> <y> <width> <height> <eventName> [glow=0|1] [spawn_x=<x> spawn_y=<y>]
 ```
 
 - `MAP` setzt die erforderliche Karten-ID. `GROUND` legt das Standard-Bodensprite fest, das den sichtbaren Kartenbereich gekachelt ausfüllt.
+- `WEATHER` ist optional und setzt das Standardwetter auf `none` oder den Dateinamen eines Wetter-Shaders ohne `.frag`, zum Beispiel `rain` für `rain.frag`; ohne Angabe gilt `none`. Alle `.frag`-Dateien unter `Assets/Shaders/Weather/` werden beim Start automatisch erkannt und vorgeladen. Ein neuer Effekt benötigt keinen Codeeintrag; er ist nach dem nächsten Build und Spielstart verfügbar. Ungültige oder mehrfache Angaben verhindern das Laden der Karte. Das Wetter wird über der Spielwelt, aber unter UI und Kartenübergang gezeichnet und pausiert im Einstellungsmenü. Wenn ein Shader nicht verfügbar ist, wird der Fehler auf stderr gemeldet und der Effekt nicht gezeichnet.
 - `OBJECT` platziert ein Sprite in Weltkoordinaten. Typen sind `untergrund`, `scenery`, `wall` und `npc`; Positionen von `untergrund` und `scenery` werden auf das 64-Pixel-Raster gerundet.
 - `solid` legt fest, ob das Objekt den Spieler blockiert: `solid=1` aktiviert die Kollision, `solid=0` lässt den Spieler hindurch. Das Flag ist erforderlich und unabhängig vom Typ – auch ein `scenery`-Objekt kann also entweder blockieren oder nicht. Für Boden- und Deko-Objekte, die begehbar sein sollen, wird üblicherweise `solid=0` verwendet.
 - `TRIGGER` definiert ein rechteckiges Ereignisgebiet in Weltkoordinaten. Das Ereignis wird beim Betreten ausgelöst; nach Verlassen kann es bei erneutem Betreten wieder ausgelöst werden. `glow` ist optional und standardmäßig `0`. Mit `glow=1` erhält das Gebiet einen pulsierenden, additiven Shader-Glow. Das ist nur Darstellung und ändert weder Auslösung noch Kollision; der Glow ist auch im Release-Build sichtbar. Wenn Shader nicht unterstützt werden, wird stattdessen ein einfaches Rechteck gezeichnet. Debug-Markierungen der Trigger bleiben auf Debug-Builds beschränkt.
@@ -89,13 +118,20 @@ Beispiel:
 ```text
 MAP 0001_TestMap
 GROUND Assets/Sprites/Environment/Forest/forest_ground.png
+WEATHER rain
 OBJECT rock_01 scenery -192 -64 Assets/Sprites/Environment/Forest/forest_rock.png solid=1
 OBJECT path_01 untergrund -64 0 Assets/Sprites/Environment/Forest/forest_path.png solid=0
 TRIGGER magic_fire 448 -32 64 64 magic_fire glow=1
+TRIGGER screen_shake_test 1408 -32 64 64 screen_shake glow=1
+TRIGGER clear_weather -32 544 64 64 weather_none glow=1
 TRIGGER north_path_to_forest -64 -260 220 120 Load_0001_Forest glow=1 spawn_x=-128 spawn_y=1024
 ```
 
-`magic_<name>` startet beim Betreten den vorhandenen Effekt gleichen Namens an der Spielerposition, zum Beispiel `magic_fire` für `Assets/Shaders/Effects/magic_fire.frag`.
+`magic_<name>` startet beim Betreten den vorhandenen Effekt gleichen Namens an der Spielerposition, zum Beispiel `magic_fire` für `Assets/Shaders/Effects/magic_fire.frag`. Der Lightning-Trigger startet zusätzlich einen Screen Shake.
+
+`screen_shake` startet unabhängig von einem Magieeffekt einen kurzen Screen Shake (Stärke 8 Pixel, Dauer 0,32 Sekunden). Nach Verlassen und erneutem Betreten der Zone wird er erneut ausgelöst. Die Testzone liegt bei x=1408, y=-32. Wetter-Overlay und UI bleiben bildschirmfest.
+
+Trigger-Ereignisse der Form `weather_<shaderName>` schalten auf den gleichnamigen automatisch erkannten Shader um; `weather_none` schaltet das Wetter aus. Beispielsweise aktiviert `weather_rain` die Datei `rain.frag`. Das Wetter bleibt bis zur nächsten Änderung aktiv. Beim erfolgreichen Kartenwechsel übernimmt die Zielkarte ihr eigenes Standardwetter; schlägt der Wechsel fehl, bleibt das bisherige Wetter erhalten. Auf der Testkarte liegen die Wetterzonen südlich des Startpunkts bei x=-32 und y=224, 384 und 544 (Regen, Nebel, aus).
 
 `Load_<dateiname>` lädt `Assets/Maps/<dateiname>.map`, zum Beispiel lädt `Load_0002_Cave` die Datei `Assets/Maps/0002_Cave.map`. Der Dateiname ohne Endung darf keine Leerzeichen oder Pfadtrennzeichen enthalten; die `MAP`-ID in der Datei muss vorhanden sein, aber nicht dem Dateinamen entsprechen. Neue Karten benötigen keinen Codeeintrag. Die optionalen Trigger-Angaben `spawn_x` und `spawn_y` legen gemeinsam die Zielposition fest; ohne sie gilt `(0, 0)`. So können verschiedene Übergänge unterschiedliche Einstiegspunkte verwenden. Die Zielposition sollte frei von Hindernissen und nicht innerhalb eines sofort zurückführenden Triggers liegen. Wenn das Laden fehlschlägt, bleibt die bisherige Karte aktiv und ein Fehler wird auf stderr ausgegeben. Die Startkarte ist weiterhin in der Engine festgelegt.
 

@@ -17,6 +17,7 @@
 #include "AnimationLoader.h"
 #include "GameTypes.h"
 #include "MagicRenderer.h"
+#include "WeatherRenderer.h"
 
 /**
  * @brief Wandelt Weltkoordinaten in Bildschirmkoordinaten um.
@@ -36,7 +37,8 @@ inline sf::Vector2f WorldToScreen(float worldX, float worldY, const GameState& g
     const float halfWidth = static_cast<float>(viewport.width) * 0.5f;
     const float halfHeight = static_cast<float>(viewport.height) * 0.5f;
 
-    return sf::Vector2f((worldX - game.player.x) + halfWidth, (worldY - game.player.y) + halfHeight);
+    return sf::Vector2f((worldX - game.player.x) + halfWidth + game.cameraShake.offsetX,
+                        (worldY - game.player.y) + halfHeight + game.cameraShake.offsetY);
 }
 
 /**
@@ -334,7 +336,7 @@ inline void RenderTriggerDebug(sf::RenderTarget& target, const Viewport& viewpor
  * 4. Map-Objekte (Wände, NPCs, etc.)
  * 5. Trigger-Zonen (nur Debug-Build)
  * 6. Spieler-Charakter (Textur oder Fallback-Rechteck)
- * 7. Magieeffekte
+ * 7. Magieeffekte und Wetter
  * 8. Optionale FPS-Anzeige und Debug-UI (Koordinaten und Ereignisse nur im Debug-Build)
  * 9. Kartenübergangs-Overlay (Fade-In/Fade-Out Effekt)
  * 
@@ -355,8 +357,8 @@ inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewpo
 #ifdef _DEBUG
     // Grid für Debugging: 32x32 Pixel Kacheln, relativ zur Spielerposition
     const int tileSize = 32;
-    const int gridOffsetX = static_cast<int>(std::fmod(-game.player.x, static_cast<float>(tileSize)));
-    const int gridOffsetY = static_cast<int>(std::fmod(-game.player.y, static_cast<float>(tileSize)));
+    const int gridOffsetX = static_cast<int>(std::fmod(-game.player.x + game.cameraShake.offsetX, static_cast<float>(tileSize)));
+    const int gridOffsetY = static_cast<int>(std::fmod(-game.player.y + game.cameraShake.offsetY, static_cast<float>(tileSize)));
 
     sf::VertexArray grid(sf::PrimitiveType::Lines);
     const sf::Color gridColor(40, 64, 44);
@@ -452,7 +454,8 @@ inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewpo
         const float frameScale = (playerSize / frameHeight) * playerAnimation.scale;
         playerSprite.setOrigin({ static_cast<float>(frame.size.x) * 0.5f, frameHeight * 0.5f });
         playerSprite.setScale({ frameScale, frameScale });
-        playerSprite.setPosition({ viewport.width * 0.5f, viewport.height * 0.5f });
+        playerSprite.setPosition({ viewport.width * 0.5f + game.cameraShake.offsetX,
+                                   viewport.height * 0.5f + game.cameraShake.offsetY });
         target.draw(playerSprite);
     }
     else
@@ -461,13 +464,17 @@ inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewpo
         sf::RectangleShape player({ playerSize, playerSize });
         player.setFillColor(sf::Color(176, 220, 255));
         player.setOrigin({ playerSize * 0.5f, playerSize * 0.5f });
-        player.setPosition({ viewport.width * 0.5f, viewport.height * 0.5f });
+        player.setPosition({ viewport.width * 0.5f + game.cameraShake.offsetX,
+                             viewport.height * 0.5f + game.cameraShake.offsetY });
 
         target.draw(player);
     }
 
-    RenderMagicEffects(target, game.magicEffects, game.player.x, game.player.y,
+    RenderMagicEffects(target, game.magicEffects,
+                       game.player.x - game.cameraShake.offsetX,
+                       game.player.y - game.cameraShake.offsetY,
                        static_cast<float>(viewport.width), static_cast<float>(viewport.height));
+    RenderWeather(target, game.weather, static_cast<float>(viewport.width), static_cast<float>(viewport.height));
 
     #ifdef _DEBUG
     constexpr bool showDebug = true;

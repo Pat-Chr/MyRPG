@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "MagicEffects.h"
+#include "Weather.h"
 
 enum class PlayerDirection
 {
@@ -125,7 +126,9 @@ struct MapData
 	
 	// Standard-Pfad zum Hintergrund-Boden-Sprite
 	std::string defaultGroundPath;
-	
+
+	std::string defaultWeather = "none";
+
 	// Liste aller Objekte in der Karte (Wände, Dekoration, NPCs)
 	std::vector<MapObject> objects;
 	
@@ -163,6 +166,15 @@ struct MapTransitionState
 	float targetPlayerY = 0.0f;
 };
 
+struct CameraShakeState
+{
+	float elapsed = 0.0f;
+	float duration = 0.0f;
+	float intensity = 0.0f;
+	float offsetX = 0.0f;
+	float offsetY = 0.0f;
+};
+
 // Gesamtzustand des Spiels (Single-Page/Level-basiert)
 struct GameState
 {
@@ -180,6 +192,8 @@ struct GameState
 	
 	// Aktueller Karten-Übergangszustand
 	MapTransitionState mapTransition;
+	CameraShakeState cameraShake;
 
 	MagicEffects magicEffects;
+	WeatherState weather;
 };

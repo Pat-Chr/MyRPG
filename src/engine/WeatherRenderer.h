@@ -1,0 +1,79 @@
+#pragma once
+
+#include <SFML/Graphics.hpp>
+
+#include <cstdio>
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+
+#include "Weather.h"
+
+inline sf::Shader* GetWeatherShader(const std::string& effectId)
+{
+	if (effectId == "none")
+	{
+		return nullptr;
+	}
+
+	const WeatherEffectDefinition* definition = FindWeatherEffectDefinition(effectId);
+	if (definition == nullptr)
+	{
+		return nullptr;
+	}
+
+	static std::unordered_map<std::string, std::unique_ptr<sf::Shader>> shaders;
+	static std::unordered_set<std::string> loadAttempted;
+	if (loadAttempted.insert(effectId).second)
+	{
+		if (!sf::Shader::isAvailable())
+		{
+			std::fprintf(stderr, "Weather shaders are not available on this system.\n");
+		}
+		else
+		{
+			auto loaded = std::make_unique<sf::Shader>();
+			if (loaded->loadFromFile("Assets/Shaders/Weather/weather.vert", definition->fragmentPath))
+			{
+				shaders.emplace(effectId, std::move(loaded));
+			}
+			else
+			{
+				std::fprintf(stderr, "Failed to load weather shader: %s\n", definition->fragmentPath.c_str());
+			}
+		}
+	}
+
+	const auto shader = shaders.find(effectId);
+	return shader == shaders.end() ? nullptr : shader->second.get();
+}
+
+inline void PreloadWeatherShaders()
+{
+	for (const WeatherEffectDefinition& definition : GetWeatherEffectDefinitions())
+	{
+		GetWeatherShader(definition.id);
+	}
+}
+
+inline void RenderWeather(sf::RenderTarget& target, const WeatherState& weather, float width, float height)
+{
+	sf::Shader* shader = GetWeatherShader(weather.effectId);
+	if (shader == nullptr) return;
+
+	const sf::Color white = sf::Color::White;
+	const sf::Vertex quad[6] = {
+		{ { 0.0f, 0.0f }, white, { 0.0f, 0.0f } },
+		{ { width, 0.0f }, white, { 1.0f, 0.0f } },
+		{ { 0.0f, height }, white, { 0.0f, 1.0f } },
+		{ { width, 0.0f }, white, { 1.0f, 0.0f } },
+		{ { width, height }, white, { 1.0f, 1.0f } },
+		{ { 0.0f, height }, white, { 0.0f, 1.0f } }
+	};
+	shader->setUniform("time", weather.elapsed);
+	shader->setUniform("resolution", sf::Glsl::Vec2(width, height));
+	sf::RenderStates states;
+	states.shader = shader;
+	target.draw(quad, 6, sf::PrimitiveType::Triangles, states);
+}

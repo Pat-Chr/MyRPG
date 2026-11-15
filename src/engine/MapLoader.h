@@ -101,6 +101,7 @@ inline float SnapToGrid(float value, float gridSize)
  * Unterstützt folgende Keywords im Dateiformat:
  * - MAP ID         : Setzt die Map-ID
  * - GROUND path    : Setzt den Pfad zum Boden-Sprite
+ * - WEATHER none|<shaderName> : Setzt das Standardwetter
  * - OBJECT id type x y spritePath solid=0|1 : Lädt ein Objekt (wird auf Grid gesnapped)
  * - TRIGGER id x y width height eventName [glow=0|1] [spawn_x=x spawn_y=y] : Definiert eine Trigger-Zone
  * 
@@ -131,6 +132,7 @@ inline bool TryLoadMapFromFile(const std::string& filePath, MapData& outMap)
 	MapData loadedMap;
 	std::string line;
 	std::size_t lineNumber = 0;
+	bool hasWeather = false;
 
 	while (std::getline(input, line))
 	{
@@ -154,6 +156,19 @@ inline bool TryLoadMapFromFile(const std::string& filePath, MapData& outMap)
 		if (keyword == "GROUND")
 		{
 			lineStream >> loadedMap.defaultGroundPath; // Pfad zum Boden-Sprite
+			continue;
+		}
+
+		if (keyword == "WEATHER")
+		{
+			std::string value;
+			std::string extra;
+			if (hasWeather || !(lineStream >> value) || !TryParseWeather(value, loadedMap.defaultWeather) || (lineStream >> extra))
+			{
+				std::cerr << filePath << ':' << lineNumber << ": Invalid WEATHER directive\n";
+				return false;
+			}
+			hasWeather = true;
 			continue;
 		}
 
