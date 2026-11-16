@@ -1,6 +1,8 @@
 #pragma once
 
-#ifdef _DEBUG
+#include "../BuildConfig.h"
+
+#ifdef MYRPG_MAP_EDITOR
 #include <Windows.h>
 #include <algorithm>
 #include <cmath>

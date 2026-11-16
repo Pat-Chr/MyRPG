@@ -154,7 +154,7 @@ inline void UpdateMapTransition(GameState& game, float deltaTime)
         if (TryLoadMapFromFile(game.mapTransition.targetMapPath, nextMap))
         {
             game.activeMap = std::move(nextMap);
-#ifdef _DEBUG
+#ifdef MYRPG_MAP_EDITOR
             game.activeMapPath = game.mapTransition.targetMapPath;
 #endif
             game.player.x = game.mapTransition.targetPlayerX;
@@ -296,11 +296,11 @@ inline void InitializeGameState(GameState& game)
     if (!TryLoadMapFromFile("Assets/Maps/0001_TestMap.map", game.activeMap))
     {
         InitializeFallbackMap(game);
-#ifdef _DEBUG
+#ifdef MYRPG_MAP_EDITOR
         game.activeMapPath.clear();
 #endif
     }
-#ifdef _DEBUG
+#ifdef MYRPG_MAP_EDITOR
     else
     {
         game.activeMapPath = "Assets/Maps/0001_TestMap.map";

@@ -4,7 +4,7 @@ MyRPG ist ein Windows-Projekt, in dem ich meine eigene kleine RPG-Engine mit C++
 
 > Ich schreibe meine eigene kleine RPG-Engine. Sie soll später auch ohne Programmierkenntnisse das Erstellen eines eigenen kleinen Adventures ermöglichen. Durch das Erstellen eigener Assets, Skripte und Maps soll man einfach seine eigene Welt erschaffen können.
 >
-> **Das ist das langfristige Ziel, noch nicht der aktuelle Funktionsumfang:** Der Prototyp enthält einen einfachen Map-Editor im Debug-Build, aber noch keine Skript-Laufzeit. Trigger-Ereignisse müssen in der Engine unterstützt werden.
+> **Das ist das langfristige Ziel, noch nicht der aktuelle Funktionsumfang:** Der Prototyp enthält einen einfachen Map-Editor, aber noch keine Skript-Laufzeit. Trigger-Ereignisse müssen in der Engine unterstützt werden.
 
 ## 📚 Dokumentation
 
@@ -28,9 +28,11 @@ Das [DesignDocument.md](./DesignDocument.md) beschreibt die technische Architekt
 - **Textur-Cache** zur Wiederverwendung geladener Texturen
 - **Kamera und Letterbox-Viewport** mit einer Basisauflösung von 1024 × 768; das Seitenverhältnis bleibt beim Ändern der Fenstergröße erhalten
 - **Debug-Anzeigen** für Karten-ID, Position, letztes Ereignis, Raster und Triggerbereiche nur im Debug-Build. Ein Linksklick auf die Koordinaten kopiert X und Y in die Zwischenablage. Im Release-Build bleiben diese Anzeigen verborgen; die Trigger-Funktion selbst bleibt aktiv.
-- **Map-Editor** im Debug-Build: `F2` während des Spiels öffnet ein separates Fenster und pausiert das Spiel. Nicht während eines Kartenübergangs verfügbar.
+- **Map-Editor**: Im Debug-Build öffnet `F2` während des Spiels ein separates Fenster und pausiert das Spiel. Im vorläufigen Release-Build muss zuerst `Map-Editor` in den Einstellungen aktiviert werden. Nicht während eines Kartenübergangs verfügbar.
 
 ### Map-Editor
+
+Im Release-Build ist der Editor standardmäßig ausgeschaltet. Über `Esc` und `Map-Editor: An` kann er aktiviert werden; die Einstellung wird gespeichert. Nach dem Schließen des Einstellungsmenüs öffnet `F2` den Editor. Im Debug-Build ist `F2` ohne Aktivierung verfügbar. Für einen finalen Build lässt sich der Editor samt Release-Einstellung ausschließen, indem `MYRPG_MAP_EDITOR_ENABLED` in `src/BuildConfig.h` auf `0` gesetzt wird (alternativ als Compilerdefinition). Die Debug-Anzeigen im Spielfenster bleiben unabhängig davon auf Debug beschränkt.
 
 Im Editor öffnen `Neu` und `Oeffnen` Karten aus `Assets/Maps` neben der EXE. `Neu` verwendet den Dateinamen als Karten-ID; Namen dürfen Buchstaben, Ziffern, `_` und `-` enthalten. Links erscheint `Assets/Sprites` als auf- und zuklappbarer Ordnerbaum; `Environment` und seine Unterordner sind standardmäßig geöffnet. Ein Klick auf einen Ordner klappt ihn auf oder zu, das Mausrad scrollt die Liste. Ein Sprite auswählen und auf die Karte klicken platziert es. `Boden setzen` verwendet das gewählte Sprite als Standardboden, `Wetter` schaltet das Standardwetter durch. Neue Karten benötigen vor dem Speichern einen Boden.
 
@@ -42,7 +44,7 @@ Beim Zuweisen eines Kartenwechsels bleibt die vorhandene Zielposition erhalten; 
 
 `Speichern` schreibt nur in den Spielordner. `Im Spiel uebernehmen` aktiviert die gespeicherte Karte und setzt die Figur auf den gewählten Startpunkt; bei ungespeicherten Änderungen wird vorher nach dem Speichern gefragt. Vor Kollisionen und Triggern am Startpunkt wird gewarnt. Der Editor bleibt bis zum Schließen geöffnet und das Spiel pausiert. Ungespeicherte Änderungen können beim Schließen oder Kartenwechsel verworfen werden.
 
-Vor dem ersten Überschreiben einer vorhandenen Karte wird eine unveränderliche Sicherung `<dateiname>.map.original.bak` daneben angelegt. Sie wird nie automatisch gelöscht oder ersetzt. Änderungen und Sicherungen liegen im Build-Ausgabeverzeichnis: Ein Build kann Karten überschreiben, und Bereinigen kann den Ordner entfernen. Fertige Karten und zusätzliche Sprites daher rechtzeitig manuell ins Projekt übernehmen oder anderweitig sichern. Im Debug-Build ist der EXE-Ordner das Arbeitsverzeichnis, damit Spiel und Editor dieselben Assets verwenden.
+Vor dem ersten Überschreiben einer vorhandenen Karte wird eine unveränderliche Sicherung `<dateiname>.map.original.bak` daneben angelegt. Sie wird nie automatisch gelöscht oder ersetzt. Änderungen und Sicherungen liegen im Spielordner: Ein Build kann Karten überschreiben, und Bereinigen kann den Ausgabeordner entfernen. Fertige Karten und zusätzliche Sprites daher rechtzeitig manuell ins Projekt übernehmen oder anderweitig sichern. Bei eingebautem Editor ist der EXE-Ordner das Arbeitsverzeichnis, damit Spiel und Editor dieselben Assets verwenden. Der Spielordner muss zum Speichern beschreibbar sein.
 
 ## 🚀 Quick Start
 

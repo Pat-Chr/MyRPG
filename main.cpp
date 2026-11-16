@@ -17,7 +17,7 @@
 #include "src/engine/GameRenderer.h"
 #include "src/engine/MainMenu.h"
 #include "src/engine/SettingsMenu.h"
-#ifdef _DEBUG
+#ifdef MYRPG_MAP_EDITOR
 #include "src/editor/MapEditor.h"
 #endif
 
@@ -127,6 +127,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             OutputDebugStringA("MyRPG: Failed to redirect stderr to the debug console.\n");
         }
     }
+#endif
+#if defined(_DEBUG) || defined(MYRPG_MAP_EDITOR)
     wchar_t executablePath[32768];
     const DWORD executableLength = GetModuleFileNameW(nullptr, executablePath, static_cast<DWORD>(std::size(executablePath)));
     if (executableLength == 0 || executableLength >= std::size(executablePath) ||
@@ -254,8 +256,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 {
                     handleSettingsAction(settingsMenu.HandleKey(key->code, window));
                 }
-#ifdef _DEBUG
-                else if (key->code == sf::Keyboard::Key::F2 && !IsMapTransitionActive(game))
+#ifdef MYRPG_MAP_EDITOR
+                else if (key->code == sf::Keyboard::Key::F2 && !IsMapTransitionActive(game)
+#ifndef _DEBUG
+                    && settingsMenu.GetSettings().mapEditorEnabled
+#endif
+                    )
                 {
                     SetMovementState(game.input, false, false, false, false);
                     game.player.moving = false;

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../BuildConfig.h"
+
 #include <string>
 #include <vector>
 
@@ -188,7 +190,7 @@ struct GameState
 	
 	// Aktive Karte, die gerade angezeigt wird
 	MapData activeMap;
-#ifdef _DEBUG
+#ifdef MYRPG_MAP_EDITOR
 	std::string activeMapPath;
 #endif
 

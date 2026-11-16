@@ -1,5 +1,6 @@
 #pragma once
-#ifdef _DEBUG
+#include "../BuildConfig.h"
+#ifdef MYRPG_MAP_EDITOR
 #include <algorithm>
 #include <cctype>
 #include <cstdio>

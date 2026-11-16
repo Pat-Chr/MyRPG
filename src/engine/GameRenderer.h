@@ -295,7 +295,7 @@ inline void RenderTriggerGlow(sf::RenderTarget& target, const Viewport& viewport
     }
 }
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(MYRPG_MAP_EDITOR)
 /**
  * @brief Rendert Debug-Debugging-Overlays für Trigger-Zonen.
  * 
