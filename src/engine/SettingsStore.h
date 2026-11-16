@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../BuildConfig.h"
+
 #include <Windows.h>
 #include <nlohmann/json.hpp>
 
@@ -17,6 +19,9 @@ struct GameSettings
 	bool verticalSync = false;
 	unsigned int fpsLimit = 0u;
 	bool showFps = false;
+#if defined(MYRPG_MAP_EDITOR) && !defined(_DEBUG)
+	bool mapEditorEnabled = false;
+#endif
 };
 
 class SettingsStore
@@ -77,7 +82,11 @@ public:
 			!document["version"].is_number_integer() || document["version"] != 1 ||
 			!document.contains("vsync") || !document["vsync"].is_boolean() ||
 			!document.contains("fps_limit") || !document["fps_limit"].is_number_integer() ||
-			(document.contains("show_fps") && !document["show_fps"].is_boolean()))
+			(document.contains("show_fps") && !document["show_fps"].is_boolean())
+#if defined(MYRPG_MAP_EDITOR) && !defined(_DEBUG)
+			|| (document.contains("map_editor_enabled") && !document["map_editor_enabled"].is_boolean())
+#endif
+			)
 		{
 			error = "Die Einstellungsdatei hat ein ungueltiges oder nicht unterstuetztes Format.";
 			return false;
@@ -93,6 +102,9 @@ public:
 		settings.verticalSync = document["vsync"].get<bool>();
 		settings.fpsLimit = *found;
 		settings.showFps = document.contains("show_fps") ? document["show_fps"].get<bool>() : true;
+#if defined(MYRPG_MAP_EDITOR) && !defined(_DEBUG)
+		settings.mapEditorEnabled = document.contains("map_editor_enabled") ? document["map_editor_enabled"].get<bool>() : false;
+#endif
 		writable = true;
 		return true;
 	}
@@ -116,6 +128,9 @@ public:
 		document["vsync"] = settings.verticalSync;
 		document["fps_limit"] = settings.fpsLimit;
 		document["show_fps"] = settings.showFps;
+#if defined(MYRPG_MAP_EDITOR) && !defined(_DEBUG)
+		document["map_editor_enabled"] = settings.mapEditorEnabled;
+#endif
 
 		wchar_t temporaryName[MAX_PATH];
 		if (!GetTempFileNameW(path.parent_path().c_str(), L"rpg", 0, temporaryName))

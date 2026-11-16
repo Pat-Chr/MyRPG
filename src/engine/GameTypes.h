@@ -1,10 +1,14 @@
 #pragma once
 
+#include "../BuildConfig.h"
+
 #include <string>
 #include <vector>
 
 #include "MagicEffects.h"
 #include "Weather.h"
+
+inline constexpr char NoTriggerEvent[] = "none";
 
 enum class PlayerDirection
 {
@@ -186,7 +190,10 @@ struct GameState
 	
 	// Aktive Karte, die gerade angezeigt wird
 	MapData activeMap;
-	
+#ifdef MYRPG_MAP_EDITOR
+	std::string activeMapPath;
+#endif
+
 	// Zuletzt ausgelöstes Ereignis (für Debugging/Logging)
 	std::string lastTriggeredEvent;
 	

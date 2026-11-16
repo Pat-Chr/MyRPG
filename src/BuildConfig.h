@@ -1,0 +1,9 @@
+#pragma once
+
+#ifndef MYRPG_MAP_EDITOR_ENABLED
+#define MYRPG_MAP_EDITOR_ENABLED 1
+#endif
+
+#if MYRPG_MAP_EDITOR_ENABLED
+#define MYRPG_MAP_EDITOR
+#endif
