@@ -6,6 +6,8 @@
 #include "MagicEffects.h"
 #include "Weather.h"
 
+inline constexpr char NoTriggerEvent[] = "none";
+
 enum class PlayerDirection
 {
 	Down, Up, Left, Right, Northwest, Northeast, Southwest, Southeast

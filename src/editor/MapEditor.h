@@ -67,7 +67,7 @@ public:
 				else if (const auto* button = event->getIf<sf::Event::MouseButtonPressed>()) HandlePress(*button, window, game);
 				else if (const auto* button = event->getIf<sf::Event::MouseButtonReleased>())
 				{
-					if (button->button == sf::Mouse::Button::Left) { draggingObject = false; draggingTrigger = false; creatingTrigger = false; }
+					if (button->button == sf::Mouse::Button::Left) { draggingObject = false; draggingTrigger = false; creatingTrigger = false; resizeEdges = 0; }
 					if (button->button == sf::Mouse::Button::Middle) panning = false;
 				}
 				else if (const auto* move = event->getIf<sf::Event::MouseMoved>())
@@ -86,7 +86,11 @@ public:
 						object.y = object.type == MapObjectType::Scenery || object.type == MapObjectType::Untergrund ? SnapToGrid(pos.y, 64.0f) : pos.y;
 						document.dirty = true;
 					}
-					else if ((draggingTrigger || creatingTrigger) && selectedTrigger < document.map.triggers.size())
+					else if (resizeEdges && triggerMode && !spawnMode && selectedTrigger < document.map.triggers.size())
+					{
+						ResizeTrigger(WorldPosition(window, move->position));
+					}
+					else if ((draggingTrigger || creatingTrigger) && triggerMode && !spawnMode && selectedTrigger < document.map.triggers.size())
 					{
 						const sf::Vector2f pos = WorldPosition(window, move->position);
 						auto& trigger = document.map.triggers[selectedTrigger];
@@ -134,9 +138,12 @@ private:
 	AssetBrowser browser;
 	std::size_t selectedObject = static_cast<std::size_t>(-1), selectedTrigger = static_cast<std::size_t>(-1);
 	sf::Vector2f camera{ 0.0f, 0.0f }, spawn{ 0.0f, 0.0f }, triggerAnchor{}, triggerOffset{};
+	sf::Vector2f resizeStart{}, resizePosition{}, resizeSize{};
 	sf::Vector2i lastMouse{};
 	float zoom = 1.0f;
 	bool selectMode = false, spawnMode = false, triggerMode = false, panning = false, draggingObject = false, draggingTrigger = false, creatingTrigger = false;
+	enum TriggerEdge { Left = 1, Right = 2, Top = 4, Bottom = 8 };
+	int resizeEdges = 0;
 	MapObjectType newType = MapObjectType::Scenery;
 	bool newSolid = false;
 	enum class TriggerDropdown { None, Maps, Effects };
@@ -151,6 +158,42 @@ private:
 	bool ObjectPanelVisible() const
 	{
 		return !triggerMode && !spawnMode && (!selectMode || selectedObject < document.map.objects.size());
+	}
+
+	int TriggerEdgesAt(const TriggerZone& trigger, sf::Vector2f pos) const
+	{
+		const float tolerance = 6.0f / zoom;
+		const float left = std::abs(pos.x - trigger.x), right = std::abs(pos.x - (trigger.x + trigger.width));
+		const float top = std::abs(pos.y - trigger.y), bottom = std::abs(pos.y - (trigger.y + trigger.height));
+		int edges = 0;
+		if (pos.y >= trigger.y - tolerance && pos.y <= trigger.y + trigger.height + tolerance)
+		{
+			if (left <= tolerance && left <= right) edges |= Left;
+			else if (right <= tolerance) edges |= Right;
+		}
+		if (pos.x >= trigger.x - tolerance && pos.x <= trigger.x + trigger.width + tolerance)
+		{
+			if (top <= tolerance && top <= bottom) edges |= Top;
+			else if (bottom <= tolerance) edges |= Bottom;
+		}
+		return edges;
+	}
+	void ResizeTrigger(sf::Vector2f pos)
+	{
+		auto& trigger = document.map.triggers[selectedTrigger];
+		const sf::Vector2f delta = pos - resizeStart;
+		float left = resizePosition.x, top = resizePosition.y;
+		float right = left + resizeSize.x, bottom = top + resizeSize.y;
+		if (resizeEdges & Left) left = (std::min)(left + delta.x, right - 1.0f);
+		if (resizeEdges & Right) right = (std::max)(right + delta.x, left + 1.0f);
+		if (resizeEdges & Top) top = (std::min)(top + delta.y, bottom - 1.0f);
+		if (resizeEdges & Bottom) bottom = (std::max)(bottom + delta.y, top + 1.0f);
+		const float width = right - left, height = bottom - top;
+		if (trigger.x != left || trigger.y != top || trigger.width != width || trigger.height != height)
+		{
+			trigger.x = left; trigger.y = top; trigger.width = width; trigger.height = height;
+			document.dirty = true;
+		}
 	}
 
 	void Error(const std::string& message) const
@@ -205,6 +248,7 @@ private:
 			for (const auto& effect : GetMagicEffectDefinitions()) entries.push_back("magic_" + effect.id);
 			for (const auto& effect : GetWeatherEffectDefinitions()) entries.push_back("weather_" + effect.id);
 		}
+		entries.insert(entries.begin(), NoTriggerEvent);
 		dropdownEntries = std::move(entries);
 		dropdownOffset = 0;
 		triggerDropdown = type;
@@ -289,6 +333,7 @@ private:
 		selectedTrigger = static_cast<std::size_t>(-1);
 		triggerDropdown = TriggerDropdown::None;
 		draggingTrigger = creatingTrigger = false;
+		resizeEdges = 0;
 	}
 	bool Save()
 	{
@@ -297,6 +342,8 @@ private:
 		selectedObject = static_cast<std::size_t>(-1);
 		selectedTrigger = static_cast<std::size_t>(-1);
 		triggerDropdown = TriggerDropdown::None;
+		draggingTrigger = creatingTrigger = false;
+		resizeEdges = 0;
 		return true;
 	}
 	void Apply(GameState& game)
@@ -312,7 +359,7 @@ private:
 		GameState test;
 		test.activeMap = loaded;
 		bool warning = IsSolidObjectBlockingPosition(test, spawn.x, spawn.y);
-		for (const TriggerZone& trigger : loaded.triggers) warning = warning || IsInsideTrigger(trigger, spawn.x, spawn.y);
+		for (const TriggerZone& trigger : loaded.triggers) warning = warning || (trigger.eventName != NoTriggerEvent && IsInsideTrigger(trigger, spawn.x, spawn.y));
 		if (warning && MessageBoxW(owner, L"Die Spielerposition liegt in einem Hindernis oder Trigger. Trotzdem uebernehmen?", L"Map-Editor", MB_YESNO | MB_ICONWARNING) != IDYES) return;
 		game.activeMap = std::move(loaded);
 		game.activeMapPath = document.path.lexically_relative(root).generic_string();
@@ -344,6 +391,8 @@ private:
 		triggerMode = false;
 		selectedTrigger = static_cast<std::size_t>(-1);
 		triggerDropdown = TriggerDropdown::None;
+		draggingTrigger = creatingTrigger = false;
+		resizeEdges = 0;
 		selectMode = !selectMode;
 		spawnMode = false;
 		if (!selectMode)
@@ -356,12 +405,14 @@ private:
 	{
 		if (key == sf::Keyboard::Key::Escape) { if (ConfirmDiscard()) window.close(); }
 		else if (key == sf::Keyboard::Key::Tab) ToggleSelectMode();
-		else if (key == sf::Keyboard::Key::P) { spawnMode = true; }
+		else if (key == sf::Keyboard::Key::P) { spawnMode = true; draggingTrigger = creatingTrigger = false; resizeEdges = 0; }
 		else if (key == sf::Keyboard::Key::T)
 		{
 			triggerMode = !triggerMode; selectMode = false; spawnMode = false;
 			selectedObject = selectedTrigger = static_cast<std::size_t>(-1);
 			triggerDropdown = TriggerDropdown::None;
+			draggingTrigger = creatingTrigger = false;
+			resizeEdges = 0;
 		}
 		else if (key == sf::Keyboard::Key::Delete && triggerMode)
 		{
@@ -371,6 +422,7 @@ private:
 				selectedTrigger = static_cast<std::size_t>(-1);
 				triggerDropdown = TriggerDropdown::None;
 				draggingTrigger = creatingTrigger = false;
+				resizeEdges = 0;
 				document.dirty = true;
 			}
 		}
@@ -465,7 +517,7 @@ private:
 				}
 			}
 			else if (x < 1040) { }
-			else if (x < 1150) spawnMode = true;
+			else if (x < 1150) HandleKey(sf::Keyboard::Key::P, window);
 			else ToggleSelectMode();
 			return;
 		}
@@ -481,7 +533,7 @@ private:
 			{
 				const auto entry = browser.visible[index];
 				if (entry.folder) browser.Toggle(entry.path);
-				else { browser.selected = entry.path; selectedObject = selectedTrigger = static_cast<std::size_t>(-1); selectMode = triggerMode = spawnMode = false; }
+				else { browser.selected = entry.path; selectedObject = selectedTrigger = static_cast<std::size_t>(-1); selectMode = triggerMode = spawnMode = false; draggingTrigger = creatingTrigger = false; resizeEdges = 0; }
 			}
 			return;
 		}
@@ -490,6 +542,26 @@ private:
 		if (spawnMode) { spawn = pos; spawnMode = false; return; }
 		if (triggerMode)
 		{
+			if (selectedTrigger < document.map.triggers.size())
+			{
+				const auto& trigger = document.map.triggers[selectedTrigger];
+				const bool moveSelected = (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LShift) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::RShift)) &&
+					pos.x >= trigger.x && pos.x <= trigger.x + trigger.width && pos.y >= trigger.y && pos.y <= trigger.y + trigger.height;
+				if (moveSelected)
+				{
+					triggerOffset = { pos.x - trigger.x, pos.y - trigger.y };
+					draggingTrigger = true;
+					return;
+				}
+				resizeEdges = TriggerEdgesAt(trigger, pos);
+				if (resizeEdges)
+				{
+					resizeStart = pos;
+					resizePosition = { trigger.x, trigger.y };
+					resizeSize = { trigger.width, trigger.height };
+					return;
+				}
+			}
 			const auto existing = document.FindTriggerAt(pos.x, pos.y);
 			if (existing)
 			{
@@ -573,29 +645,29 @@ private:
 			return text.size() > 30 ? text.substr(0, 27) + "..." : text;
 		};
 		rectangle(960, 70, 320, 510, sf::Color(35, 38, 45, 245));
+		const bool noEvent = trigger.eventName == NoTriggerEvent;
 		Label(window, font, "TRIGGER: " + shortText(trigger.id), 970, 80, 14);
-		Label(window, font, "Ereignis: " + shortText(trigger.eventName), 970, 105, 13);
+		Label(window, font, "Ereignis: " + (noEvent ? std::string("Kein Ereignis") : shortText(trigger.eventName)), 970, 105, 13);
 		Label(window, font, "Load Map", 970, 130, 13);
 		rectangle(970, 150, 300, 30, sf::Color(65, 70, 80));
-		Label(window, font, trigger.eventName.starts_with("Load_") ? shortText(trigger.eventName.substr(5)) + "  v" : "Karte auswaehlen  v", 978, 156, 13);
+		Label(window, font, noEvent ? "Kein Ereignis  v" : trigger.eventName.starts_with("Load_") ? shortText(trigger.eventName.substr(5)) + "  v" : "Karte auswaehlen  v", 978, 156, 13);
 		Label(window, font, "Effekte", 970, 185, 13);
 		rectangle(970, 205, 300, 30, sf::Color(65, 70, 80));
-		Label(window, font, !trigger.eventName.starts_with("Load_") ? shortText(trigger.eventName) + "  v" : "Effekt auswaehlen  v", 978, 211, 13);
+		Label(window, font, noEvent ? "Kein Ereignis  v" : !trigger.eventName.starts_with("Load_") ? shortText(trigger.eventName) + "  v" : "Effekt auswaehlen  v", 978, 211, 13);
 		if (triggerDropdown != TriggerDropdown::None)
 		{
-			if (dropdownEntries.empty()) Label(window, font, "Keine Karten gefunden", 978, 255, 13);
 			for (int row = 0; row < 8 && dropdownOffset + row < static_cast<int>(dropdownEntries.size()); ++row)
 			{
 				const auto& entry = dropdownEntries[static_cast<std::size_t>(dropdownOffset + row)];
 				const float y = static_cast<float>(250 + row * 24);
 				rectangle(970, y, 300, 23, entry == trigger.eventName ? sf::Color(70, 105, 110) : sf::Color(60, 64, 72));
-				Label(window, font, shortText(triggerDropdown == TriggerDropdown::Maps ? entry.substr(5) : entry), 978, y + 3, 13);
+				Label(window, font, entry == NoTriggerEvent ? "Kein Ereignis" : shortText(triggerDropdown == TriggerDropdown::Maps ? entry.substr(5) : entry), 978, y + 3, 13);
 			}
 			Label(window, font, "Mausrad: Liste scrollen", 970, 448, 12);
 		}
 		else
 		{
-			Label(window, font, "Ein Trigger hat ein Ereignis.", 970, 255, 13);
+			Label(window, font, "Ein Trigger hat hoechstens ein Ereignis.", 970, 255, 13);
 			if (trigger.eventName.starts_with("Load_"))
 				Label(window, font, "Zielposition: " + std::to_string(trigger.spawnX) + ", " + std::to_string(trigger.spawnY), 970, 280, 12);
 		}
@@ -651,6 +723,17 @@ private:
 			selection.setOutlineColor(sf::Color::Cyan);
 			selection.setOutlineThickness(2.0f / zoom);
 			window.draw(selection);
+			const float handleSize = 8.0f / zoom;
+			sf::RectangleShape handle({ handleSize, handleSize });
+			handle.setOrigin({ handleSize / 2.0f, handleSize / 2.0f });
+			handle.setFillColor(sf::Color::Cyan);
+			for (int row = 0; row < 3; ++row)
+				for (int column = 0; column < 3; ++column)
+				{
+					if (row == 1 && column == 1) continue;
+					handle.setPosition({ trigger.x - left + trigger.width * column / 2.0f, trigger.y - top + trigger.height * row / 2.0f });
+					window.draw(handle);
+				}
 		}
 		window.setView(window.getDefaultView());
 		sf::RectangleShape bar({ 1280, 60 }); bar.setFillColor(sf::Color(35, 38, 45)); window.draw(bar);
@@ -705,7 +788,7 @@ private:
 			if (selectedTrigger < document.map.triggers.size())
 			{
 				const auto& trigger = document.map.triggers[selectedTrigger];
-				info = trigger.id + " | " + trigger.eventName + " | glow=" + (trigger.glow ? "1" : "0") + " | " + std::to_string(static_cast<int>(trigger.width)) + " x " + std::to_string(static_cast<int>(trigger.height));
+				info = trigger.id + " | " + trigger.eventName + " | glow=" + (trigger.glow ? "1" : "0") + " | " + std::to_string(static_cast<int>(trigger.width)) + " x " + std::to_string(static_cast<int>(trigger.height)) + " | Rand ziehen = Groesse";
 			}
 		}
 		Label(window, font, info, 285, 773, 12);

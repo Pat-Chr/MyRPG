@@ -197,7 +197,7 @@ inline void UpdateTriggers(GameState& game)
     {
         const bool isInside = IsInsideTrigger(trigger, game.player.x, game.player.y);
 
-        if (isInside && !trigger.isPlayerInside)
+        if (isInside && !trigger.isPlayerInside && trigger.eventName != NoTriggerEvent)
         {
 #ifdef _DEBUG
             std::cout << "[Trigger] Map '" << game.activeMap.id << "', trigger '" << trigger.id
