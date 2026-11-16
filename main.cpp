@@ -17,6 +17,9 @@
 #include "src/engine/GameRenderer.h"
 #include "src/engine/MainMenu.h"
 #include "src/engine/SettingsMenu.h"
+#ifdef _DEBUG
+#include "src/editor/MapEditor.h"
+#endif
 
 sf::FloatRect ComputeLetterboxViewport(sf::Vector2u windowSize, sf::Vector2u baseResolution)
 {
@@ -123,6 +126,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         {
             OutputDebugStringA("MyRPG: Failed to redirect stderr to the debug console.\n");
         }
+    }
+    wchar_t executablePath[32768];
+    const DWORD executableLength = GetModuleFileNameW(nullptr, executablePath, static_cast<DWORD>(std::size(executablePath)));
+    if (executableLength == 0 || executableLength >= std::size(executablePath) ||
+        !SetCurrentDirectoryW(std::filesystem::path(executablePath).parent_path().c_str()))
+    {
+        MessageBoxW(nullptr, L"Der Spielordner konnte nicht als Arbeitsverzeichnis eingerichtet werden.", L"MyRPG", MB_OK | MB_ICONERROR);
+        return 1;
     }
 #endif
 
@@ -243,6 +254,16 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 {
                     handleSettingsAction(settingsMenu.HandleKey(key->code, window));
                 }
+#ifdef _DEBUG
+                else if (key->code == sf::Keyboard::Key::F2 && !IsMapTransitionActive(game))
+                {
+                    SetMovementState(game.input, false, false, false, false);
+                    game.player.moving = false;
+                    MapEditor editor;
+                    editor.Run(window, game);
+                    frameClock.restart();
+                }
+#endif
                 else if (key->code == sf::Keyboard::Key::M && !IsMapTransitionActive(game))
                 {
                     StartMagicEffect(game.magicEffects, "sparkle", game.player.x, game.player.y);

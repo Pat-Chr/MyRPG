@@ -186,7 +186,10 @@ struct GameState
 	
 	// Aktive Karte, die gerade angezeigt wird
 	MapData activeMap;
-	
+#ifdef _DEBUG
+	std::string activeMapPath;
+#endif
+
 	// Zuletzt ausgelöstes Ereignis (für Debugging/Logging)
 	std::string lastTriggeredEvent;
 	

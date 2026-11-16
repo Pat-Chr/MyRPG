@@ -154,6 +154,9 @@ inline void UpdateMapTransition(GameState& game, float deltaTime)
         if (TryLoadMapFromFile(game.mapTransition.targetMapPath, nextMap))
         {
             game.activeMap = std::move(nextMap);
+#ifdef _DEBUG
+            game.activeMapPath = game.mapTransition.targetMapPath;
+#endif
             game.player.x = game.mapTransition.targetPlayerX;
             game.player.y = game.mapTransition.targetPlayerY;
             game.weather = WeatherState{ game.activeMap.defaultWeather };
@@ -293,7 +296,16 @@ inline void InitializeGameState(GameState& game)
     if (!TryLoadMapFromFile("Assets/Maps/0001_TestMap.map", game.activeMap))
     {
         InitializeFallbackMap(game);
+#ifdef _DEBUG
+        game.activeMapPath.clear();
+#endif
     }
+#ifdef _DEBUG
+    else
+    {
+        game.activeMapPath = "Assets/Maps/0001_TestMap.map";
+    }
+#endif
     game.weather = WeatherState{ game.activeMap.defaultWeather };
 }
 

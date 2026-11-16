@@ -4,7 +4,7 @@ MyRPG ist ein Windows-Projekt, in dem ich meine eigene kleine RPG-Engine mit C++
 
 > Ich schreibe meine eigene kleine RPG-Engine. Sie soll später auch ohne Programmierkenntnisse das Erstellen eines eigenen kleinen Adventures ermöglichen. Durch das Erstellen eigener Assets, Skripte und Maps soll man einfach seine eigene Welt erschaffen können.
 >
-> **Das ist das langfristige Ziel, noch nicht der aktuelle Funktionsumfang:** Der Prototyp hat derzeit weder einen visuellen Editor noch eine Skript-Laufzeit. Karten und Animationen werden momentan über Dateien erstellt; Trigger-Ereignisse müssen in der Engine unterstützt werden.
+> **Das ist das langfristige Ziel, noch nicht der aktuelle Funktionsumfang:** Der Prototyp enthält einen einfachen Map-Editor im Debug-Build, aber noch keine Skript-Laufzeit. Trigger-Ereignisse müssen in der Engine unterstützt werden.
 
 ## 📚 Dokumentation
 
@@ -28,6 +28,17 @@ Das [DesignDocument.md](./DesignDocument.md) beschreibt die technische Architekt
 - **Textur-Cache** zur Wiederverwendung geladener Texturen
 - **Kamera und Letterbox-Viewport** mit einer Basisauflösung von 1024 × 768; das Seitenverhältnis bleibt beim Ändern der Fenstergröße erhalten
 - **Debug-Anzeigen** für Karten-ID, Position, letztes Ereignis, Raster und Triggerbereiche nur im Debug-Build. Ein Linksklick auf die Koordinaten kopiert X und Y in die Zwischenablage. Im Release-Build bleiben diese Anzeigen verborgen; die Trigger-Funktion selbst bleibt aktiv.
+- **Map-Editor** im Debug-Build: `F2` während des Spiels öffnet ein separates Fenster und pausiert das Spiel. Nicht während eines Kartenübergangs verfügbar.
+
+### Map-Editor
+
+Im Editor öffnen `Neu` und `Oeffnen` Karten aus `Assets/Maps` neben der EXE. `Neu` verwendet den Dateinamen als Karten-ID; Namen dürfen Buchstaben, Ziffern, `_` und `-` enthalten. Links wird `Assets/Sprites` einschließlich Unterordnern aufgelistet; Mausrad scrollt die Liste. Ein Sprite auswählen und auf die Karte klicken platziert es. `Boden setzen` verwendet das gewählte Sprite als Standardboden, `Wetter` schaltet das Standardwetter durch. Neue Karten benötigen vor dem Speichern einen Boden.
+
+`Tab` bzw. `Modus` wechselt zwischen Platzieren und Auswählen: Im Auswahlmodus Objekte anklicken und ziehen; `Typ` und `Solid` ändern das ausgewählte Objekt oder die Vorgabe für neue Objekte. `Entf` löscht das ausgewählte Objekt oder, wenn keines ausgewählt ist bzw. im Platziermodus, das oberste Objekt unter dem Mauszeiger. Darunter liegende Objekte bleiben erhalten; wo kein Objekt mehr liegt, erscheint der Standardboden, ohne einen neuen `OBJECT`-Eintrag zu erzeugen. Mittlere Maustaste verschiebt die Ansicht, das Mausrad über der Karte zoomt. `Startpunkt` bzw. `P` und ein Klick wählen die Position für die Spielerfigur; sie ist nur für die Übernahme im Editor gültig. Trigger werden angezeigt und beim Speichern erhalten, aber nicht bearbeitet. Spritesheets werden als ganzes Bild behandelt.
+
+`Speichern` schreibt nur in den Spielordner. `Im Spiel uebernehmen` aktiviert die gespeicherte Karte und setzt die Figur auf den gewählten Startpunkt; bei ungespeicherten Änderungen wird vorher nach dem Speichern gefragt. Vor Kollisionen und Triggern am Startpunkt wird gewarnt. Der Editor bleibt bis zum Schließen geöffnet und das Spiel pausiert. Ungespeicherte Änderungen können beim Schließen oder Kartenwechsel verworfen werden.
+
+Vor dem ersten Überschreiben einer vorhandenen Karte wird eine unveränderliche Sicherung `<dateiname>.map.original.bak` daneben angelegt. Sie wird nie automatisch gelöscht oder ersetzt. Änderungen und Sicherungen liegen im Build-Ausgabeverzeichnis: Ein Build kann Karten überschreiben, und Bereinigen kann den Ordner entfernen. Fertige Karten und zusätzliche Sprites daher rechtzeitig manuell ins Projekt übernehmen oder anderweitig sichern. Im Debug-Build ist der EXE-Ordner das Arbeitsverzeichnis, damit Spiel und Editor dieselben Assets verwenden.
 
 ## 🚀 Quick Start
 
