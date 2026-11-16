@@ -96,6 +96,7 @@
   <ItemGroup>
     <ClInclude Include="framework.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="src\editor\AssetBrowser.h" />
     <ClInclude Include="src\editor\MapDocument.h" />
     <ClInclude Include="src\editor\MapEditor.h" />
     <ClInclude Include="src\engine\AnimationLoader.h" />

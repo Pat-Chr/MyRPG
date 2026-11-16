@@ -75,6 +75,9 @@
     <ClInclude Include="src\editor\MapEditor.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="src\editor\AssetBrowser.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">

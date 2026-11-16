@@ -46,6 +46,22 @@ public:
 		dirty = true;
 	}
 
+	bool HasUsedTriggerId(const std::string& id) const
+	{
+		return FindTrigger(map.triggers, id) != map.triggers.end() || FindTrigger(originalTriggers, id) != originalTriggers.end();
+	}
+
+	std::optional<std::size_t> FindTriggerAt(float x, float y) const
+	{
+		for (std::size_t i = map.triggers.size(); i > 0; --i)
+		{
+			const auto& trigger = map.triggers[i - 1];
+			if (x >= trigger.x && x <= trigger.x + trigger.width && y >= trigger.y && y <= trigger.y + trigger.height)
+				return i - 1;
+		}
+		return std::nullopt;
+	}
+
 	bool IsCurrent(std::string& error) const
 	{
 		std::string contents;
@@ -69,10 +85,10 @@ public:
 			return false;
 		}
 		std::vector<Line> lines;
-		std::set<std::string> ids;
+		std::set<std::string> ids, triggerIds;
 		std::istringstream input(contents);
 		std::string text;
-		std::size_t objects = 0;
+		std::size_t objects = 0, triggers = 0;
 		while (std::getline(input, text))
 		{
 			const bool cr = !text.empty() && text.back() == '\r';
@@ -96,12 +112,26 @@ public:
 				line.objectId = id;
 				++objects;
 			}
+			else if (keyword == "TRIGGER")
+			{
+				std::string id, event;
+				float x, y, width, height;
+				if (!(fields >> id >> x >> y >> width >> height >> event) ||
+					!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(width) || !std::isfinite(height) ||
+					!triggerIds.insert(id).second)
+				{
+					error = "Ungueltige TRIGGER-Zeile oder doppelte Trigger-ID; die Karte wird nicht bearbeitet.";
+					return false;
+				}
+				line.triggerId = id;
+				++triggers;
+			}
 			lines.push_back(std::move(line));
 		}
 		if (!contents.empty() && contents.back() != '\n' && !lines.empty()) lines.back().ending.clear();
-		if (objects != loaded.objects.size())
+		if (objects != loaded.objects.size() || triggers != loaded.triggers.size())
 		{
-			error = "Die Objektliste konnte nicht vollstaendig geladen werden.";
+			error = "Objekte oder Trigger konnten nicht vollstaendig geladen werden.";
 			return false;
 		}
 		map = std::move(loaded);
@@ -109,6 +139,7 @@ public:
 		original = std::move(contents);
 		sourceLines = std::move(lines);
 		originalObjects = map.objects;
+		originalTriggers = map.triggers;
 		originalGround = map.defaultGroundPath;
 		originalWeather = map.defaultWeather;
 		existsOnDisk = true;
@@ -124,6 +155,7 @@ public:
 		original.clear();
 		sourceLines.clear();
 		originalObjects.clear();
+		originalTriggers.clear();
 		originalGround.clear();
 		originalWeather = "none";
 		existsOnDisk = false;
@@ -147,7 +179,7 @@ public:
 			return false;
 		}
 		std::string output;
-		std::set<std::string> emitted;
+		std::set<std::string> emitted, emittedTriggers;
 		bool groundWritten = false, weatherWritten = false;
 		const std::string ending = sourceLines.empty() ? "\n" : (sourceLines.front().ending == "\r\n" ? "\r\n" : "\n");
 		auto append = [&](const std::string& text) {
@@ -170,6 +202,16 @@ public:
 				emitted.insert(item->id);
 				const auto previous = Find(originalObjects, line.objectId);
 				output += previous != originalObjects.end() && Equal(*item, *previous) ? line.text : Format(*item);
+				output += line.ending;
+				continue;
+			}
+			if (!line.triggerId.empty())
+			{
+				const auto item = FindTrigger(map.triggers, line.triggerId);
+				if (item == map.triggers.end()) continue;
+				emittedTriggers.insert(item->id);
+				const auto previous = FindTrigger(originalTriggers, line.triggerId);
+				output += previous != originalTriggers.end() ? UpdateTriggerLine(line.text, *previous, *item) : FormatTrigger(*item);
 				output += line.ending;
 				continue;
 			}
@@ -204,6 +246,8 @@ public:
 		if (!weatherWritten && map.defaultWeather != "none") append("WEATHER " + map.defaultWeather);
 		for (const MapObject& item : map.objects)
 			if (!emitted.contains(item.id)) append(Format(item));
+		for (const TriggerZone& item : map.triggers)
+			if (!emittedTriggers.contains(item.id)) append(FormatTrigger(item));
 
 		if (exists)
 		{
@@ -245,10 +289,11 @@ public:
 	}
 
 private:
-	struct Line { std::string text, ending, objectId; };
+	struct Line { std::string text, ending, objectId, triggerId; };
 	std::string original, originalGround, originalWeather;
 	std::vector<Line> sourceLines;
 	std::vector<MapObject> originalObjects;
+	std::vector<TriggerZone> originalTriggers;
 	bool existsOnDisk = false;
 
 	static bool Read(const std::filesystem::path& file, std::string& result, std::string& error)
@@ -262,6 +307,48 @@ private:
 	static std::vector<MapObject>::const_iterator Find(const std::vector<MapObject>& objects, const std::string& id)
 	{
 		return std::find_if(objects.begin(), objects.end(), [&](const MapObject& item) { return item.id == id; });
+	}
+	static std::vector<TriggerZone>::const_iterator FindTrigger(const std::vector<TriggerZone>& triggers, const std::string& id)
+	{
+		return std::find_if(triggers.begin(), triggers.end(), [&](const TriggerZone& trigger) { return trigger.id == id; });
+	}
+	static std::string Number(float value)
+	{
+		std::ostringstream stream;
+		stream << std::setprecision(std::numeric_limits<float>::max_digits10) << value;
+		return stream.str();
+	}
+	static std::string FormatTrigger(const TriggerZone& trigger)
+	{
+		return "TRIGGER " + trigger.id + " " + Number(trigger.x) + " " + Number(trigger.y) + " " +
+			Number(trigger.width) + " " + Number(trigger.height) + " " + trigger.eventName +
+			" glow=" + (trigger.glow ? "1" : "0") + " spawn_x=" + Number(trigger.spawnX) + " spawn_y=" + Number(trigger.spawnY);
+	}
+	static std::string UpdateTriggerLine(const std::string& text, const TriggerZone& previous, const TriggerZone& trigger)
+	{
+		std::string result;
+		std::size_t pos = 0, index = 0;
+		bool glowFound = false;
+		while (pos < text.size())
+		{
+			const auto start = text.find_first_not_of(" \t\r\n", pos);
+			if (start == std::string::npos) { result += text.substr(pos); break; }
+			result += text.substr(pos, start - pos);
+			const auto end = text.find_first_of(" \t\r\n", start);
+			const auto length = end == std::string::npos ? text.size() - start : end - start;
+			const std::string token = text.substr(start, length);
+			if (index == 2 && trigger.x != previous.x) result += Number(trigger.x);
+			else if (index == 3 && trigger.y != previous.y) result += Number(trigger.y);
+			else if (index == 4 && trigger.width != previous.width) result += Number(trigger.width);
+			else if (index == 5 && trigger.height != previous.height) result += Number(trigger.height);
+			else if (index == 6 && trigger.eventName != previous.eventName) result += trigger.eventName;
+			else if (index >= 7 && token.starts_with("glow=")) { glowFound = true; result += trigger.glow != previous.glow ? (trigger.glow ? "glow=1" : "glow=0") : token; }
+			else result += token;
+			pos = start + length;
+			++index;
+		}
+		if (!glowFound && trigger.glow != previous.glow) result += trigger.glow ? " glow=1" : " glow=0";
+		return result;
 	}
 	static bool Equal(const MapObject& a, const MapObject& b)
 	{

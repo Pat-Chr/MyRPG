@@ -13,6 +13,7 @@
 #include <system_error>
 #include <vector>
 
+#include "AssetBrowser.h"
 #include "MapDocument.h"
 #include "../engine/GameEngine.h"
 #include "../engine/GameRenderer.h"
@@ -66,7 +67,7 @@ public:
 				else if (const auto* button = event->getIf<sf::Event::MouseButtonPressed>()) HandlePress(*button, window, game);
 				else if (const auto* button = event->getIf<sf::Event::MouseButtonReleased>())
 				{
-					if (button->button == sf::Mouse::Button::Left) draggingObject = false;
+					if (button->button == sf::Mouse::Button::Left) { draggingObject = false; draggingTrigger = false; creatingTrigger = false; }
 					if (button->button == sf::Mouse::Button::Middle) panning = false;
 				}
 				else if (const auto* move = event->getIf<sf::Event::MouseMoved>())
@@ -85,13 +86,27 @@ public:
 						object.y = object.type == MapObjectType::Scenery || object.type == MapObjectType::Untergrund ? SnapToGrid(pos.y, 64.0f) : pos.y;
 						document.dirty = true;
 					}
+					else if ((draggingTrigger || creatingTrigger) && selectedTrigger < document.map.triggers.size())
+					{
+						const sf::Vector2f pos = WorldPosition(window, move->position);
+						auto& trigger = document.map.triggers[selectedTrigger];
+						if (creatingTrigger)
+						{
+							trigger.x = (std::min)(triggerAnchor.x, pos.x);
+							trigger.y = (std::min)(triggerAnchor.y, pos.y);
+							trigger.width = (std::max)(1.0f, std::abs(pos.x - triggerAnchor.x));
+							trigger.height = (std::max)(1.0f, std::abs(pos.y - triggerAnchor.y));
+						}
+						else { trigger.x = pos.x - triggerOffset.x; trigger.y = pos.y - triggerOffset.y; }
+						document.dirty = true;
+					}
 				}
 				else if (const auto* wheel = event->getIf<sf::Event::MouseWheelScrolled>())
 				{
 					if (wheel->position.x < 280)
 					{
-						const int maxOffset = (std::max)(0, static_cast<int>(assets.size()) - 17);
-						assetOffset = std::clamp(assetOffset - (wheel->delta > 0 ? 3 : -3), 0, maxOffset);
+						const int maxOffset = (std::max)(0, static_cast<int>(browser.visible.size()) - 17);
+						browser.offset = std::clamp(browser.offset - (wheel->delta > 0 ? 3 : -3), 0, maxOffset);
 					}
 					else zoom = std::clamp(zoom * (wheel->delta > 0 ? 1.2f : 1.0f / 1.2f), 0.25f, 4.0f);
 				}
@@ -104,13 +119,12 @@ private:
 	MapDocument document;
 	std::filesystem::path root;
 	HWND owner = nullptr;
-	std::vector<std::string> assets;
-	std::size_t selectedAsset = 0, selectedObject = static_cast<std::size_t>(-1);
-	int assetOffset = 0;
-	sf::Vector2f camera{ 0.0f, 0.0f }, spawn{ 0.0f, 0.0f };
+	AssetBrowser browser;
+	std::size_t selectedObject = static_cast<std::size_t>(-1), selectedTrigger = static_cast<std::size_t>(-1);
+	sf::Vector2f camera{ 0.0f, 0.0f }, spawn{ 0.0f, 0.0f }, triggerAnchor{}, triggerOffset{};
 	sf::Vector2i lastMouse{};
 	float zoom = 1.0f;
-	bool selectMode = false, spawnMode = false, panning = false, draggingObject = false;
+	bool selectMode = false, spawnMode = false, triggerMode = false, panning = false, draggingObject = false, draggingTrigger = false, creatingTrigger = false;
 	MapObjectType newType = MapObjectType::Scenery;
 	bool newSolid = false;
 
@@ -129,32 +143,8 @@ private:
 	}
 	void RefreshAssets()
 	{
-		std::vector<std::string> found;
-		std::error_code ec;
-		const auto directory = root / L"Assets" / L"Sprites";
-		std::filesystem::recursive_directory_iterator it(directory, ec), end;
-		if (ec) { Error("Sprites konnten nicht gelesen werden: " + ec.message()); return; }
-		while (it != end)
-		{
-			if (it->is_regular_file(ec) && !ec)
-			{
-				std::string extension = it->path().extension().string();
-				std::transform(extension.begin(), extension.end(), extension.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-				if (extension == ".png")
-				{
-					const std::string path = it->path().lexically_relative(root).generic_string();
-					if (path.find_first_of(" \t\r\n") == std::string::npos) found.push_back(path);
-					else std::fprintf(stderr, "Map-Editor: Sprite-Pfad enthaelt Leerzeichen und wird nicht angeboten: %s\n", path.c_str());
-				}
-			}
-			if (ec) { Error("Sprite konnte nicht geprueft werden: " + ec.message()); return; }
-			it.increment(ec);
-			if (ec) { Error("Sprite-Ordner konnte nicht vollstaendig gelesen werden: " + ec.message()); return; }
-		}
-		std::sort(found.begin(), found.end());
-		assets = std::move(found);
-		assetOffset = 0;
-		selectedAsset = 0;
+		std::string error;
+		if (!browser.Refresh(root, error)) Error(error);
 	}
 	bool ChoosePath(bool create, std::filesystem::path& result)
 	{
@@ -209,12 +199,15 @@ private:
 		}
 		camera = spawn;
 		selectedObject = static_cast<std::size_t>(-1);
+		selectedTrigger = static_cast<std::size_t>(-1);
+		draggingTrigger = creatingTrigger = false;
 	}
 	bool Save()
 	{
 		std::string error;
 		if (!document.Save(error)) { Error(error); return false; }
 		selectedObject = static_cast<std::size_t>(-1);
+		selectedTrigger = static_cast<std::size_t>(-1);
 		return true;
 	}
 	void Apply(GameState& game)
@@ -259,6 +252,8 @@ private:
 	}
 	void ToggleSelectMode()
 	{
+		triggerMode = false;
+		selectedTrigger = static_cast<std::size_t>(-1);
 		selectMode = !selectMode;
 		spawnMode = false;
 		if (!selectMode)
@@ -272,6 +267,21 @@ private:
 		if (key == sf::Keyboard::Key::Escape) { if (ConfirmDiscard()) window.close(); }
 		else if (key == sf::Keyboard::Key::Tab) ToggleSelectMode();
 		else if (key == sf::Keyboard::Key::P) { spawnMode = true; }
+		else if (key == sf::Keyboard::Key::T)
+		{
+			triggerMode = !triggerMode; selectMode = false; spawnMode = false;
+			selectedObject = selectedTrigger = static_cast<std::size_t>(-1);
+		}
+		else if (key == sf::Keyboard::Key::Delete && triggerMode)
+		{
+			if (selectedTrigger < document.map.triggers.size())
+			{
+				document.map.triggers.erase(document.map.triggers.begin() + selectedTrigger);
+				selectedTrigger = static_cast<std::size_t>(-1);
+				draggingTrigger = creatingTrigger = false;
+				document.dirty = true;
+			}
+		}
 		else if (key == sf::Keyboard::Key::Delete)
 		{
 			std::optional<std::size_t> target;
@@ -311,8 +321,8 @@ private:
 			else if (x < 560) RefreshAssets();
 			else if (x < 700)
 			{
-				if (document.path.empty() || selectedAsset >= assets.size()) Error("Bitte zuerst eine Karte und ein Sprite auswaehlen.");
-				else { document.map.defaultGroundPath = assets[selectedAsset]; document.dirty = true; }
+				if (document.path.empty() || browser.selected.empty()) Error("Bitte zuerst eine Karte und ein Sprite auswaehlen.");
+				else { document.map.defaultGroundPath = browser.selected; document.dirty = true; }
 			}
 			else if (x < 820)
 			{
@@ -321,6 +331,23 @@ private:
 				auto current = std::find_if(weather.begin(), weather.end(), [&](const WeatherEffectDefinition& item) { return item.id == document.map.defaultWeather; });
 				document.map.defaultWeather = document.map.defaultWeather == "none" && !weather.empty() ? weather.front().id : current != weather.end() && ++current != weather.end() ? current->id : "none";
 				document.dirty = true;
+			}
+			else if (x < 940 && triggerMode)
+			{
+				if (selectedTrigger >= document.map.triggers.size()) { Error("Bitte zuerst eine Triggerzone auswaehlen."); return; }
+				std::vector<std::string> effects{ "screen_shake", "weather_none" };
+				for (const auto& effect : GetMagicEffectDefinitions()) effects.push_back("magic_" + effect.id);
+				for (const auto& effect : GetWeatherEffectDefinitions()) effects.push_back("weather_" + effect.id);
+				auto& eventName = document.map.triggers[selectedTrigger].eventName;
+				auto current = std::find(effects.begin(), effects.end(), eventName);
+				if (current == effects.end() || ++current == effects.end()) eventName = effects.front();
+				else eventName = *current;
+				document.dirty = true;
+			}
+			else if (x < 1040 && triggerMode)
+			{
+				if (selectedTrigger >= document.map.triggers.size()) { Error("Bitte zuerst eine Triggerzone auswaehlen."); return; }
+				auto& trigger = document.map.triggers[selectedTrigger]; trigger.glow = !trigger.glow; document.dirty = true;
 			}
 			else if (x < 940)
 			{
@@ -342,15 +369,45 @@ private:
 			else ToggleSelectMode();
 			return;
 		}
+		if (x < 280 && y >= 720 && y < 760)
+		{
+			HandleKey(sf::Keyboard::Key::T, window);
+			return;
+		}
 		if (x < 280 && y >= 100 && y < 100 + 17 * 36)
 		{
-			const std::size_t index = static_cast<std::size_t>(assetOffset + (y - 100) / 36);
-			if (index < assets.size()) { selectedAsset = index; selectedObject = static_cast<std::size_t>(-1); selectMode = false; spawnMode = false; }
+			const std::size_t index = static_cast<std::size_t>(browser.offset + (y - 100) / 36);
+			if (index < browser.visible.size())
+			{
+				const auto entry = browser.visible[index];
+				if (entry.folder) browser.Toggle(entry.path);
+				else { browser.selected = entry.path; selectedObject = selectedTrigger = static_cast<std::size_t>(-1); selectMode = triggerMode = spawnMode = false; }
+			}
 			return;
 		}
 		if (x < 280 || y < 60 || y >= 770 || document.path.empty()) return;
 		sf::Vector2f pos = WorldPosition(window, event.position);
 		if (spawnMode) { spawn = pos; spawnMode = false; return; }
+		if (triggerMode)
+		{
+			const auto existing = document.FindTriggerAt(pos.x, pos.y);
+			if (existing)
+			{
+				selectedTrigger = *existing;
+				const auto& trigger = document.map.triggers[selectedTrigger];
+				triggerOffset = { pos.x - trigger.x, pos.y - trigger.y };
+				draggingTrigger = true;
+			}
+			else
+			{
+				std::size_t number = 1; std::string id;
+				do { id = "trigger_" + std::to_string(number++); } while (document.HasUsedTriggerId(id));
+				document.map.triggers.push_back({ id, pos.x, pos.y, 64.0f, 64.0f, "screen_shake", false });
+				selectedTrigger = document.map.triggers.size() - 1;
+				triggerAnchor = pos; creatingTrigger = true; document.dirty = true;
+			}
+			return;
+		}
 		if (selectMode)
 		{
 			const auto object = document.FindObjectAt(pos.x, pos.y);
@@ -358,12 +415,12 @@ private:
 			draggingObject = object.has_value();
 			return;
 		}
-		if (selectedAsset >= assets.size()) { Error("Bitte zuerst ein Sprite auswaehlen."); return; }
+		if (browser.selected.empty()) { Error("Bitte zuerst ein Sprite auswaehlen."); return; }
 		std::size_t number = 1;
 		std::string id;
 		do { id = "object_" + std::to_string(number++); } while (document.HasUsedId(id));
 		if (newType == MapObjectType::Scenery || newType == MapObjectType::Untergrund) { pos.x = SnapToGrid(pos.x, 64); pos.y = SnapToGrid(pos.y, 64); }
-		document.map.objects.push_back({ id, newType, pos.x, pos.y, assets[selectedAsset], newSolid });
+		document.map.objects.push_back({ id, newType, pos.x, pos.y, browser.selected, newSolid });
 		document.dirty = true;
 	}
 	static const char* TypeName(MapObjectType type)
@@ -411,10 +468,20 @@ private:
 			selection.setOutlineThickness(2.0f / zoom);
 			window.draw(selection);
 		}
+		if (triggerMode && selectedTrigger < document.map.triggers.size())
+		{
+			const auto& trigger = document.map.triggers[selectedTrigger];
+			sf::RectangleShape selection({ trigger.width, trigger.height });
+			selection.setPosition({ trigger.x - left, trigger.y - top });
+			selection.setFillColor(sf::Color::Transparent);
+			selection.setOutlineColor(sf::Color::Cyan);
+			selection.setOutlineThickness(2.0f / zoom);
+			window.draw(selection);
+		}
 		window.setView(window.getDefaultView());
 		sf::RectangleShape bar({ 1280, 60 }); bar.setFillColor(sf::Color(35, 38, 45)); window.draw(bar);
 		sf::RectangleShape side({ 280, 740 }); side.setPosition({ 0, 60 }); side.setFillColor(sf::Color(40, 43, 48)); window.draw(side);
-		const char* buttons[] = { "Neu", "Oeffnen", "Speichern", "Im Spiel uebernehmen", "Assets neu", "Boden setzen", "Wetter", "Typ", "Solid", "Startpunkt", "Modus" };
+		const char* buttons[] = { "Neu", "Oeffnen", "Speichern", "Im Spiel uebernehmen", "Assets neu", "Boden setzen", "Wetter", triggerMode ? "Effekt" : "Typ", triggerMode ? "Glow" : "Solid", "Startpunkt", "Modus" };
 		const float positions[] = { 5, 105, 205, 305, 455, 565, 705, 825, 945, 1045, 1155 };
 		const float ends[] = { 100, 200, 300, 450, 560, 700, 820, 940, 1040, 1150, 1280 };
 		for (int i = 0; i < 11; ++i)
@@ -426,29 +493,48 @@ private:
 			Label(window, font, buttons[i], positions[i] + 3, 15, 13);
 		}
 		Label(window, font, "SPRITES (Mausrad)", 8, 70);
-		for (int row = 0; row < 17 && assetOffset + row < static_cast<int>(assets.size()); ++row)
+		for (int row = 0; row < 17 && browser.offset + row < static_cast<int>(browser.visible.size()); ++row)
 		{
-			const std::size_t index = static_cast<std::size_t>(assetOffset + row);
+			const auto& entry = browser.visible[static_cast<std::size_t>(browser.offset + row)];
 			const float y = static_cast<float>(100 + row * 36);
-			if (index == selectedAsset) { sf::RectangleShape highlight({ 278, 35 }); highlight.setPosition({ 0, y }); highlight.setFillColor(sf::Color(75, 85, 100)); window.draw(highlight); }
-			if (sf::Texture* texture = GetCachedTexture(assets[index]))
+			const float indent = static_cast<float>((std::min)(entry.depth, 6) * 16);
+			if (!entry.folder && entry.path == browser.selected) { sf::RectangleShape highlight({ 278, 35 }); highlight.setPosition({ 0, y }); highlight.setFillColor(sf::Color(75, 85, 100)); window.draw(highlight); }
+			if (!entry.folder)
 			{
-				sf::Sprite sprite(*texture);
-				const auto size = texture->getSize();
-				if (size.x && size.y) sprite.setScale({ 30.0f / size.x, 30.0f / size.y });
-				sprite.setPosition({ 3, y + 2 }); window.draw(sprite);
+				if (sf::Texture* texture = GetCachedTexture(entry.path))
+				{
+					sf::Sprite sprite(*texture);
+					const auto size = texture->getSize();
+					if (size.x && size.y) sprite.setScale({ 30.0f / size.x, 30.0f / size.y });
+					sprite.setPosition({ 3 + indent, y + 2 }); window.draw(sprite);
+				}
 			}
-			std::string name = assets[index].substr(std::string("Assets/Sprites/").size());
-			if (name.size() > 31) name = "..." + name.substr(name.size() - 28);
-			Label(window, font, name, 38, y + 7, 12);
+			std::string name = entry.folder ? std::string(browser.IsExpanded(entry.path) ? "[-] " : "[+] ") + entry.label : entry.label;
+			const std::size_t limit = static_cast<std::size_t>(22 - (std::min)(entry.depth, 6) * 2);
+			if (name.size() > limit) name = name.substr(0, limit - 3) + "...";
+			Label(window, font, name, (entry.folder ? 8.0f : 38.0f) + indent, y + 7, 12);
 		}
+		sf::RectangleShape triggerButton({ 270, 36 });
+		triggerButton.setPosition({ 5, 720 });
+		triggerButton.setFillColor(triggerMode ? sf::Color(70, 105, 110) : sf::Color(65, 70, 80));
+		window.draw(triggerButton);
+		Label(window, font, "Trigger-Werkzeug (T)", 12, 730, 14);
 		const MapObject* selected = selectedObject < document.map.objects.size() ? &document.map.objects[selectedObject] : nullptr;
 		std::string info = std::string(spawnMode ? "Startpunkt: Klick auf Karte" : selectMode ? "Auswaehlen/Verschieben" : "Platzieren") + " | Typ: " + TypeName(selected ? selected->type : newType) + " | solid=" + ((selected ? selected->solid : newSolid) ? "1" : "0") + " | Wetter: " + document.map.defaultWeather;
 		if (selected) info += " | " + selected->id + " (" + std::to_string(static_cast<int>(selected->x)) + ", " + std::to_string(static_cast<int>(selected->y)) + ")";
+		if (triggerMode && !spawnMode)
+		{
+			info = "Trigger: Freie Stelle ziehen = neu | Zone ziehen = verschieben | Entf = loeschen";
+			if (selectedTrigger < document.map.triggers.size())
+			{
+				const auto& trigger = document.map.triggers[selectedTrigger];
+				info = trigger.id + " | " + trigger.eventName + " | glow=" + (trigger.glow ? "1" : "0") + " | " + std::to_string(static_cast<int>(trigger.width)) + " x " + std::to_string(static_cast<int>(trigger.height));
+			}
+		}
 		Label(window, font, info, 285, 773, 12);
 		std::string title = document.path.empty() ? "Keine Karte" : document.path.filename().string();
 		if (document.dirty) title += " *";
-		window.setTitle("Map-Editor - " + title + " | Spielordner: " + root.string() + " | Tab: Modus, P: Startpunkt, Entf: Loeschen, Mitteltaste: Verschieben");
+		window.setTitle("Map-Editor - " + title + " | Spielordner: " + root.string() + " | T: Trigger, Tab: Objekte, P: Startpunkt, Entf: Loeschen, Mitteltaste: Verschieben");
 		window.display();
 	}
 };
