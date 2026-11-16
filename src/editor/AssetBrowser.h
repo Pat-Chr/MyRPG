@@ -24,6 +24,7 @@ public:
 		std::vector<Entry> entries;
 		std::error_code ec;
 		const auto sprites = root / L"Assets" / L"Sprites";
+		const std::set<std::filesystem::path> excludedDirectories{ L"Characters" };
 		std::filesystem::recursive_directory_iterator it(sprites, ec), end;
 		if (ec) { error = "Sprite-Ordner konnte nicht gelesen werden: " + ec.message(); return false; }
 		while (it != end)
@@ -31,20 +32,27 @@ public:
 			const auto path = it->path();
 			const bool folder = it->is_directory(ec);
 			if (ec) { error = "Asset konnte nicht geprueft werden: " + ec.message(); return false; }
-			const bool regular = !folder && it->is_regular_file(ec);
-			if (ec) { error = "Asset konnte nicht geprueft werden: " + ec.message(); return false; }
-			std::string extension = path.extension().string();
-			std::transform(extension.begin(), extension.end(), extension.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-			if (folder || (regular && extension == ".png"))
+			if (folder && excludedDirectories.contains(path.lexically_relative(sprites)))
 			{
-				const std::string relative = path.lexically_relative(root).generic_string();
-				if (relative.find_first_of(" \t\r\n") == std::string::npos)
+				it.disable_recursion_pending();
+			}
+			else
+			{
+				const bool regular = !folder && it->is_regular_file(ec);
+				if (ec) { error = "Asset konnte nicht geprueft werden: " + ec.message(); return false; }
+				std::string extension = path.extension().string();
+				std::transform(extension.begin(), extension.end(), extension.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+				if (folder || (regular && extension == ".png"))
 				{
-					const auto local = path.lexically_relative(sprites);
-					const int depth = static_cast<int>(std::distance(local.begin(), local.end())) - 1;
-					entries.push_back({ relative, path.filename().string(), depth, folder });
+					const std::string relative = path.lexically_relative(root).generic_string();
+					if (relative.find_first_of(" \t\r\n") == std::string::npos)
+					{
+						const auto local = path.lexically_relative(sprites);
+						const int depth = static_cast<int>(std::distance(local.begin(), local.end())) - 1;
+						entries.push_back({ relative, path.filename().string(), depth, folder });
+					}
+					else std::fprintf(stderr, "Map-Editor: Asset-Pfad enthaelt Leerzeichen: %s\n", relative.c_str());
 				}
-				else std::fprintf(stderr, "Map-Editor: Asset-Pfad enthaelt Leerzeichen: %s\n", relative.c_str());
 			}
 			it.increment(ec);
 			if (ec) { error = "Sprite-Ordner konnte nicht vollstaendig gelesen werden: " + ec.message(); return false; }
