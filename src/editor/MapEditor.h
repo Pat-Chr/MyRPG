@@ -6,6 +6,7 @@
 #include <Windows.h>
 #include <commdlg.h>
 #include <SFML/Graphics.hpp>
+#include <SFML/Window/Keyboard.hpp>
 #include <algorithm>
 #include <cctype>
 #include <cmath>
@@ -34,7 +35,7 @@ public:
 			MessageBoxW(gameWindow.getNativeHandle(), L"Die Editorschrift konnte nicht geladen werden.", L"Map-Editor", MB_OK | MB_ICONERROR);
 			return;
 		}
-		sf::RenderWindow window(sf::VideoMode({ 1280u, 800u }), "MyRPG Map-Editor", sf::Style::Titlebar | sf::Style::Close);
+		sf::RenderWindow window(sf::VideoMode({ 1280u, 800u }), "MyRPG Map-Editor", sf::Style::Titlebar | sf::Style::Resize | sf::Style::Close);
 		window.setFramerateLimit(60);
 		window.setKeyRepeatEnabled(false);
 		owner = window.getNativeHandle();
@@ -55,6 +56,7 @@ public:
 			if (!document.Load(root / game.activeMapPath, error)) Error(error);
 		}
 		else Error("Die aktuelle Ersatzkarte ist keine gespeicherte Kartendatei. Bitte eine Karte oeffnen oder neu anlegen.");
+		sf::Clock panClock;
 		while (window.isOpen() && gameWindow.isOpen())
 		{
 			while (const std::optional event = gameWindow.pollEvent())
@@ -69,16 +71,17 @@ public:
 				else if (const auto* button = event->getIf<sf::Event::MouseButtonPressed>()) HandlePress(*button, window, game);
 				else if (const auto* button = event->getIf<sf::Event::MouseButtonReleased>())
 				{
-					if (button->button == sf::Mouse::Button::Left) { draggingObject = false; draggingTrigger = false; creatingTrigger = false; resizeEdges = 0; }
+					if (button->button == sf::Mouse::Button::Left) { draggingObject = false; draggingTrigger = false; creatingTrigger = false; resizeEdges = 0; placementDragActive = false; hasLastPlacementPosition = false; }
 					if (button->button == sf::Mouse::Button::Middle) panning = false;
 				}
 				else if (const auto* move = event->getIf<sf::Event::MouseMoved>())
 				{
+					const sf::Vector2f position = EditorPosition(window, move->position);
 					if (panning)
 					{
-						camera.x -= static_cast<float>(move->position.x - lastMouse.x) / zoom;
-						camera.y -= static_cast<float>(move->position.y - lastMouse.y) / zoom;
-						lastMouse = move->position;
+						camera.x -= (position.x - lastMouse.x) / zoom;
+						camera.y -= (position.y - lastMouse.y) / zoom;
+						lastMouse = position;
 					}
 					else if (draggingObject && selectedObject < document.map.objects.size())
 					{
@@ -106,10 +109,25 @@ public:
 						else { trigger.x = pos.x - triggerOffset.x; trigger.y = pos.y - triggerOffset.y; }
 						document.dirty = true;
 					}
+					else if (placementDragActive && sf::Mouse::isButtonPressed(sf::Mouse::Button::Left) &&
+						!triggerMode && !selectMode && !spawnMode && IsMapArea(position))
+					{
+						PlaceDraggedSprites(WorldPosition(window, move->position));
+					}
 				}
 				else if (const auto* wheel = event->getIf<sf::Event::MouseWheelScrolled>())
 				{
-					if (TriggerPanelVisible() && wheel->position.x >= 960 && wheel->position.y >= 70 && wheel->position.y < 580)
+					const sf::Vector2f position = EditorPosition(window, wheel->position);
+					if (mapPropertiesOpen && position.x >= 440 && position.x < 820 && position.y >= 330 && position.y < 600)
+					{
+						const int weatherCount = static_cast<int>(GetWeatherEffectDefinitions().size()) + 1;
+						mapWeatherOffset = std::clamp(mapWeatherOffset - (wheel->delta > 0 ? 1 : -1), 0, (std::max)(0, weatherCount - 9));
+					}
+					else if (mapPropertiesOpen)
+					{
+						// The map properties dialog handles scrolling only over its weather list.
+					}
+					else if (TriggerPanelVisible() && position.x >= 960 && position.y >= 70 && position.y < 580)
 					{
 						if (triggerDropdown != TriggerDropdown::None)
 						{
@@ -117,16 +135,31 @@ public:
 							dropdownOffset = std::clamp(dropdownOffset - (wheel->delta > 0 ? 3 : -3), 0, maxOffset);
 						}
 					}
-					else if (ObjectPanelVisible() && wheel->position.x >= 960 && wheel->position.y >= 70 && wheel->position.y < 270)
+					else if (ObjectPanelVisible() && position.x >= 960 && position.y >= 70 && position.y < 270)
 					{
 						// Scrolling over the properties panel must not zoom the map.
 					}
-					else if (wheel->position.x < 280)
+					else if (position.x < 280)
 					{
 						const int maxOffset = (std::max)(0, static_cast<int>(browser.visible.size()) - 17);
 						browser.offset = std::clamp(browser.offset - (wheel->delta > 0 ? 3 : -3), 0, maxOffset);
 					}
 					else zoom = std::clamp(zoom * (wheel->delta > 0 ? 1.2f : 1.0f / 1.2f), 0.25f, 4.0f);
+				}
+			}
+			const float panDelta = panClock.restart().asSeconds();
+			if (window.hasFocus() && !mapPropertiesOpen)
+			{
+				float panX = static_cast<float>(sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right)) -
+					static_cast<float>(sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left));
+				float panY = static_cast<float>(sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Down)) -
+					static_cast<float>(sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up));
+				const float panLength = std::sqrt(panX * panX + panY * panY);
+				if (panLength > 0.0f)
+				{
+					const float distance = 500.0f * panDelta / (zoom * panLength);
+					camera.x += panX * distance;
+					camera.y += panY * distance;
 				}
 			}
 			if (window.isOpen()) Draw(window, font);
@@ -141,8 +174,11 @@ private:
 	std::size_t selectedObject = static_cast<std::size_t>(-1), selectedTrigger = static_cast<std::size_t>(-1);
 	sf::Vector2f camera{ 0.0f, 0.0f }, spawn{ 0.0f, 0.0f }, triggerAnchor{}, triggerOffset{};
 	sf::Vector2f resizeStart{}, resizePosition{}, resizeSize{};
-	sf::Vector2i lastMouse{};
 	float zoom = 1.0f;
+	sf::Vector2f lastMouse{}, lastPlacementPosition{};
+	bool placementDragActive = false, hasLastPlacementPosition = false;
+	bool mapPropertiesOpen = false;
+	int mapWeatherOffset = 0;
 	bool selectMode = false, spawnMode = false, triggerMode = false, panning = false, draggingObject = false, draggingTrigger = false, creatingTrigger = false;
 	enum TriggerEdge { Left = 1, Right = 2, Top = 4, Bottom = 8 };
 	int resizeEdges = 0;
@@ -375,17 +411,93 @@ private:
 		game.lastTriggeredEvent = "MapLoaded: " + game.activeMap.id;
 		MessageBoxW(owner, L"Die Karte ist jetzt im Spiel aktiv. Das Spiel bleibt bis zum Schliessen des Editors pausiert.", L"Map-Editor", MB_OK | MB_ICONINFORMATION);
 	}
-	sf::View MapView() const
+	static sf::FloatRect EditorViewport(sf::Vector2u windowSize)
 	{
+		if (windowSize.x == 0u || windowSize.y == 0u) return { { 0.0f, 0.0f }, { 1.0f, 1.0f } };
+		const float windowRatio = static_cast<float>(windowSize.x) / static_cast<float>(windowSize.y);
+		constexpr float editorRatio = 1280.0f / 800.0f;
+		if (windowRatio > editorRatio)
+		{
+			const float width = editorRatio / windowRatio;
+			return { { (1.0f - width) * 0.5f, 0.0f }, { width, 1.0f } };
+		}
+		if (windowRatio < editorRatio)
+		{
+			const float height = windowRatio / editorRatio;
+			return { { 0.0f, (1.0f - height) * 0.5f }, { 1.0f, height } };
+		}
+		return { { 0.0f, 0.0f }, { 1.0f, 1.0f } };
+	}
+	sf::View EditorView(const sf::RenderWindow& window) const
+	{
+		sf::View view;
+		view.setSize({ 1280.0f, 800.0f });
+		view.setCenter({ 640.0f, 400.0f });
+		view.setViewport(EditorViewport(window.getSize()));
+		return view;
+	}
+	sf::View MapView(const sf::RenderWindow& window) const
+	{
+		const sf::FloatRect editorViewport = EditorViewport(window.getSize());
 		sf::View view;
 		view.setSize({ 1000.0f / zoom, 710.0f / zoom });
 		view.setCenter({ 500.0f / zoom, 355.0f / zoom });
-		view.setViewport({ { 280.0f / 1280.0f, 60.0f / 800.0f }, { 1000.0f / 1280.0f, 710.0f / 800.0f } });
+		view.setViewport({
+			{ editorViewport.position.x + (280.0f / 1280.0f) * editorViewport.size.x,
+			  editorViewport.position.y + (60.0f / 800.0f) * editorViewport.size.y },
+			{ (1000.0f / 1280.0f) * editorViewport.size.x,
+			  (710.0f / 800.0f) * editorViewport.size.y }
+		});
 		return view;
+	}
+	sf::Vector2f EditorPosition(const sf::RenderWindow& window, sf::Vector2i pixel) const
+	{
+		return window.mapPixelToCoords(pixel, EditorView(window));
+	}
+	static bool IsMapArea(sf::Vector2f position)
+	{
+		return position.x >= 280.0f && position.x < 1280.0f && position.y >= 60.0f && position.y < 770.0f;
+	}
+	bool PlaceSelectedSprite(sf::Vector2f position)
+	{
+		if (document.path.empty() || browser.selected.empty()) return false;
+		if (newType == MapObjectType::Scenery || newType == MapObjectType::Untergrund)
+		{
+			position.x = SnapToGrid(position.x, 64.0f);
+			position.y = SnapToGrid(position.y, 64.0f);
+		}
+		if (hasLastPlacementPosition && position == lastPlacementPosition) return false;
+		std::size_t number = 1;
+		std::string id;
+		do { id = "object_" + std::to_string(number++); } while (document.HasUsedId(id));
+		document.map.objects.push_back({ id, newType, position.x, position.y, browser.selected, newSolid });
+		document.dirty = true;
+		lastPlacementPosition = position;
+		hasLastPlacementPosition = true;
+		placementDragActive = true;
+		return true;
+	}
+	void PlaceDraggedSprites(sf::Vector2f position)
+	{
+		if (!hasLastPlacementPosition)
+		{
+			PlaceSelectedSprite(position);
+			return;
+		}
+		const sf::Vector2f start = lastPlacementPosition;
+		const sf::Vector2f delta = position - start;
+		const float distance = std::sqrt(delta.x * delta.x + delta.y * delta.y);
+		constexpr float spacing = 64.0f;
+		const int count = static_cast<int>(distance / spacing);
+		for (int index = 1; index <= count; ++index)
+		{
+			const float fraction = spacing * static_cast<float>(index) / distance;
+			PlaceSelectedSprite(start + delta * fraction);
+		}
 	}
 	sf::Vector2f WorldPosition(const sf::RenderWindow& window, sf::Vector2i pixel) const
 	{
-		const sf::Vector2f pos = window.mapPixelToCoords(pixel, MapView());
+		const sf::Vector2f pos = window.mapPixelToCoords(pixel, MapView(window));
 		return { pos.x + camera.x - 500.0f / zoom, pos.y + camera.y - 355.0f / zoom };
 	}
 	void ToggleSelectMode()
@@ -405,6 +517,11 @@ private:
 	}
 	void HandleKey(sf::Keyboard::Key key, sf::RenderWindow& window)
 	{
+		if (mapPropertiesOpen)
+		{
+			if (key == sf::Keyboard::Key::Escape) mapPropertiesOpen = false;
+			return;
+		}
 		if (key == sf::Keyboard::Key::Escape) { if (ConfirmDiscard()) window.close(); }
 		else if (key == sf::Keyboard::Key::Tab) ToggleSelectMode();
 		else if (key == sf::Keyboard::Key::P) { spawnMode = true; draggingTrigger = creatingTrigger = false; resizeEdges = 0; }
@@ -438,11 +555,12 @@ private:
 			else
 			{
 				const sf::Vector2i pixel = sf::Mouse::getPosition(window);
-				const bool overPanel = ObjectPanelVisible() && pixel.x >= 960 && pixel.y >= 70 && pixel.y < 270;
-				if (!overPanel && pixel.x >= 280 && pixel.x < 1280 && pixel.y >= 60 && pixel.y < 770)
+				const sf::Vector2f position = EditorPosition(window, pixel);
+				const bool overPanel = ObjectPanelVisible() && position.x >= 960 && position.y >= 70 && position.y < 270;
+				if (!overPanel && position.x >= 280 && position.x < 1280 && position.y >= 60 && position.y < 770)
 				{
-					const sf::Vector2f position = WorldPosition(window, pixel);
-					target = document.FindObjectAt(position.x, position.y);
+					const sf::Vector2f worldPosition = WorldPosition(window, pixel);
+					target = document.FindObjectAt(worldPosition.x, worldPosition.y);
 				}
 			}
 			if (target)
@@ -455,7 +573,18 @@ private:
 	}
 	void HandlePress(const sf::Event::MouseButtonPressed& event, sf::RenderWindow& window, GameState& game)
 	{
-		const int x = event.position.x, y = event.position.y;
+		if (event.button == sf::Mouse::Button::Left)
+		{
+			placementDragActive = false;
+			hasLastPlacementPosition = false;
+		}
+		const sf::Vector2f position = EditorPosition(window, event.position);
+		const int x = static_cast<int>(position.x), y = static_cast<int>(position.y);
+		if (mapPropertiesOpen)
+		{
+			if (event.button == sf::Mouse::Button::Left) HandleMapPropertiesClick(position);
+			return;
+		}
 		if (TriggerPanelVisible() && x >= 960 && y >= 70 && y < 580)
 		{
 			if (event.button == sf::Mouse::Button::Left) HandleTriggerPanelClick(x, y);
@@ -476,7 +605,7 @@ private:
 			return;
 		}
 		if (event.button == sf::Mouse::Button::Middle && x >= 280 && y >= 60 && y < 770)
-		{ panning = true; lastMouse = event.position; return; }
+		{ panning = true; lastMouse = position; return; }
 		if (event.button != sf::Mouse::Button::Left) return;
 		triggerDropdown = TriggerDropdown::None;
 		if (y < 50)
@@ -486,18 +615,10 @@ private:
 			else if (x < 300) Save();
 			else if (x < 450) Apply(game);
 			else if (x < 560) RefreshAssets();
-			else if (x < 700)
-			{
-				if (document.path.empty() || browser.selected.empty()) Error("Bitte zuerst eine Karte und ein Sprite auswaehlen.");
-				else { document.map.defaultGroundPath = browser.selected; document.dirty = true; }
-			}
 			else if (x < 820)
 			{
-				if (document.path.empty()) { Error("Bitte zuerst eine Karte oeffnen oder erstellen."); return; }
-				const auto& weather = GetWeatherEffectDefinitions();
-				auto current = std::find_if(weather.begin(), weather.end(), [&](const WeatherEffectDefinition& item) { return item.id == document.map.defaultWeather; });
-				document.map.defaultWeather = document.map.defaultWeather == "none" && !weather.empty() ? weather.front().id : current != weather.end() && ++current != weather.end() ? current->id : "none";
-				document.dirty = true;
+				mapPropertiesOpen = true;
+				mapWeatherOffset = 0;
 			}
 			else if (x < 940 && triggerMode)
 			{
@@ -535,7 +656,7 @@ private:
 			{
 				const auto entry = browser.visible[index];
 				if (entry.folder) browser.Toggle(entry.path);
-				else { browser.selected = entry.path; selectedObject = selectedTrigger = static_cast<std::size_t>(-1); selectMode = triggerMode = spawnMode = false; draggingTrigger = creatingTrigger = false; resizeEdges = 0; }
+				else { browser.selected = entry.path; selectedObject = selectedTrigger = static_cast<std::size_t>(-1); selectMode = triggerMode = spawnMode = false; draggingTrigger = creatingTrigger = false; resizeEdges = 0; placementDragActive = true; }
 			}
 			return;
 		}
@@ -590,16 +711,85 @@ private:
 			return;
 		}
 		if (browser.selected.empty()) { Error("Bitte zuerst ein Sprite auswaehlen."); return; }
-		std::size_t number = 1;
-		std::string id;
-		do { id = "object_" + std::to_string(number++); } while (document.HasUsedId(id));
-		if (newType == MapObjectType::Scenery || newType == MapObjectType::Untergrund) { pos.x = SnapToGrid(pos.x, 64); pos.y = SnapToGrid(pos.y, 64); }
-		document.map.objects.push_back({ id, newType, pos.x, pos.y, browser.selected, newSolid });
-		document.dirty = true;
+		PlaceSelectedSprite(pos);
 	}
 	static const char* TypeName(MapObjectType type)
 	{
 		return type == MapObjectType::Untergrund ? "untergrund" : type == MapObjectType::Wall ? "wall" : type == MapObjectType::Npc ? "npc" : "scenery";
+	}
+	void HandleMapPropertiesClick(sf::Vector2f position)
+	{
+		if (position.x < 420.0f || position.x >= 860.0f || position.y < 140.0f || position.y >= 660.0f || position.y < 188.0f)
+		{
+			mapPropertiesOpen = false;
+			return;
+		}
+		if (position.x >= 440.0f && position.x < 820.0f && position.y >= 250.0f && position.y < 288.0f)
+		{
+			if (document.path.empty() || browser.selected.empty())
+				Error("Bitte zuerst eine Karte oeffnen oder erstellen und ein Sprite im Asset-Browser auswaehlen.");
+			else if (document.map.defaultGroundPath != browser.selected)
+			{
+				document.map.defaultGroundPath = browser.selected;
+				document.dirty = true;
+			}
+			return;
+		}
+		if (position.x >= 440.0f && position.x < 820.0f && position.y >= 330.0f && position.y < 600.0f)
+		{
+			const int row = static_cast<int>((position.y - 330.0f) / 30.0f);
+			const int index = mapWeatherOffset + row;
+			const auto& weather = GetWeatherEffectDefinitions();
+			if (index >= 0 && index <= static_cast<int>(weather.size()))
+			{
+				const std::string selected = index == 0 ? "none" : weather[static_cast<std::size_t>(index - 1)].id;
+				if (document.path.empty()) Error("Bitte zuerst eine Karte oeffnen oder erstellen.");
+				else if (document.map.defaultWeather != selected)
+				{
+					document.map.defaultWeather = selected;
+					document.dirty = true;
+				}
+			}
+		}
+	}
+	void DrawMapPropertiesPanel(sf::RenderWindow& window, const sf::Font& font) const
+	{
+		if (!mapPropertiesOpen) return;
+		auto rectangle = [&](float x, float y, float width, float height, sf::Color color)
+		{
+			sf::RectangleShape shape({ width, height });
+			shape.setPosition({ x, y });
+			shape.setFillColor(color);
+			window.draw(shape);
+		};
+		rectangle(420, 140, 440, 520, sf::Color(28, 31, 37, 250));
+		rectangle(420, 140, 440, 48, sf::Color(48, 52, 60));
+		Label(window, font, "MAP EIGENSCHAFTEN", 440, 155, 18);
+		Label(window, font, "Schliessen (Esc)", 710, 157, 12);
+		Label(window, font, "Standardboden", 440, 195, 14);
+		std::string ground = document.map.defaultGroundPath.empty() ? "Kein Boden gesetzt" : "Aktuell: " + document.map.defaultGroundPath;
+		if (ground.size() > 54) ground = "..." + ground.substr(ground.size() - 51);
+		Label(window, font, ground, 440, 211, 11);
+		std::string selectedSprite = browser.selected.empty() ? "Kein Sprite ausgewaehlt" : "Sprite: " + browser.selected;
+		if (selectedSprite.size() > 54) selectedSprite = "..." + selectedSprite.substr(selectedSprite.size() - 51);
+		Label(window, font, selectedSprite, 440, 228, 11);
+		rectangle(440, 252, 380, 34, sf::Color(65, 70, 80));
+		Label(window, font, "Ausgewaehltes Sprite als Boden setzen", 450, 261, 13);
+		Label(window, font, "Standardwetter (Mausrad zum Scrollen)", 440, 300, 14);
+		const auto& weather = GetWeatherEffectDefinitions();
+		const int weatherCount = static_cast<int>(weather.size()) + 1;
+		const int visibleRows = (std::min)(9, weatherCount);
+		for (int row = 0; row < visibleRows; ++row)
+		{
+			const int index = mapWeatherOffset + row;
+			const std::string id = index == 0 ? "none" : weather[static_cast<std::size_t>(index - 1)].id;
+			const bool selected = id == document.map.defaultWeather;
+			rectangle(440, static_cast<float>(330 + row * 30), 380, 28,
+				selected ? sf::Color(70, 105, 110) : sf::Color(55, 59, 67));
+			Label(window, font, index == 0 ? "Kein Wetter (none)" : id, 450, static_cast<float>(337 + row * 30), 13);
+		}
+		if (weatherCount > visibleRows)
+			Label(window, font, std::to_string(mapWeatherOffset + 1) + "-" + std::to_string(mapWeatherOffset + visibleRows) + " / " + std::to_string(weatherCount), 440, 610, 12);
 	}
 	static void Label(sf::RenderTarget& target, const sf::Font& font, const std::string& text, float x, float y, unsigned int size = 14)
 	{
@@ -681,10 +871,33 @@ private:
 		Label(window, font, "auch im Release. Nur Darstellung;", 970, 533, 13);
 		Label(window, font, "aendert weder Ereignis noch Kollision.", 970, 551, 13);
 	}
+	void DrawPlacementPreview(sf::RenderWindow& window, float left, float top)
+	{
+		if (browser.selected.empty() || triggerMode || selectMode || spawnMode) return;
+		const sf::Vector2i pixel = sf::Mouse::getPosition(window);
+		if (!IsMapArea(EditorPosition(window, pixel))) return;
+		sf::Vector2f position = WorldPosition(window, pixel);
+		if (newType == MapObjectType::Scenery || newType == MapObjectType::Untergrund)
+		{
+			position.x = SnapToGrid(position.x, 64.0f);
+			position.y = SnapToGrid(position.y, 64.0f);
+		}
+		if (sf::Texture* texture = GetCachedTexture(browser.selected))
+		{
+			const sf::Vector2u size = texture->getSize();
+			if (size.x == 0u || size.y == 0u) return;
+			sf::Sprite sprite(*texture);
+			sprite.setOrigin({ size.x * 0.5f, size.y * 0.5f });
+			sprite.setScale({ 64.0f / size.x, 64.0f / size.y });
+			sprite.setColor(sf::Color(255, 255, 255, 150));
+			sprite.setPosition({ position.x - left, position.y - top });
+			window.draw(sprite);
+		}
+	}
 	void Draw(sf::RenderWindow& window, const sf::Font& font)
 	{
 		window.clear(sf::Color(22, 34, 26));
-		window.setView(MapView());
+		window.setView(MapView(window));
 		Viewport viewport{ static_cast<int>(1000.0f / zoom), static_cast<int>(710.0f / zoom) };
 		GameState preview;
 		preview.activeMap = document.map;
@@ -737,13 +950,14 @@ private:
 					window.draw(handle);
 				}
 		}
-		window.setView(window.getDefaultView());
+		DrawPlacementPreview(window, left, top);
+		window.setView(EditorView(window));
 		sf::RectangleShape bar({ 1280, 60 }); bar.setFillColor(sf::Color(35, 38, 45)); window.draw(bar);
 		sf::RectangleShape side({ 280, 740 }); side.setPosition({ 0, 60 }); side.setFillColor(sf::Color(40, 43, 48)); window.draw(side);
-		const char* buttons[] = { "Neu", "Oeffnen", "Speichern", "Im Spiel uebernehmen", "Assets neu", "Boden setzen", "Wetter", triggerMode ? "Effekt" : "Typ", triggerMode ? "Glow" : "", "Startpunkt", "Modus" };
-		const float positions[] = { 5, 105, 205, 305, 455, 565, 705, 825, 945, 1045, 1155 };
-		const float ends[] = { 100, 200, 300, 450, 560, 700, 820, 940, 1040, 1150, 1280 };
-		for (int i = 0; i < 11; ++i)
+		const char* buttons[] = { "Neu", "Oeffnen", "Speichern", "Im Spiel uebernehmen", "Assets neu", "Map Eigenschaften", triggerMode ? "Effekt" : "Typ", triggerMode ? "Glow" : "", "Startpunkt", "Modus" };
+		const float positions[] = { 5, 105, 205, 305, 455, 565, 825, 945, 1045, 1155 };
+		const float ends[] = { 100, 200, 300, 450, 560, 820, 940, 1040, 1150, 1280 };
+		for (int i = 0; i < 10; ++i)
 		{
 			if (buttons[i][0] == '\0') continue;
 			sf::RectangleShape button({ ends[i] - positions[i] - 4, 38 });
@@ -781,6 +995,7 @@ private:
 		Label(window, font, "Trigger-Werkzeug (T)", 12, 730, 14);
 		DrawTriggerPanel(window, font);
 		DrawObjectPanel(window, font);
+		DrawMapPropertiesPanel(window, font);
 		const MapObject* selected = selectedObject < document.map.objects.size() ? &document.map.objects[selectedObject] : nullptr;
 		std::string info = std::string(spawnMode ? "Startpunkt: Klick auf Karte" : selectMode ? "Auswaehlen/Verschieben" : "Platzieren") + " | Typ: " + TypeName(selected ? selected->type : newType) + " | solid=" + ((selected ? selected->solid : newSolid) ? "1" : "0") + " | Wetter: " + document.map.defaultWeather;
 		if (selected) info += " | " + selected->id + " (" + std::to_string(static_cast<int>(selected->x)) + ", " + std::to_string(static_cast<int>(selected->y)) + ")";
