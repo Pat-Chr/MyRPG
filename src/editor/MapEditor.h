@@ -163,7 +163,11 @@ public:
 				}
 			}
 			if (window.isOpen()) Draw(window, font);
+			PollSheetEvents(window);
+			PanSheet(panDelta);
+			DrawSheetWindow(font);
 		}
+		sheetWindow.reset();
 	}
 
 private:
@@ -188,6 +192,241 @@ private:
 	TriggerDropdown triggerDropdown = TriggerDropdown::None;
 	std::vector<std::string> dropdownEntries;
 	int dropdownOffset = 0;
+
+	// Spritesheet-Ansicht: eigenes Fenster, Inhaltsbereich ab y=70 (Fensterpixel)
+	static constexpr float SheetContentY = 70.0f;
+	std::optional<sf::RenderWindow> sheetWindow;
+	bool sheetDragging = false, brushTile = false, sheetPanning = false;
+	int sheetCell = 16;
+	float sheetScale = 4.0f, sheetScrollX = 0.0f, sheetScrollY = 0.0f;
+	sf::Vector2f lastSheetMouse{};
+	sf::IntRect brushRect{};
+
+	void ResetSheetView()
+	{
+		sheetScale = 64.0f / static_cast<float>(sheetCell);
+		sheetScrollX = sheetScrollY = 0.0f;
+	}
+	void ClampSheetScroll(sf::Vector2u size)
+	{
+		if (!sheetWindow) return;
+		const sf::Vector2u view = sheetWindow->getSize();
+		sheetScrollX = std::clamp(sheetScrollX, 64.0f - static_cast<float>(view.x), (std::max)(0.0f, size.x * sheetScale - 64.0f));
+		sheetScrollY = std::clamp(sheetScrollY, 64.0f + SheetContentY - static_cast<float>(view.y), (std::max)(0.0f, size.y * sheetScale - 64.0f));
+	}
+	void SetSheetCell(int value)
+	{
+		sheetCell = std::clamp(value, 1, 512);
+		brushTile = false;
+		ResetSheetView();
+	}
+	void ToggleSheet()
+	{
+		if (sheetWindow)
+		{
+			sheetWindow.reset();
+			sheetDragging = sheetPanning = false;
+			return;
+		}
+		if (browser.selected.empty()) { Error("Bitte zuerst ein Spritesheet auswaehlen."); return; }
+		sheetWindow.emplace(sf::VideoMode({ 900u, 720u }), "MyRPG Sheet-Ansicht", sf::Style::Titlebar | sf::Style::Resize | sf::Style::Close);
+		sheetWindow->setFramerateLimit(60);
+		sheetWindow->setKeyRepeatEnabled(false);
+		ResetSheetView();
+	}
+	// Liefert den Tile-Ausschnitt unter dem Mauszeiger (Fensterpixel), falls vorhanden
+	std::optional<sf::IntRect> SheetTileAt(sf::Vector2f p)
+	{
+		if (p.x < 0.0f || p.y < SheetContentY) return std::nullopt;
+		sf::Texture* texture = GetCachedTexture(browser.selected);
+		if (!texture) return std::nullopt;
+		const sf::Vector2u size = texture->getSize();
+		const int tx = static_cast<int>(std::floor((p.x + sheetScrollX) / sheetScale));
+		const int ty = static_cast<int>(std::floor((p.y - SheetContentY + sheetScrollY) / sheetScale));
+		if (tx < 0 || ty < 0 || tx >= static_cast<int>(size.x) || ty >= static_cast<int>(size.y)) return std::nullopt;
+		const int cx = tx / sheetCell * sheetCell, cy = ty / sheetCell * sheetCell;
+		return sf::IntRect({ cx, cy }, { (std::min)(sheetCell, static_cast<int>(size.x) - cx), (std::min)(sheetCell, static_cast<int>(size.y) - cy) });
+	}
+	void HandleSheetClick(sf::Vector2f p)
+	{
+		if (p.y < SheetContentY)
+		{
+			if (p.y < 6 || p.y >= 34) return;
+			if (p.x >= 70 && p.x < 100) SetSheetCell(sheetCell - 1);
+			else if (p.x >= 150 && p.x < 180) SetSheetCell(sheetCell + 1);
+			else if (p.x >= 195 && p.x < 375)
+			{
+				const int index = static_cast<int>((p.x - 195) / 45);
+				constexpr int presets[] = { 8, 16, 32, 64 };
+				if (index >= 0 && index < 4 && std::fmod(p.x - 195, 45.0f) < 40.0f) SetSheetCell(presets[index]);
+			}
+			return;
+		}
+		if (const auto tile = SheetTileAt(p))
+		{
+			brushRect = *tile;
+			brushTile = true;
+			sheetDragging = true;
+			selectedObject = selectedTrigger = static_cast<std::size_t>(-1);
+			selectMode = triggerMode = spawnMode = false;
+			draggingTrigger = creatingTrigger = false;
+			resizeEdges = 0;
+		}
+	}
+	// releasePixel liegt in Sheet-Fensterkoordinaten; ausserhalb des Sheet-Fensters wird auf die Karte gesetzt
+	void HandleSheetRelease(const sf::RenderWindow& window, sf::Vector2i releasePixel)
+	{
+		if (!sheetDragging) return;
+		sheetDragging = false;
+		const sf::Vector2u sheetSize = sheetWindow ? sheetWindow->getSize() : sf::Vector2u{};
+		if (releasePixel.x >= 0 && releasePixel.y >= 0 && releasePixel.x < static_cast<int>(sheetSize.x) && releasePixel.y < static_cast<int>(sheetSize.y)) return;
+		const sf::Vector2i pixel = sf::Mouse::getPosition(window);
+		const sf::Vector2u size = window.getSize();
+		if (pixel.x < 0 || pixel.y < 0 || pixel.x >= static_cast<int>(size.x) || pixel.y >= static_cast<int>(size.y)) return;
+		const sf::Vector2f position = EditorPosition(window, pixel);
+		if (mapPropertiesOpen || !IsMapArea(position)) return;
+		if (ObjectPanelVisible() && position.x >= 960 && position.y >= 70 && position.y < 270) return;
+		if (document.path.empty()) return;
+		hasLastPlacementPosition = false;
+		PlaceSelectedSprite(WorldPosition(window, pixel));
+		placementDragActive = false;
+		hasLastPlacementPosition = false;
+	}
+	void PollSheetEvents(const sf::RenderWindow& mainWindow)
+	{
+		while (sheetWindow && sheetWindow->isOpen())
+		{
+			const std::optional event = sheetWindow->pollEvent();
+			if (!event) break;
+			if (event->is<sf::Event::Closed>()) { sheetWindow.reset(); sheetDragging = sheetPanning = false; return; }
+			if (const auto* resized = event->getIf<sf::Event::Resized>())
+				sheetWindow->setView(sf::View(sf::FloatRect({ 0.0f, 0.0f }, { static_cast<float>(resized->size.x), static_cast<float>(resized->size.y) })));
+			else if (const auto* key = event->getIf<sf::Event::KeyPressed>())
+			{
+				if (key->code == sf::Keyboard::Key::Escape || key->code == sf::Keyboard::Key::G) { ToggleSheet(); return; }
+			}
+			else if (const auto* press = event->getIf<sf::Event::MouseButtonPressed>())
+			{
+				const sf::Vector2f position = sheetWindow->mapPixelToCoords(press->position);
+				if (press->button == sf::Mouse::Button::Left) HandleSheetClick(position);
+				else if (press->button == sf::Mouse::Button::Middle && position.y >= SheetContentY) { sheetPanning = true; lastSheetMouse = position; }
+			}
+			else if (const auto* release = event->getIf<sf::Event::MouseButtonReleased>())
+			{
+				if (release->button == sf::Mouse::Button::Left) HandleSheetRelease(mainWindow, release->position);
+				else if (release->button == sf::Mouse::Button::Middle) sheetPanning = false;
+			}
+			else if (const auto* move = event->getIf<sf::Event::MouseMoved>())
+			{
+				const sf::Vector2f position = sheetWindow->mapPixelToCoords(move->position);
+				if (sheetPanning)
+				{
+					sheetScrollX -= position.x - lastSheetMouse.x;
+					sheetScrollY -= position.y - lastSheetMouse.y;
+					lastSheetMouse = position;
+				}
+			}
+			else if (const auto* wheel = event->getIf<sf::Event::MouseWheelScrolled>())
+			{
+				const sf::Vector2f position = sheetWindow->mapPixelToCoords(wheel->position);
+				if (position.y < SheetContentY) continue;
+				// Zoom um den Mauszeiger, sodass der Punkt unter der Maus stehen bleibt
+				const float oldScale = sheetScale;
+				sheetScale = std::clamp(sheetScale * (wheel->delta > 0 ? 1.2f : 1.0f / 1.2f), 0.25f, 32.0f);
+				const float ratio = sheetScale / oldScale;
+				sheetScrollX = (position.x + sheetScrollX) * ratio - position.x;
+				sheetScrollY = (position.y - SheetContentY + sheetScrollY) * ratio - (position.y - SheetContentY);
+			}
+		}
+	}
+	void PanSheet(float delta)
+	{
+		if (!sheetWindow || !sheetWindow->hasFocus()) return;
+		const float panX = static_cast<float>(sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right)) -
+			static_cast<float>(sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left));
+		const float panY = static_cast<float>(sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Down)) -
+			static_cast<float>(sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up));
+		const float length = std::sqrt(panX * panX + panY * panY);
+		if (length <= 0.0f) return;
+		sheetScrollX += panX * 500.0f * delta / length;
+		sheetScrollY += panY * 500.0f * delta / length;
+	}
+	// Halbtransparente Vorschau des gezogenen Tiles im Haupteditor
+	void DrawSheetGhost(sf::RenderWindow& window)
+	{
+		if (!sheetDragging || !brushTile) return;
+		sf::Texture* texture = GetCachedTexture(browser.selected);
+		if (!texture || brushRect.size.x <= 0 || brushRect.size.y <= 0) return;
+		const sf::Vector2f mouse = EditorPosition(window, sf::Mouse::getPosition(window));
+		if (!IsMapArea(mouse)) return;
+		sf::Sprite ghost(*texture);
+		ghost.setTextureRect(brushRect);
+		ghost.setScale({ 64.0f / brushRect.size.x, 64.0f / brushRect.size.y });
+		ghost.setOrigin({ brushRect.size.x * 0.5f, brushRect.size.y * 0.5f });
+		ghost.setColor(sf::Color(255, 255, 255, 170));
+		ghost.setPosition(mouse);
+		window.draw(ghost);
+	}
+	void DrawSheetWindow(const sf::Font& font)
+	{
+		if (!sheetWindow) return;
+		sf::RenderWindow& window = *sheetWindow;
+		window.clear(sf::Color(30, 33, 40));
+		sf::Texture* texture = GetCachedTexture(browser.selected);
+		if (texture)
+		{
+			const sf::Vector2u size = texture->getSize();
+			ClampSheetScroll(size);
+			const sf::Vector2f origin{ -sheetScrollX, SheetContentY - sheetScrollY };
+			sf::RectangleShape backdrop({ size.x * sheetScale, size.y * sheetScale });
+			backdrop.setPosition(origin);
+			backdrop.setFillColor(sf::Color(55, 58, 66));
+			window.draw(backdrop);
+			sf::Sprite sprite(*texture);
+			sprite.setPosition(origin);
+			sprite.setScale({ sheetScale, sheetScale });
+			window.draw(sprite);
+			sf::VertexArray lines(sf::PrimitiveType::Lines);
+			const sf::Color lineColor(255, 255, 255, 70);
+			const float step = sheetCell * sheetScale, width = size.x * sheetScale, height = size.y * sheetScale;
+			for (float x = 0; x <= width + 0.5f; x += step) { lines.append(sf::Vertex({ origin.x + x, origin.y }, lineColor)); lines.append(sf::Vertex({ origin.x + x, origin.y + height }, lineColor)); }
+			for (float y = 0; y <= height + 0.5f; y += step) { lines.append(sf::Vertex({ origin.x, origin.y + y }, lineColor)); lines.append(sf::Vertex({ origin.x + width, origin.y + y }, lineColor)); }
+			window.draw(lines);
+			auto outline = [&](const sf::IntRect& rect, sf::Color color)
+			{
+				sf::RectangleShape box({ rect.size.x * sheetScale, rect.size.y * sheetScale });
+				box.setPosition({ origin.x + rect.position.x * sheetScale, origin.y + rect.position.y * sheetScale });
+				box.setFillColor(sf::Color(color.r, color.g, color.b, 40));
+				box.setOutlineColor(color);
+				box.setOutlineThickness(2.0f);
+				window.draw(box);
+			};
+			if (brushTile) outline(brushRect, sf::Color::Yellow);
+			if (const auto hover = SheetTileAt(window.mapPixelToCoords(sf::Mouse::getPosition(window)))) outline(*hover, sf::Color::Cyan);
+		}
+		sf::RectangleShape bar({ static_cast<float>(window.getSize().x), SheetContentY });
+		bar.setFillColor(sf::Color(35, 38, 45));
+		window.draw(bar);
+		auto button = [&](float x, float w, const std::string& text, bool active = false)
+		{
+			sf::RectangleShape shape({ w, 28 });
+			shape.setPosition({ x, 6 });
+			shape.setFillColor(active ? sf::Color(70, 105, 110) : sf::Color(65, 70, 80));
+			window.draw(shape);
+			Label(window, font, text, x + 6, 10, 14);
+		};
+		Label(window, font, "Raster:", 8, 10, 14);
+		button(70, 30, "-");
+		Label(window, font, std::to_string(sheetCell), 110, 10, 14);
+		button(150, 30, "+");
+		constexpr int presets[] = { 8, 16, 32, 64 };
+		for (int i = 0; i < 4; ++i) button(195.0f + 45.0f * i, 40, std::to_string(presets[i]), presets[i] == sheetCell);
+		char info[96];
+		std::snprintf(info, sizeof info, "Zelle %d px -> 64 px im Spiel | Ansicht x%.2f", sheetCell, sheetScale);
+		Label(window, font, info, 8, 40, 12);
+		Label(window, font, "Klick = Tile waehlen, ziehen = auf Karte setzen | WASD/Pfeile/Mitteltaste = bewegen | Mausrad = Zoom", 8, 54, 11);
+		window.display();
+	}
 
 	bool TriggerPanelVisible() const
 	{
@@ -470,7 +709,14 @@ private:
 		std::size_t number = 1;
 		std::string id;
 		do { id = "object_" + std::to_string(number++); } while (document.HasUsedId(id));
-		document.map.objects.push_back({ id, newType, position.x, position.y, browser.selected, newSolid });
+		MapObject object{ id, newType, position.x, position.y, browser.selected, newSolid };
+		if (brushTile)
+		{
+			object.hasTile = true;
+			object.tileX = brushRect.position.x; object.tileY = brushRect.position.y;
+			object.tileWidth = brushRect.size.x; object.tileHeight = brushRect.size.y;
+		}
+		document.map.objects.push_back(object);
 		document.dirty = true;
 		lastPlacementPosition = position;
 		hasLastPlacementPosition = true;
@@ -524,6 +770,7 @@ private:
 		}
 		if (key == sf::Keyboard::Key::Escape) { if (ConfirmDiscard()) window.close(); }
 		else if (key == sf::Keyboard::Key::Tab) ToggleSelectMode();
+		else if (key == sf::Keyboard::Key::G) ToggleSheet();
 		else if (key == sf::Keyboard::Key::P) { spawnMode = true; draggingTrigger = creatingTrigger = false; resizeEdges = 0; }
 		else if (key == sf::Keyboard::Key::T)
 		{
@@ -644,6 +891,11 @@ private:
 			else ToggleSelectMode();
 			return;
 		}
+		if (x < 280 && y >= 764 && y < 796)
+		{
+			ToggleSheet();
+			return;
+		}
 		if (x < 280 && y >= 720 && y < 760)
 		{
 			HandleKey(sf::Keyboard::Key::T, window);
@@ -656,7 +908,7 @@ private:
 			{
 				const auto entry = browser.visible[index];
 				if (entry.folder) browser.Toggle(entry.path);
-				else { browser.selected = entry.path; selectedObject = selectedTrigger = static_cast<std::size_t>(-1); selectMode = triggerMode = spawnMode = false; draggingTrigger = creatingTrigger = false; resizeEdges = 0; placementDragActive = true; }
+				else { browser.selected = entry.path; brushTile = false; sheetScrollX = sheetScrollY = 0.0f; sheetDragging = false; selectedObject = selectedTrigger = static_cast<std::size_t>(-1); selectMode = triggerMode = spawnMode = false; draggingTrigger = creatingTrigger = false; resizeEdges = 0; placementDragActive = true; }
 			}
 			return;
 		}
@@ -884,9 +1136,14 @@ private:
 		}
 		if (sf::Texture* texture = GetCachedTexture(browser.selected))
 		{
-			const sf::Vector2u size = texture->getSize();
-			if (size.x == 0u || size.y == 0u) return;
+			sf::Vector2u size = texture->getSize();
 			sf::Sprite sprite(*texture);
+			if (brushTile)
+			{
+				sprite.setTextureRect(brushRect);
+				size = { static_cast<unsigned>(brushRect.size.x), static_cast<unsigned>(brushRect.size.y) };
+			}
+			if (size.x == 0u || size.y == 0u) return;
 			sprite.setOrigin({ size.x * 0.5f, size.y * 0.5f });
 			sprite.setScale({ 64.0f / size.x, 64.0f / size.y });
 			sprite.setColor(sf::Color(255, 255, 255, 150));
@@ -993,8 +1250,14 @@ private:
 		triggerButton.setFillColor(triggerMode ? sf::Color(70, 105, 110) : sf::Color(65, 70, 80));
 		window.draw(triggerButton);
 		Label(window, font, "Trigger-Werkzeug (T)", 12, 730, 14);
+		sf::RectangleShape sheetButton({ 270, 32 });
+		sheetButton.setPosition({ 5, 764 });
+		sheetButton.setFillColor(sheetWindow ? sf::Color(70, 105, 110) : sf::Color(65, 70, 80));
+		window.draw(sheetButton);
+		Label(window, font, "Sheet-Ansicht (G)", 12, 772, 14);
 		DrawTriggerPanel(window, font);
 		DrawObjectPanel(window, font);
+		DrawSheetGhost(window);
 		DrawMapPropertiesPanel(window, font);
 		const MapObject* selected = selectedObject < document.map.objects.size() ? &document.map.objects[selectedObject] : nullptr;
 		std::string info = std::string(spawnMode ? "Startpunkt: Klick auf Karte" : selectMode ? "Auswaehlen/Verschieben" : "Platzieren") + " | Typ: " + TypeName(selected ? selected->type : newType) + " | solid=" + ((selected ? selected->solid : newSolid) ? "1" : "0") + " | Wetter: " + document.map.defaultWeather;

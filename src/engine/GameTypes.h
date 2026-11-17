@@ -89,6 +89,13 @@ struct MapObject
 	
 	// Ob das Objekt Kollisionen verursacht (wahr für Wände)
 	bool solid = false;
+
+	// Optionaler Ausschnitt (Tile) aus einem Spritesheet in Texturpixeln
+	bool hasTile = false;
+	int tileX = 0;
+	int tileY = 0;
+	int tileWidth = 0;
+	int tileHeight = 0;
 };
 
 // Auslöse-Zone für Ereignisse (Trigger)

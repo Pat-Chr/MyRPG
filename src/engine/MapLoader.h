@@ -203,6 +203,16 @@ inline bool TryLoadMapFromFile(const std::string& filePath, MapData& outMap)
 				}
 				
 				object.solid = solidFlag != 0; // Festkörper-Objekte wenn Flag != 0
+
+				std::string tileToken;
+				if (lineStream >> tileToken && tileToken.starts_with("tile="))
+				{
+					char comma1 = 0, comma2 = 0, comma3 = 0;
+					std::istringstream tileStream(tileToken.substr(5));
+					tileStream >> object.tileX >> comma1 >> object.tileY >> comma2 >> object.tileWidth >> comma3 >> object.tileHeight;
+					object.hasTile = !tileStream.fail() && comma1 == ',' && comma2 == ',' && comma3 == ',' &&
+						object.tileX >= 0 && object.tileY >= 0 && object.tileWidth > 0 && object.tileHeight > 0;
+				}
 				loadedMap.objects.push_back(object);
 			}
 
