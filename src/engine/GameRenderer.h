@@ -175,7 +175,12 @@ inline void RenderMapObjects(sf::RenderTarget& target, const Viewport& viewport,
         if (sf::Texture* texture = GetCachedTexture(object.spritePath))
         {
             sf::Sprite sprite(*texture);
-            const sf::Vector2u textureSize = texture->getSize();
+            sf::Vector2u textureSize = texture->getSize();
+            if (object.hasTile)
+            {
+                sprite.setTextureRect(sf::IntRect({ object.tileX, object.tileY }, { object.tileWidth, object.tileHeight }));
+                textureSize = { static_cast<unsigned>(object.tileWidth), static_cast<unsigned>(object.tileHeight) };
+            }
 
             // Zentriert und skaliert das Sprite auf die Standard-Objektgröße (64x64)
             if (textureSize.x > 0u && textureSize.y > 0u)
