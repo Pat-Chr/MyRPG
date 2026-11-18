@@ -71,7 +71,8 @@ inline void RenderHeat(sf::RenderTarget& target, const sf::RenderTexture& scene,
 	target.draw(sprite, shader);
 }
 
-inline void RenderWeather(sf::RenderTarget& target, const WeatherState& weather, float width, float height)
+inline void RenderWeather(sf::RenderTarget& target, const WeatherState& weather, float width, float height,
+	sf::Vector2f worldOrigin)
 {
 	sf::Shader* shader = GetWeatherShader(weather.effectId);
 	if (shader == nullptr) return;
@@ -87,6 +88,10 @@ inline void RenderWeather(sf::RenderTarget& target, const WeatherState& weather,
 	};
 	shader->setUniform("time", weather.elapsed);
 	shader->setUniform("resolution", sf::Glsl::Vec2(width, height));
+	if (weather.effectId == "rain")
+	{
+		shader->setUniform("worldOrigin", sf::Glsl::Vec2(worldOrigin));
+	}
 	sf::RenderStates states;
 	states.shader = shader;
 	target.draw(quad, 6, sf::PrimitiveType::Triangles, states);

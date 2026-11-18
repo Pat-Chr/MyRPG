@@ -506,16 +506,17 @@ inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewpo
                        static_cast<float>(viewport.width), static_cast<float>(viewport.height));
     }
 
+    const sf::Vector2f worldZero = WorldToScreen(0.0f, 0.0f, game, viewport);
+    const sf::Vector2f worldOrigin{ -worldZero.x, -worldZero.y };
     if (renderHeat)
     {
         heatScene.display();
-        const sf::Vector2f worldZero = WorldToScreen(0.0f, 0.0f, game, viewport);
         RenderHeat(target, heatScene, game.weather, static_cast<float>(viewport.width), static_cast<float>(viewport.height),
-                   { -worldZero.x, -worldZero.y });
+                   worldOrigin);
     }
     else if (game.weather.effectId != "heat")
     {
-        RenderWeather(target, game.weather, static_cast<float>(viewport.width), static_cast<float>(viewport.height));
+        RenderWeather(target, game.weather, static_cast<float>(viewport.width), static_cast<float>(viewport.height), worldOrigin);
     }
 
     #ifdef _DEBUG
