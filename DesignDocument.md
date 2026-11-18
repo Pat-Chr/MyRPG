@@ -321,7 +321,31 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 
 ---
 
-## 16. Änderungsverlauf
+## 16. Geplante Features
+Diese Liste enthält Features, die in zukünftigen Entwicklungsphasen hinzugefügt werden sollen.
+
+### Gameplay-Features
+- [ ] **Crafting-System**: Ressourcen sammeln, Werkzeuge herstellen, Ausrüstung verbessern
+- [ ] **Fortschritts-Savegame**: Automatische Speicherpunkte an strategischen Orten
+
+### UI/UX-Features
+- [ ] **Inventar-System**: Gegenstände organisieren, Kategorien, Filter
+- [ ] **Quest-Log**: Aktive Quests verfolgen, Belohnungen anzeigen
+- [ ] **Skill-Tree**: Visuelle Darstellung von Fähigkeiten und deren Abhängigkeiten
+- [ ] **Tutorial-System**: Interaktive Einleitung für neue Spieler
+
+### Technische Features
+- [ ] **Sound-System**: Hintergrundmusik, Soundeffekte, Sprachausgabe
+- [ ] **Dialog-System**: Textbasierte Gespräche mit Optionen
+- [ ] **Cutscene-Engine**: Vorabgezeichnete Sequenzen für Story-Momente
+
+### Content-Features
+- [ ] **Boss-Kämpfe**: Große Gegner am Ende jeder Region
+- [ ] **Side-Quests**: Nebenmissionen für zusätzliche Belohnungen
+
+---
+
+## 17. Änderungsverlauf
 | Version | Datum | Änderung | Autor |
 |---------|-------|----------|-------|
 | v0.1    |       | Initiale Vorlage | |
@@ -346,6 +370,5 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 - Raster- und Player-Rendering wurden auf SFML (`VertexArray`, `RectangleShape`) portiert.
 
 ### Nächste sinnvolle Schritte
-1. Animations-Spritesheet für den Spieler ergänzen.
-2. Kamera/Viewport als eigenes Modul unter `src/engine` auslagern.
-3. Erstes Asset- und Content-Verzeichnis für Texturen/Sounds anlegen.
+1. Kamera/Viewport als eigenes Modul unter `src/engine` auslagern.
+2. Erstes Asset- und Content-Verzeichnis für Texturen/Sounds anlegen.
