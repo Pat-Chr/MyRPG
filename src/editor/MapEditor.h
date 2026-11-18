@@ -68,6 +68,14 @@ public:
 					if (ConfirmDiscard()) window.close();
 				}
 				else if (const auto* key = event->getIf<sf::Event::KeyPressed>()) HandleKey(key->code, window);
+				else if (const auto* text = event->getIf<sf::Event::TextEntered>())
+				{
+					if (renameTriggerOpen)
+					{
+						if (text->unicode == 8 && !triggerNameInput.empty()) triggerNameInput.pop_back();
+						else if (text->unicode >= 32 && text->unicode < 127 && triggerNameInput.size() < 64) triggerNameInput += static_cast<char>(text->unicode);
+					}
+				}
 				else if (const auto* button = event->getIf<sf::Event::MouseButtonPressed>()) HandlePress(*button, window, game);
 				else if (const auto* button = event->getIf<sf::Event::MouseButtonReleased>())
 				{
@@ -118,7 +126,12 @@ public:
 				else if (const auto* wheel = event->getIf<sf::Event::MouseWheelScrolled>())
 				{
 					const sf::Vector2f position = EditorPosition(window, wheel->position);
-					if (mapPropertiesOpen && position.x >= 440 && position.x < 820 && position.y >= 330 && position.y < 600)
+					if (renameTriggerOpen) continue;
+					if (pickingTarget)
+					{
+						if (IsMapArea(position)) zoom = std::clamp(zoom * (wheel->delta > 0 ? 1.2f : 1.0f / 1.2f), 0.25f, 4.0f);
+					}
+					else if (mapPropertiesOpen && position.x >= 440 && position.x < 820 && position.y >= 330 && position.y < 600)
 					{
 						const int weatherCount = static_cast<int>(GetWeatherEffectDefinitions().size()) + 1;
 						mapWeatherOffset = std::clamp(mapWeatherOffset - (wheel->delta > 0 ? 1 : -1), 0, (std::max)(0, weatherCount - 9));
@@ -148,7 +161,7 @@ public:
 				}
 			}
 			const float panDelta = panClock.restart().asSeconds();
-			if (window.hasFocus() && !mapPropertiesOpen)
+			if (window.hasFocus() && !mapPropertiesOpen && !renameTriggerOpen)
 			{
 				float panX = static_cast<float>(sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right)) -
 					static_cast<float>(sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left));
@@ -183,6 +196,12 @@ private:
 	bool placementDragActive = false, hasLastPlacementPosition = false;
 	bool mapPropertiesOpen = false;
 	int mapWeatherOffset = 0;
+	bool renameTriggerOpen = false;
+	std::string triggerNameInput;
+	bool pickingTarget = false;
+	MapData targetMap;
+	sf::Vector2f sourceCamera{};
+	float sourceZoom = 1.0f;
 	bool selectMode = false, spawnMode = false, triggerMode = false, panning = false, draggingObject = false, draggingTrigger = false, creatingTrigger = false;
 	enum TriggerEdge { Left = 1, Right = 2, Top = 4, Bottom = 8 };
 	int resizeEdges = 0;
@@ -537,11 +556,64 @@ private:
 		trigger.glow = !trigger.glow;
 		document.dirty = true;
 	}
+	void BeginTargetPick()
+	{
+		const auto& trigger = document.map.triggers[selectedTrigger];
+		std::string relativePath;
+		if (!TryResolveMapTransitionTarget(trigger.eventName, relativePath))
+		{
+			Error("Ungueltige Zielkarte fuer diesen Trigger.");
+			return;
+		}
+		const std::filesystem::path targetPath = (root / relativePath).lexically_normal();
+		MapData loaded;
+		if (targetPath == document.path.lexically_normal()) loaded = document.map;
+		else if (!TryLoadMapFromFile(targetPath.string(), loaded))
+		{
+			Error("Die Zielkarte konnte nicht geladen werden: " + targetPath.string());
+			return;
+		}
+		targetMap = std::move(loaded);
+		sourceCamera = camera;
+		sourceZoom = zoom;
+		camera = { trigger.spawnX, trigger.spawnY };
+		pickingTarget = true;
+		panning = draggingObject = draggingTrigger = creatingTrigger = false;
+		resizeEdges = 0;
+		placementDragActive = hasLastPlacementPosition = false;
+		sheetWindow.reset();
+		sheetDragging = sheetPanning = false;
+	}
+	void EndTargetPick()
+	{
+		pickingTarget = false;
+		panning = false;
+		camera = sourceCamera;
+		zoom = sourceZoom;
+		targetMap = MapData{};
+	}
+	void ConfirmTriggerName()
+	{
+		std::string error;
+		if (!document.RenameTrigger(selectedTrigger, triggerNameInput, error)) { Error(error); return; }
+		renameTriggerOpen = false;
+	}
 	void HandleTriggerPanelClick(int x, int y)
 	{
 		if (x < 970 || x >= 1270) return;
-		if (y >= 150 && y < 180) OpenTriggerDropdown(TriggerDropdown::Maps);
+		if (x >= 1165 && y >= 75 && y < 100)
+		{
+			triggerNameInput = document.map.triggers[selectedTrigger].id;
+			renameTriggerOpen = true;
+			triggerDropdown = TriggerDropdown::None;
+			panning = draggingObject = draggingTrigger = creatingTrigger = false;
+			resizeEdges = 0;
+			sheetWindow.reset();
+			sheetDragging = sheetPanning = false;
+		}
+		else if (y >= 150 && y < 180) OpenTriggerDropdown(TriggerDropdown::Maps);
 		else if (y >= 205 && y < 235) OpenTriggerDropdown(TriggerDropdown::Effects);
+		else if (triggerDropdown == TriggerDropdown::None && y >= 310 && y < 344 && document.map.triggers[selectedTrigger].eventName.starts_with("Load_")) BeginTargetPick();
 		else if (y >= 480 && y < 508) ToggleTriggerGlow();
 		else if (triggerDropdown != TriggerDropdown::None && y >= 250 && y < 442)
 		{
@@ -744,7 +816,8 @@ private:
 	sf::Vector2f WorldPosition(const sf::RenderWindow& window, sf::Vector2i pixel) const
 	{
 		const sf::Vector2f pos = window.mapPixelToCoords(pixel, MapView(window));
-		return { pos.x + camera.x - 500.0f / zoom, pos.y + camera.y - 355.0f / zoom };
+		const int width = static_cast<int>(1000.0f / zoom), height = static_cast<int>(710.0f / zoom);
+		return { pos.x + camera.x - width * 0.5f, pos.y + camera.y - height * 0.5f };
 	}
 	void ToggleSelectMode()
 	{
@@ -763,6 +836,17 @@ private:
 	}
 	void HandleKey(sf::Keyboard::Key key, sf::RenderWindow& window)
 	{
+		if (renameTriggerOpen)
+		{
+			if (key == sf::Keyboard::Key::Escape) renameTriggerOpen = false;
+			else if (key == sf::Keyboard::Key::Enter) ConfirmTriggerName();
+			return;
+		}
+		if (pickingTarget)
+		{
+			if (key == sf::Keyboard::Key::Escape) EndTargetPick();
+			return;
+		}
 		if (mapPropertiesOpen)
 		{
 			if (key == sf::Keyboard::Key::Escape) mapPropertiesOpen = false;
@@ -827,6 +911,36 @@ private:
 		}
 		const sf::Vector2f position = EditorPosition(window, event.position);
 		const int x = static_cast<int>(position.x), y = static_cast<int>(position.y);
+		if (renameTriggerOpen)
+		{
+			if (event.button == sf::Mouse::Button::Left && y >= 460 && y < 500)
+			{
+				if (x >= 450 && x < 625) ConfirmTriggerName();
+				else if (x >= 655 && x < 830) renameTriggerOpen = false;
+			}
+			return;
+		}
+		if (pickingTarget)
+		{
+			if (event.button == sf::Mouse::Button::Middle && IsMapArea(position)) { panning = true; lastMouse = position; }
+			else if (event.button == sf::Mouse::Button::Left && IsMapArea(position))
+			{
+				const sf::Vector2f pos = WorldPosition(window, event.position);
+				GameState test;
+				test.activeMap = targetMap;
+				bool warning = IsSolidObjectBlockingPosition(test, pos.x, pos.y);
+				for (const TriggerZone& zone : targetMap.triggers) warning = warning || (zone.eventName != NoTriggerEvent && IsInsideTrigger(zone, pos.x, pos.y));
+				if (warning && MessageBoxW(owner, L"Die Zielposition liegt in einem Hindernis oder Trigger. Trotzdem waehlen?", L"Map-Editor", MB_YESNO | MB_ICONWARNING) != IDYES) return;
+				auto& trigger = document.map.triggers[selectedTrigger];
+				if (trigger.spawnX != pos.x || trigger.spawnY != pos.y)
+				{
+					trigger.spawnX = pos.x; trigger.spawnY = pos.y;
+					document.dirty = true;
+				}
+				EndTargetPick();
+			}
+			return;
+		}
 		if (mapPropertiesOpen)
 		{
 			if (event.button == sf::Mouse::Button::Left) HandleMapPropertiesClick(position);
@@ -1090,7 +1204,10 @@ private:
 		};
 		rectangle(960, 70, 320, 510, sf::Color(35, 38, 45, 245));
 		const bool noEvent = trigger.eventName == NoTriggerEvent;
-		Label(window, font, "TRIGGER: " + shortText(trigger.id), 970, 80, 14);
+		const std::string title = trigger.id.size() > 15 ? trigger.id.substr(0, 12) + "..." : trigger.id;
+		Label(window, font, "TRIGGER: " + title, 970, 80, 14);
+		rectangle(1165, 75, 105, 25, sf::Color(65, 70, 80));
+		Label(window, font, "Umbenennen", 1170, 80, 12);
 		Label(window, font, "Ereignis: " + (noEvent ? std::string("Kein Ereignis") : shortText(trigger.eventName)), 970, 105, 13);
 		Label(window, font, "Load Map", 970, 130, 13);
 		rectangle(970, 150, 300, 30, sf::Color(65, 70, 80));
@@ -1113,7 +1230,11 @@ private:
 		{
 			Label(window, font, "Ein Trigger hat hoechstens ein Ereignis.", 970, 255, 13);
 			if (trigger.eventName.starts_with("Load_"))
+			{
 				Label(window, font, "Zielposition: " + std::to_string(trigger.spawnX) + ", " + std::to_string(trigger.spawnY), 970, 280, 12);
+				rectangle(970, 310, 300, 34, sf::Color(65, 70, 80));
+				Label(window, font, "Zielposition auf Karte waehlen", 978, 319, 13);
+			}
 		}
 		rectangle(970, 482, 20, 20, sf::Color(185, 190, 195));
 		rectangle(972, 484, 16, 16, trigger.glow ? sf::Color(70, 145, 150) : sf::Color(35, 38, 45));
@@ -1122,6 +1243,26 @@ private:
 		Label(window, font, "Laesst die Zone sichtbar pulsieren,", 970, 515, 13);
 		Label(window, font, "auch im Release. Nur Darstellung;", 970, 533, 13);
 		Label(window, font, "aendert weder Ereignis noch Kollision.", 970, 551, 13);
+	}
+	void DrawRenameTriggerDialog(sf::RenderWindow& window, const sf::Font& font) const
+	{
+		if (!renameTriggerOpen) return;
+		auto rectangle = [&](float x, float y, float width, float height, sf::Color color)
+		{
+			sf::RectangleShape shape({ width, height }); shape.setPosition({ x, y }); shape.setFillColor(color); window.draw(shape);
+		};
+		rectangle(420, 270, 440, 250, sf::Color(28, 31, 37, 250));
+		rectangle(420, 270, 440, 48, sf::Color(48, 52, 60));
+		Label(window, font, "TRIGGER UMBENENNEN", 440, 285, 18);
+		Label(window, font, "Name (Buchstaben, Ziffern, _ und -):", 450, 335, 14);
+		rectangle(450, 365, 380, 36, sf::Color(65, 70, 80));
+		const std::string visible = triggerNameInput.size() > 38 ? "..." + triggerNameInput.substr(triggerNameInput.size() - 35) : triggerNameInput;
+		Label(window, font, visible + "_", 458, 374, 14);
+		Label(window, font, "Enter: Uebernehmen | Esc: Abbrechen", 450, 420, 13);
+		rectangle(450, 460, 175, 40, sf::Color(70, 105, 110));
+		rectangle(655, 460, 175, 40, sf::Color(65, 70, 80));
+		Label(window, font, "Uebernehmen", 460, 471, 14);
+		Label(window, font, "Abbrechen", 665, 471, 14);
 	}
 	void DrawPlacementPreview(sf::RenderWindow& window, float left, float top)
 	{
@@ -1157,7 +1298,7 @@ private:
 		window.setView(MapView(window));
 		Viewport viewport{ static_cast<int>(1000.0f / zoom), static_cast<int>(710.0f / zoom) };
 		GameState preview;
-		preview.activeMap = document.map;
+		preview.activeMap = pickingTarget ? targetMap : document.map;
 		preview.player.x = camera.x; preview.player.y = camera.y;
 		RenderDefaultGround(window, viewport, preview);
 		RenderMapObjects(window, viewport, preview);
@@ -1172,10 +1313,11 @@ private:
 		window.draw(grid);
 		sf::CircleShape marker(8.0f / zoom);
 		marker.setOrigin({ 8.0f / zoom, 8.0f / zoom });
-		marker.setPosition({ spawn.x - left, spawn.y - top });
+		const sf::Vector2f markerPosition = pickingTarget ? sf::Vector2f{ document.map.triggers[selectedTrigger].spawnX, document.map.triggers[selectedTrigger].spawnY } : spawn;
+		marker.setPosition({ markerPosition.x - left, markerPosition.y - top });
 		marker.setFillColor(sf::Color::Cyan);
 		window.draw(marker);
-		if (selectedObject < document.map.objects.size())
+		if (!pickingTarget && selectedObject < document.map.objects.size())
 		{
 			const auto& item = document.map.objects[selectedObject];
 			sf::RectangleShape selection({ 64, 64 });
@@ -1186,7 +1328,7 @@ private:
 			selection.setOutlineThickness(2.0f / zoom);
 			window.draw(selection);
 		}
-		if (triggerMode && selectedTrigger < document.map.triggers.size())
+		if (!pickingTarget && triggerMode && selectedTrigger < document.map.triggers.size())
 		{
 			const auto& trigger = document.map.triggers[selectedTrigger];
 			sf::RectangleShape selection({ trigger.width, trigger.height });
@@ -1207,8 +1349,22 @@ private:
 					window.draw(handle);
 				}
 		}
-		DrawPlacementPreview(window, left, top);
+		if (!pickingTarget) DrawPlacementPreview(window, left, top);
 		window.setView(EditorView(window));
+		if (pickingTarget)
+		{
+			sf::RectangleShape bar({ 1280, 60 }); bar.setFillColor(sf::Color(35, 38, 45)); window.draw(bar);
+			sf::RectangleShape side({ 280, 740 }); side.setPosition({ 0, 60 }); side.setFillColor(sf::Color(40, 43, 48)); window.draw(side);
+			Label(window, font, "ZIELKARTE: " + document.map.triggers[selectedTrigger].eventName.substr(5), 10, 15, 16);
+			Label(window, font, "Klick: Zielposition waehlen", 10, 80, 13);
+			Label(window, font, "Esc: Abbrechen", 10, 100, 13);
+			Label(window, font, "WASD/Pfeile oder Mitteltaste:", 10, 130, 12);
+			Label(window, font, "Ansicht bewegen", 10, 148, 12);
+			Label(window, font, "Mausrad: Zoom", 10, 170, 12);
+			window.setTitle("Map-Editor - Zielposition waehlen");
+			window.display();
+			return;
+		}
 		sf::RectangleShape bar({ 1280, 60 }); bar.setFillColor(sf::Color(35, 38, 45)); window.draw(bar);
 		sf::RectangleShape side({ 280, 740 }); side.setPosition({ 0, 60 }); side.setFillColor(sf::Color(40, 43, 48)); window.draw(side);
 		const char* buttons[] = { "Neu", "Oeffnen", "Speichern", "Im Spiel uebernehmen", "Assets neu", "Map Eigenschaften", triggerMode ? "Effekt" : "Typ", triggerMode ? "Glow" : "", "Startpunkt", "Modus" };
@@ -1259,6 +1415,7 @@ private:
 		DrawObjectPanel(window, font);
 		DrawSheetGhost(window);
 		DrawMapPropertiesPanel(window, font);
+		DrawRenameTriggerDialog(window, font);
 		const MapObject* selected = selectedObject < document.map.objects.size() ? &document.map.objects[selectedObject] : nullptr;
 		std::string info = std::string(spawnMode ? "Startpunkt: Klick auf Karte" : selectMode ? "Auswaehlen/Verschieben" : "Platzieren") + " | Typ: " + TypeName(selected ? selected->type : newType) + " | solid=" + ((selected ? selected->solid : newSolid) ? "1" : "0") + " | Wetter: " + document.map.defaultWeather;
 		if (selected) info += " | " + selected->id + " (" + std::to_string(static_cast<int>(selected->x)) + ", " + std::to_string(static_cast<int>(selected->y)) + ")";

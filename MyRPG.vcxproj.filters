@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Quelldateien">
@@ -623,6 +623,84 @@
     <None Include="Assets\Animations\Characters\player_walk_up.anim">
       <Filter>Ressourcendateien</Filter>
     </None>
+    <None Include="Assets\Shaders\Effects\magic_effect.vert">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_effects.cfg">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_fire.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_frost.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_heal.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_lightning.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_screen_test.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_shockwave.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_sparkle.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_vortex.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Weather\fog.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Weather\rain.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Weather\weather.vert">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include=".github\copilot-instructions.md">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="DesignDocument.md">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Animations\Characters\player_idle_left.anim">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Animations\Characters\player_idle_right.anim">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Animations\Characters\player_idle_up.anim">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Animations\Characters\player_walk_down.anim">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Animations\Characters\player_walk_left.anim">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Animations\Characters\player_walk_northeast.anim">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Animations\Characters\player_walk_northwest.anim">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Animations\Characters\player_walk_right.anim">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Animations\Characters\player_walk_southeast.anim">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Animations\Characters\player_walk_southwest.anim">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Animations\Characters\player_walk_up.anim">
+      <Filter>Ressourcendateien</Filter>
+    </None>
     <None Include="Assets\Maps\0001_Forest.map">
       <Filter>Ressourcendateien</Filter>
     </None>
@@ -660,6 +738,9 @@
       <Filter>Ressourcendateien</Filter>
     </None>
     <None Include="Assets\Shaders\Weather\fog.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Weather\heat.frag">
       <Filter>Ressourcendateien</Filter>
     </None>
     <None Include="Assets\Shaders\Weather\rain.frag">
@@ -725,16 +806,10 @@
     <None Include="Assets\Sprites\Environment\Forest\forest_tree.png">
       <Filter>Ressourcendateien</Filter>
     </None>
+    <None Include="Assets\Sprites\Environment\Forest\Spritesheet_Forest_1.png">
+      <Filter>Ressourcendateien</Filter>
+    </None>
     <None Include="Assets\UI\title_screen.png">
-      <Filter>Ressourcendateien</Filter>
-    </None>
-    <None Include=".github\copilot-instructions.md">
-      <Filter>Ressourcendateien</Filter>
-    </None>
-    <None Include="DesignDocument.md">
-      <Filter>Ressourcendateien</Filter>
-    </None>
-    <None Include="Assets\**\*">
       <Filter>Ressourcendateien</Filter>
     </None>
     <None Include="Assets\Maps\0001_TestMap.map" />
