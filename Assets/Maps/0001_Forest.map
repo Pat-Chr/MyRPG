@@ -332,14 +332,12 @@ OBJECT tree_030 scenery -384 1216 Assets/Sprites/Environment/Forest/forest_tree.
 OBJECT tree_031 scenery -320 -1280 Assets/Sprites/Environment/Forest/forest_tree.png solid=1
 OBJECT tree_032 scenery -320 1216 Assets/Sprites/Environment/Forest/forest_tree.png solid=1
 OBJECT bush_011 scenery -320 -1216 Assets/Sprites/Environment/Forest/forest_bush.png solid=1
-OBJECT bush_012 scenery -320 1152 Assets/Sprites/Environment/Forest/forest_bush.png solid=1
 OBJECT tree_033 scenery -256 -1280 Assets/Sprites/Environment/Forest/forest_tree.png solid=1
 OBJECT tree_034 scenery -256 1216 Assets/Sprites/Environment/Forest/forest_tree.png solid=1
 OBJECT tree_035 scenery -192 -1280 Assets/Sprites/Environment/Forest/forest_tree.png solid=1
 OBJECT tree_036 scenery -192 1216 Assets/Sprites/Environment/Forest/forest_tree.png solid=1
 OBJECT tree_037 scenery -128 -1280 Assets/Sprites/Environment/Forest/forest_tree.png solid=1
 OBJECT tree_038 scenery -128 1216 Assets/Sprites/Environment/Forest/forest_tree.png solid=1
-OBJECT bush_013 scenery -128 -1216 Assets/Sprites/Environment/Forest/forest_bush.png solid=1
 OBJECT bush_014 scenery -128 1152 Assets/Sprites/Environment/Forest/forest_bush.png solid=1
 OBJECT tree_039 scenery -64 -1280 Assets/Sprites/Environment/Forest/forest_tree.png solid=1
 OBJECT tree_040 scenery -64 1216 Assets/Sprites/Environment/Forest/forest_tree.png solid=1
@@ -672,8 +670,8 @@ OBJECT rock_044 scenery -896 -640 Assets/Sprites/Environment/Forest/forest_rock.
 OBJECT bush_074 scenery -768 -640 Assets/Sprites/Environment/Forest/forest_bush.png solid=1
 OBJECT bush_075 scenery -832 -640 Assets/Sprites/Environment/Forest/forest_bush.png solid=1
 
-TRIGGER forest_entry -220 -1240 180 120 Trigger_ForestEntry
+TRIGGER Zurck_Geheimpfad -220 -1248 180 38 Load_0001_TestMap spawn_x=-298 spawn_y=-118.000031
 TRIGGER forest_clearing -540 -360 260 220 Trigger_ForestClearing
 TRIGGER forest_ruins 500 300 280 220 Trigger_ForestRuins
 TRIGGER forest_pond -940 -780 300 300 Trigger_ForestPond
-TRIGGER forest_to_test -220 1120 180 120 Load_0001_TestMap spawn_x=0 spawn_y=-128
+TRIGGER forest_to_test -343.611084 1074.86121 180 120 Load_0001_TestMap spawn_x=1.61108398 spawn_y=-125.888885
