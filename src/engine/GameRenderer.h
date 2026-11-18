@@ -359,6 +359,31 @@ inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewpo
     // Hintergrund mit dunkelgrünem Farbton löschen (Wald/Regenwald-Atmosphäre)
     target.clear(sf::Color(22, 34, 26));
 
+    static sf::RenderTexture heatScene;
+    static sf::Vector2u attemptedHeatSize{};
+    static bool heatSizeAttempted = false;
+    static bool heatSceneReady = false;
+    const sf::Vector2u sceneSize{ static_cast<unsigned int>(viewport.width), static_cast<unsigned int>(viewport.height) };
+    const bool heatRequested = game.weather.effectId == "heat" && GetWeatherShader("heat") != nullptr;
+    if (heatRequested && (!heatSizeAttempted || sceneSize != attemptedHeatSize))
+    {
+        attemptedHeatSize = sceneSize;
+        heatSizeAttempted = true;
+        heatSceneReady = sceneSize.x > 0 && sceneSize.y > 0 && heatScene.resize(sceneSize);
+        if (!heatSceneReady)
+        {
+            std::fprintf(stderr, "Failed to create heat scene texture (%u x %u).\n", sceneSize.x, sceneSize.y);
+        }
+    }
+    const bool renderHeat = heatRequested && heatSceneReady && sceneSize == attemptedHeatSize;
+    {
+    sf::RenderTarget& sceneTarget = renderHeat ? static_cast<sf::RenderTarget&>(heatScene) : target;
+    sf::RenderTarget& target = sceneTarget;
+    if (renderHeat)
+    {
+        target.clear(sf::Color(22, 34, 26));
+    }
+
 #ifdef _DEBUG
     // Grid für Debugging: 32x32 Pixel Kacheln, relativ zur Spielerposition
     const int tileSize = 32;
@@ -479,7 +504,19 @@ inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewpo
                        game.player.x - game.cameraShake.offsetX,
                        game.player.y - game.cameraShake.offsetY,
                        static_cast<float>(viewport.width), static_cast<float>(viewport.height));
-    RenderWeather(target, game.weather, static_cast<float>(viewport.width), static_cast<float>(viewport.height));
+    }
+
+    if (renderHeat)
+    {
+        heatScene.display();
+        const sf::Vector2f worldZero = WorldToScreen(0.0f, 0.0f, game, viewport);
+        RenderHeat(target, heatScene, game.weather, static_cast<float>(viewport.width), static_cast<float>(viewport.height),
+                   { -worldZero.x, -worldZero.y });
+    }
+    else if (game.weather.effectId != "heat")
+    {
+        RenderWeather(target, game.weather, static_cast<float>(viewport.width), static_cast<float>(viewport.height));
+    }
 
     #ifdef _DEBUG
     constexpr bool showDebug = true;

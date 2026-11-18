@@ -30,6 +30,7 @@ TRIGGER magic_screen_test 1568 -32 64 64 magic_screen_test glow=1
 TRIGGER weather_rain -32 224 64 64 weather_rain glow=1
 TRIGGER weather_fog -32 384 64 64 weather_fog glow=1
 TRIGGER weather_none -32 544 64 64 weather_none glow=1
+TRIGGER weather_heat -32 704 64 64 weather_heat glow=1
 TRIGGER north_path_to_forest -71.999939 -271 220 120 Load_0001_Forest glow=1 spawn_x=-128 spawn_y=1024
 OBJECT object_1 scenery 64 0 Assets/Sprites/Environment/Forest/forest_path.png solid=0
 OBJECT object_2 scenery -0 -64 Assets/Sprites/Environment/Forest/forest_path.png solid=0
@@ -117,3 +118,6 @@ OBJECT object_83 scenery 768 320 Assets/Sprites/Environment/Forest/Spritesheet_F
 OBJECT object_84 scenery 768 384 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=144,176,16,16
 OBJECT object_85 scenery 704 320 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=1 tile=64,176,16,16
 OBJECT object_86 scenery 768 320 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=48,176,16,16
+OBJECT object_87 scenery -0 640 Assets/Sprites/Environment/Forest/forest_path.png solid=0
+OBJECT object_88 scenery -0 704 Assets/Sprites/Environment/Forest/forest_path.png solid=0
+OBJECT object_89 scenery 0 768 Assets/Sprites/Environment/Forest/forest_path.png solid=0

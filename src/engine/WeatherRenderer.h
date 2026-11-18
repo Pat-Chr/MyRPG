@@ -57,6 +57,20 @@ inline void PreloadWeatherShaders()
 	}
 }
 
+inline void RenderHeat(sf::RenderTarget& target, const sf::RenderTexture& scene, const WeatherState& weather,
+	float width, float height, sf::Vector2f worldOrigin)
+{
+	sf::Shader* shader = GetWeatherShader(weather.effectId);
+	if (shader == nullptr) return;
+
+	shader->setUniform("time", weather.elapsed);
+	shader->setUniform("resolution", sf::Glsl::Vec2(width, height));
+	shader->setUniform("worldOrigin", sf::Glsl::Vec2(worldOrigin));
+	shader->setUniform("scene", sf::Shader::CurrentTexture);
+	sf::Sprite sprite(scene.getTexture());
+	target.draw(sprite, shader);
+}
+
 inline void RenderWeather(sf::RenderTarget& target, const WeatherState& weather, float width, float height)
 {
 	sf::Shader* shader = GetWeatherShader(weather.effectId);
