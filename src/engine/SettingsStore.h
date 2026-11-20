@@ -1,17 +1,12 @@
 #pragma once
 
 #include "../BuildConfig.h"
+#include "UserDataFiles.h"
 
-#include <Windows.h>
 #include <nlohmann/json.hpp>
 
 #include <array>
 #include <algorithm>
-#include <filesystem>
-#include <fstream>
-#include <string>
-#include <system_error>
-#include <vector>
 
 struct GameSettings
 {
@@ -30,20 +25,10 @@ public:
 	// Eine fehlende Datei lässt die Vorgaben unverändert; eine fehlerhafte Datei gibt Save nicht frei.
 	bool Load(GameSettings& settings, std::string& error)
 	{
-		const DWORD size = GetEnvironmentVariableW(L"LOCALAPPDATA", nullptr, 0);
-		if (size == 0)
+		if (!UserDataFiles::Resolve(L"settings.json", path, error))
 		{
-			error = "LOCALAPPDATA konnte nicht ermittelt werden.";
 			return false;
 		}
-		std::vector<wchar_t> buffer(size);
-		const DWORD length = GetEnvironmentVariableW(L"LOCALAPPDATA", buffer.data(), size);
-		if (length == 0 || length >= size)
-		{
-			error = "LOCALAPPDATA konnte nicht ermittelt werden.";
-			return false;
-		}
-		path = std::filesystem::path(buffer.data()) / L"MyRPG" / L"settings.json";
 
 		std::error_code ec;
 		const bool exists = std::filesystem::exists(path, ec);
@@ -117,13 +102,6 @@ public:
 			error = "Einstellungen werden nicht gespeichert, da die Einstellungsdatei nicht geladen werden konnte.";
 			return false;
 		}
-		std::error_code ec;
-		std::filesystem::create_directories(path.parent_path(), ec);
-		if (ec)
-		{
-			error = "Das Einstellungsverzeichnis konnte nicht erstellt werden: " + ec.message();
-			return false;
-		}
 
 		// Nur bekannte Felder aktualisieren, damit andere JSON-Einträge erhalten bleiben.
 		document["version"] = 1;
@@ -134,31 +112,7 @@ public:
 		document["map_editor_enabled"] = settings.mapEditorEnabled;
 #endif
 
-		// Erst vollständig in eine temporäre Datei schreiben, dann die bisherige Datei ersetzen.
-		wchar_t temporaryName[MAX_PATH];
-		if (!GetTempFileNameW(path.parent_path().c_str(), L"rpg", 0, temporaryName))
-		{
-			error = "Eine temporaere Einstellungsdatei konnte nicht erstellt werden (Windows-Fehler " + std::to_string(GetLastError()) + ").";
-			return false;
-		}
-		const std::filesystem::path temporaryPath(temporaryName);
-		std::ofstream output(temporaryPath, std::ios::binary | std::ios::trunc);
-		output << document.dump(2) << '\n';
-		output.close();
-		if (!output)
-		{
-			std::filesystem::remove(temporaryPath, ec);
-			error = "Die Einstellungsdatei konnte nicht geschrieben werden.";
-			return false;
-		}
-		if (!MoveFileExW(temporaryPath.c_str(), path.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))
-		{
-			const DWORD code = GetLastError();
-			std::filesystem::remove(temporaryPath, ec);
-			error = "Die Einstellungsdatei konnte nicht ersetzt werden (Windows-Fehler " + std::to_string(code) + ").";
-			return false;
-		}
-		return true;
+		return UserDataFiles::WriteAtomically(path, document.dump(2) + '\n', true, error);
 	}
 
 private:

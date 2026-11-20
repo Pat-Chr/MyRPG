@@ -151,9 +151,7 @@ inline void UpdateMapTransition(GameState& game, float deltaTime)
         if (TryLoadMapFromFile(game.mapTransition.targetMapPath, nextMap))
         {
             game.activeMap = std::move(nextMap);
-#ifdef MYRPG_MAP_EDITOR
             game.activeMapPath = game.mapTransition.targetMapPath;
-#endif
             game.player.x = game.mapTransition.targetPlayerX;
             game.player.y = game.mapTransition.targetPlayerY;
             game.weather = WeatherState{ game.activeMap.defaultWeather };
@@ -289,19 +287,16 @@ inline void InitializeGameState(GameState& game)
     ClearMagicEffects(game.magicEffects);
     game.cameraShake = CameraShakeState{};
 
-    if (!TryLoadMapFromFile("Assets/Maps/0001_TestMap.map", game.activeMap))
+    constexpr const char* startMapPath = "Assets/Maps/0001_TestMap.map";
+    if (!TryLoadMapFromFile(startMapPath, game.activeMap))
     {
         InitializeFallbackMap(game);
-#ifdef MYRPG_MAP_EDITOR
         game.activeMapPath.clear();
-#endif
     }
-#ifdef MYRPG_MAP_EDITOR
     else
     {
-        game.activeMapPath = "Assets/Maps/0001_TestMap.map";
+        game.activeMapPath = startMapPath;
     }
-#endif
     game.weather = WeatherState{ game.activeMap.defaultWeather };
 }
 
@@ -350,6 +345,32 @@ inline bool IsSolidObjectBlockingPosition(const GameState& game, float playerX, 
     }
 
     return false;
+}
+
+inline bool TryRestorePlayerPosition(GameState& game, const std::string& mapPath, float x, float y, std::string& error)
+{
+    GameState restored{};
+    if (!TryLoadMapFromFile(mapPath, restored.activeMap))
+    {
+        error = "Die gespeicherte Karte konnte nicht geladen werden: " + mapPath;
+        return false;
+    }
+    if (IsSolidObjectBlockingPosition(restored, x, y))
+    {
+        error = "Die gespeicherte Spielerposition liegt in einem Hindernis.";
+        return false;
+    }
+
+    restored.activeMapPath = mapPath;
+    restored.player.x = x;
+    restored.player.y = y;
+    restored.weather = WeatherState{ restored.activeMap.defaultWeather };
+    for (TriggerZone& trigger : restored.activeMap.triggers)
+    {
+        trigger.isPlayerInside = IsInsideTrigger(trigger, x, y);
+    }
+    game = std::move(restored);
+    return true;
 }
 
 // Effekte laufen während eines Kartenübergangs weiter; Bewegung und Triggerprüfung pausieren.
