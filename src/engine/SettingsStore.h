@@ -27,6 +27,7 @@ struct GameSettings
 class SettingsStore
 {
 public:
+	// Eine fehlende Datei lässt die Vorgaben unverändert; eine fehlerhafte Datei gibt Save nicht frei.
 	bool Load(GameSettings& settings, std::string& error)
 	{
 		const DWORD size = GetEnvironmentVariableW(L"LOCALAPPDATA", nullptr, 0);
@@ -124,6 +125,7 @@ public:
 			return false;
 		}
 
+		// Nur bekannte Felder aktualisieren, damit andere JSON-Einträge erhalten bleiben.
 		document["version"] = 1;
 		document["vsync"] = settings.verticalSync;
 		document["fps_limit"] = settings.fpsLimit;
@@ -132,6 +134,7 @@ public:
 		document["map_editor_enabled"] = settings.mapEditorEnabled;
 #endif
 
+		// Erst vollständig in eine temporäre Datei schreiben, dann die bisherige Datei ersetzen.
 		wchar_t temporaryName[MAX_PATH];
 		if (!GetTempFileNameW(path.parent_path().c_str(), L"rpg", 0, temporaryName))
 		{

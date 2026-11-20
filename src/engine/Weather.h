@@ -14,6 +14,7 @@ struct WeatherEffectDefinition
 	std::string fragmentPath;
 };
 
+// Die ID stammt vom Dateinamen des Fragment-Shaders; "none" bleibt für ausgeschaltetes Wetter reserviert.
 inline const std::vector<WeatherEffectDefinition>& GetWeatherEffectDefinitions()
 {
 	static const std::vector<WeatherEffectDefinition> definitions = []
@@ -97,6 +98,7 @@ struct WeatherState
 	float elapsed = 0.0f;
 };
 
+// Derselbe Wettertrigger kann erneut auslösen, ohne die laufende Animation neu zu starten.
 inline void SetWeather(WeatherState& weather, const std::string& effectId)
 {
 	if (weather.effectId != effectId)

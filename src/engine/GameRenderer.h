@@ -419,6 +419,7 @@ inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewpo
 
     // Spieler-Charakter rendern (animiertes Sprite oder Fallback-Rechteck)
     const float playerSize = static_cast<float>(game.player.size);
+    // Radien in Texturpixeln; der größere Y-Radius gleicht die spätere vertikale Stauchung aus.
     constexpr int shadowBlurX = 3;
     constexpr int shadowBlurY = 7;
     struct PlayerAnimation
@@ -442,6 +443,7 @@ inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewpo
                     continue;
                 }
 
+                // Schattenmasken einmal beim Laden vorbereiten, nicht bei jedem Renderdurchlauf.
                 sf::Image mask = animations[i].texture->copyToImage();
                 const sf::Vector2u maskSize = mask.getSize();
                 if (maskSize.x == 0u || maskSize.y == 0u)
@@ -458,6 +460,7 @@ inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewpo
                         static_cast<std::uint64_t>(frame.position.x) + frame.size.x, static_cast<std::uint64_t>(maskSize.x)));
                     const unsigned int endY = static_cast<unsigned int>((std::min)(
                         static_cast<std::uint64_t>(frame.position.y) + frame.size.y, static_cast<std::uint64_t>(maskSize.y)));
+                    // An der Unterkante der sichtbaren Silhouette spiegeln, nicht am transparenten Frame-Rand.
                     bool found = false;
                     for (unsigned int y = endY; y > top && !found; --y)
                     {
@@ -480,8 +483,10 @@ inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewpo
                         continue;
                     }
 
+                    // Ein transparenter Rand lässt den Schatten auslaufen, ohne Nachbarframes einzumischen.
                     const int width = frame.size.x + 2 * shadowBlurX;
                     const int height = frame.size.y + 2 * shadowBlurY;
+                    // Den Alphakanal in zwei Durchgängen weichzeichnen (horizontal, dann vertikal).
                     std::vector<float> horizontal(static_cast<std::size_t>(width) * height, 0.0f);
                     for (int y = 0; y < frame.size.y; ++y)
                     {
@@ -590,8 +595,10 @@ inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewpo
             constexpr float shadowHeightScale = 0.4f;
             const float bottom = selected.frameBottoms[frameIndex];
             sf::Sprite shadow(*selected.shadowFrames[frameIndex]);
+            // Den Ursprung um den transparenten Rand korrigieren, damit die Spiegelachse an der Silhouette bleibt.
             shadow.setOrigin({ static_cast<float>(frame.size.x) * 0.5f + shadowBlurX, bottom + shadowBlurY });
             shadow.setScale({ frameScale, -frameScale * shadowHeightScale });
+            // Vom Sprite-Mittelpunkt zur Spiegelachse; der Abzug verschiebt den Schatten 5 Pixel nach oben.
             shadow.setPosition({ playerSprite.getPosition().x,
                                  playerSprite.getPosition().y + (bottom - frameHeight * 0.5f) * frameScale - 5.0f});
             shadow.setColor(sf::Color(255, 255, 255, 100));

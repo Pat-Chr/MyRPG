@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <filesystem>
 
+// Menüs nutzen Windows-Systemschriften (Arial, ersatzweise Consolas) statt eines Font-Assets.
 inline bool LoadMenuFont(sf::Font& font)
 {
 	wchar_t windowsDirectory[MAX_PATH];

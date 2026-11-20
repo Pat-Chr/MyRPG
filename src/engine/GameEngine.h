@@ -81,9 +81,8 @@ inline bool TryResolveMagicEffect(const std::string& eventName, MagicEffectType&
     return false;
 }
 
-// Startet einen Map-Übergang zur angegebenen Ziel-Map.
-// Der Spieler wird während des Übergangs ausgeblendet und an der Zielposition wieder eingeblendet.
-// Wenn bereits ein aktiver Übergang läuft, wird keine Aktion ausgeführt.
+// Startet das Ausblenden der Szene. Karte und Spielerposition wechseln erst bei Schwarzbild.
+// Ein laufender Übergang wird nicht ersetzt.
 inline void BeginMapTransition(GameState& game, 
                                std::string targetMapPath, 
                                float targetPlayerX, 
@@ -132,9 +131,7 @@ inline void UpdateCameraShake(CameraShakeState& shake, float deltaTime)
     shake.offsetY = std::sin(shake.elapsed * 91.0f) * shake.intensity * 0.75f * envelope;
 }
 
-// Aktualisiert den Map-Übergangsstatus.
-// Verarbeitet die Zeit für das Ausblenden der aktuellen Map und das Einblenden der nächsten Map.
-// Wenn der Übergang abgeschlossen ist, wird die neue Map geladen und der Spieler an die Zielposition versetzt.
+// Lädt die Zielkarte zwischen den Fade-Phasen. Schlägt das Laden fehl, wird die alte Karte wieder eingeblendet.
 inline void UpdateMapTransition(GameState& game, float deltaTime)
 {
     if (!IsMapTransitionActive(game))
@@ -180,9 +177,8 @@ inline void UpdateMapTransition(GameState& game, float deltaTime)
     game.mapTransition.targetMapPath.clear();
 }
 
-// Aktualisiert die Trigger-Zustände und löst Event-Aktionen aus.
-// Wenn ein Spieler in einem Trigger-Bereich ist, wird das entsprechende Event ausgelöst.
-// Bei aktivem Map-Übergang werden keine Trigger-Abfragen durchgeführt.
+// Löst Ereignisse beim Betreten aus, nicht solange der Spieler in der Zone bleibt.
+// Bei bereits laufendem Kartenübergang wird die Triggerprüfung übersprungen.
 inline void UpdateTriggers(GameState& game)
 {
     if (IsMapTransitionActive(game))
@@ -319,9 +315,7 @@ inline void SetMovementState(InputState& input, bool up, bool down, bool left, b
     input.right = right;
 }
 
-// Prüft, ob ein Map-Objekt den Spieler blockiert.
-// Berechnet die Kollisionsboxen von Objekten und des Spielers und prüft auf Überlappung.
-// Nur feste (solid) Objekte werden berücksichtigt. Fluids oder andere Objekttypen werden ignoriert.
+// Prüft überlappende Kollisionsboxen. Ausschlaggebend ist nur solid, nicht der Objekttyp.
 inline bool IsSolidObjectBlockingPosition(const GameState& game, float playerX, float playerY)
 {
     constexpr float mapObjectSize = 64.0f;
@@ -357,10 +351,7 @@ inline bool IsSolidObjectBlockingPosition(const GameState& game, float playerX, 
     return false;
 }
 
-// Haupt-Update-Funktion für das Spiel.
-// Verarbeitet Spielerbewegung, Kollisionserkennung und Trigger-Auslöser.
-// Wenn eine Map-Transition aktiv ist, wird nur die Transition-Logik aktualisiert.
-// Andernfalls wird die normale Spiellogik ausgeführt: Bewegung, Kollisionsprüfung und Trigger-Updates.
+// Effekte laufen während eines Kartenübergangs weiter; Bewegung und Triggerprüfung pausieren.
 inline void UpdateGame(GameState& game, float deltaTime)
 {
     UpdateMagicEffects(game.magicEffects, deltaTime);
@@ -389,6 +380,7 @@ inline void UpdateGame(GameState& game, float deltaTime)
         moveY /= length;
     }
 
+    // Achsen getrennt prüfen, damit diagonale Bewegung an Hindernissen entlanggleiten kann.
     const float previousX = game.player.x;
     const float previousY = game.player.y;
     const float nextX = game.player.x + (moveX * game.player.speed * deltaTime);

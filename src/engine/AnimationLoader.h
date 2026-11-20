@@ -18,6 +18,8 @@ struct SpriteAnimation
 	std::vector<sf::IntRect> frames;
 };
 
+// Liest ANIM 1; frame-Rechtecke in Texturpixeln werden in Dateireihenfolge abgespielt.
+// Die Ausgabe bleibt bei Fehlern unverändert. Der optionale scale-Faktor ist rein visuell.
 inline bool LoadAnimationFromFile(const std::string& path, SpriteAnimation& animation)
 {
 	std::ifstream file(path);
