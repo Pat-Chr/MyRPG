@@ -31,7 +31,7 @@ TRIGGER weather_rain -32 224 64 64 weather_rain glow=1
 TRIGGER weather_fog -32 384 64 64 weather_fog glow=1
 TRIGGER weather_none -32 544 64 64 weather_none glow=1
 TRIGGER weather_heat -32 704 64 64 weather_heat glow=1
-TRIGGER north_path_to_forest -71.999939 -271 220 120 Load_0001_Forest glow=1 spawn_x=-246.800049 spawn_y=1056.3999
+TRIGGER north_path_to_forest -71.999939 -271 220 120 Load_0001_Forest glow=0 spawn_x=-246.800049 spawn_y=1056.3999
 OBJECT object_1 scenery 64 0 Assets/Sprites/Environment/Forest/forest_path.png solid=0
 OBJECT object_2 scenery -0 -64 Assets/Sprites/Environment/Forest/forest_path.png solid=0
 OBJECT object_3 scenery -0 -0 Assets/Sprites/Environment/Forest/forest_path.png solid=0
@@ -122,3 +122,46 @@ OBJECT object_87 scenery -0 640 Assets/Sprites/Environment/Forest/forest_path.pn
 OBJECT object_88 scenery -0 704 Assets/Sprites/Environment/Forest/forest_path.png solid=0
 OBJECT object_89 scenery 0 768 Assets/Sprites/Environment/Forest/forest_path.png solid=0
 TRIGGER Geheimpfad_Norden -246.281342 -142.166687 78.9638214 50 Load_0001_Forest glow=0 spawn_x=-127.719574 spawn_y=-1167.50708
+OBJECT object_90 scenery 448 384 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=128,192,16,16
+OBJECT object_91 scenery 512 448 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=96,176,16,16
+OBJECT object_92 scenery 448 448 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=96,176,16,16
+OBJECT object_93 scenery 384 448 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=96,176,16,16
+OBJECT object_94 scenery 384 384 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=96,176,16,16
+OBJECT object_95 scenery 384 320 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=96,176,16,16
+OBJECT object_96 scenery 576 448 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=96,176,16,16
+OBJECT object_97 scenery 384 256 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=48,208,16,16
+OBJECT object_98 scenery 448 256 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=64,208,16,16
+OBJECT object_99 scenery 512 256 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=80,208,16,16
+OBJECT object_100 scenery 576 256 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=80,208,16,16
+OBJECT object_101 scenery 640 256 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=80,208,16,16
+OBJECT object_102 scenery 704 256 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=80,208,16,16
+OBJECT object_103 scenery 768 256 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=96,208,16,16
+OBJECT object_104 scenery 768 384 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=96,224,16,16
+OBJECT object_105 scenery 768 320 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=96,224,16,16
+OBJECT object_106 scenery 320 384 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=48,208,16,16
+OBJECT object_107 scenery 320 384 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=48,208,16,16
+OBJECT object_108 scenery 320 320 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=48,208,16,16
+OBJECT object_109 scenery 320 384 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=48,224,16,16
+OBJECT object_110 scenery 576 320 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=96,176,16,16
+OBJECT object_111 scenery 512 320 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=96,176,16,16
+OBJECT object_112 scenery 640 320 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=96,176,16,16
+OBJECT object_113 scenery 448 320 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=96,176,16,16
+OBJECT object_114 scenery 576 320 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=64,288,16,16
+OBJECT object_115 scenery 320 448 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=112,208,16,16
+OBJECT object_116 scenery 384 448 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=128,208,16,16
+OBJECT object_117 scenery 448 448 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=128,208,16,16
+OBJECT object_118 scenery 512 448 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=128,208,16,16
+OBJECT object_119 scenery 576 448 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=128,208,16,16
+OBJECT object_120 scenery 640 448 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=128,208,16,16
+OBJECT object_121 scenery 704 448 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=128,208,16,16
+OBJECT object_122 scenery 768 448 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=160,208,16,16
+OBJECT object_123 scenery 768 512 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=96,32,16,16
+OBJECT object_124 scenery 704 512 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=96,32,16,16
+OBJECT object_126 scenery 384 512 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=96,32,16,16
+OBJECT object_127 scenery 448 512 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=96,32,16,16
+OBJECT object_125 scenery 320 512 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=16,16,16,16
+OBJECT object_128 scenery 768 512 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=128,32,16,16
+OBJECT object_129 scenery 704 512 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=112,32,16,16
+OBJECT object_130 scenery 640 512 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=96,32,16,16
+OBJECT object_131 scenery 576 512 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=80,32,16,16
+OBJECT object_132 scenery 512 512 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=80,32,16,16

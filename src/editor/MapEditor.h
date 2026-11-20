@@ -1142,6 +1142,20 @@ private:
 	{
 		return type == MapObjectType::Untergrund ? "untergrund" : type == MapObjectType::Wall ? "wall" : type == MapObjectType::Npc ? "npc" : "scenery";
 	}
+	std::string ObjectTypeHelp() const
+	{
+		const MapObject* object = mode == Mode::Select && selectedObject < document.map.objects.size() ? &document.map.objects[selectedObject] : nullptr;
+		const MapObjectType type = object ? object->type : newType;
+		const std::string prefix = std::string(TypeName(type)) + " - ";
+		switch (type)
+		{
+		case MapObjectType::Scenery: return prefix + "Deko; Positionen beim Platzieren/Verschieben im 64-Pixel-Raster. Kollision nur ueber Solid.";
+		case MapObjectType::Untergrund: return prefix + "Bodenobjekt; Positionen im 64-Pixel-Raster. Kollision nur ueber Solid.";
+		case MapObjectType::Wall: return prefix + "Barriere ohne Rasterbindung; blockiert nur, wenn Solid aktiv ist.";
+		case MapObjectType::Npc: return prefix + "Charakterkategorie ohne Rasterbindung; Kollision nur ueber Solid.";
+		}
+		return prefix;
+	}
 	void HandleMapPropertiesClick(sf::Vector2f position)
 	{
 		if (position.x < 420.0f || position.x >= 860.0f || position.y < 140.0f || position.y >= 660.0f || position.y < 188.0f)
@@ -1273,7 +1287,9 @@ private:
 		const RibbonButton* hint = hovered ? hovered : activeMode;
 		if (hint)
 		{
-			const char* description = RibbonButtonEnabled(*hint) ? hint->help : "Verfuegbar beim Platzieren oder Auswaehlen von Objekten.";
+			std::string description = RibbonButtonEnabled(*hint) ? hint->help : "Verfuegbar beim Platzieren oder Auswaehlen von Objekten.";
+			if (hint->action == RibbonAction::ObjectType && RibbonButtonEnabled(*hint))
+				description = ObjectTypeHelp();
 			Label(window, font, std::string(hint->label) + ": " + description, 10, 66, 14, ink);
 		}
 	}

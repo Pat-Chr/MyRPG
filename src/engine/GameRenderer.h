@@ -637,7 +637,16 @@ inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewpo
         RenderWeather(target, game.weather, static_cast<float>(viewport.width), static_cast<float>(viewport.height), worldOrigin);
     }
 
-    #ifdef _DEBUG
+#ifdef _DEBUG
+    constexpr float side = Player::hitboxSize;
+    sf::RectangleShape hitbox({ side, side });
+    hitbox.setOrigin({ side * 0.5f, side * 0.5f });
+    hitbox.setPosition(WorldToScreen(game.player.x, Player::HitboxCenterY(game.player.y), game, viewport));
+    hitbox.setFillColor(sf::Color::Transparent);
+    hitbox.setOutlineColor(sf::Color(90, 255, 215));
+    hitbox.setOutlineThickness(-1.0f);
+    target.draw(hitbox);
+
     constexpr bool showDebug = true;
 #else
     constexpr bool showDebug = false;

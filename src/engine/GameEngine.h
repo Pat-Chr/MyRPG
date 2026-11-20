@@ -320,7 +320,8 @@ inline bool IsSolidObjectBlockingPosition(const GameState& game, float playerX, 
 {
     constexpr float mapObjectSize = 64.0f;
     const float objectHalfSize = mapObjectSize * 0.5f;
-    const float playerHalfSize = static_cast<float>(game.player.size) * 0.35f;
+    constexpr float playerHalfSize = Player::hitboxSize * 0.5f;
+    const float hitboxCenterY = Player::HitboxCenterY(playerY);
 
     for (const MapObject& object : game.activeMap.objects)
     {
@@ -336,8 +337,8 @@ inline bool IsSolidObjectBlockingPosition(const GameState& game, float playerX, 
 
         const float playerLeft = playerX - playerHalfSize;
         const float playerRight = playerX + playerHalfSize;
-        const float playerTop = playerY - playerHalfSize;
-        const float playerBottom = playerY + playerHalfSize;
+        const float playerTop = hitboxCenterY - playerHalfSize;
+        const float playerBottom = hitboxCenterY + playerHalfSize;
 
         const bool overlapX = playerRight > objectLeft && playerLeft < objectRight;
         const bool overlapY = playerBottom > objectTop && playerTop < objectBottom;

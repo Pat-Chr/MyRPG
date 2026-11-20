@@ -27,8 +27,13 @@ struct Player
 	// Bewegungsgeschwindigkeit (Pixel pro Sekunde)
 	float speed = 220.0f;
 
-	// Basisgröße für die Darstellung; die Kollision verwendet eine kleinere quadratische Box.
 	int size = 64;
+
+	// Seitenlänge der quadratischen Kollisionsfläche, unabhängig von der Sprite-Größe.
+	static constexpr float hitboxSize = 24.0f;
+	static constexpr float hitboxOffsetY = 20.0f; // Positiv = nach unten schieben
+
+	static constexpr float HitboxCenterY(float playerY) { return playerY + hitboxOffsetY; }
 
 	PlayerDirection direction = PlayerDirection::Down;
 	bool moving = false;
