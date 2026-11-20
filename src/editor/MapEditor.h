@@ -47,7 +47,6 @@ public:
 			return;
 		}
 		RefreshAssets();
-		MessageBoxW(owner, L"Karten und Originalsicherungen liegen im Build-Ausgabeordner. Ein Build oder Bereinigen kann sie ueberschreiben oder entfernen. Bitte wichtige Aenderungen rechtzeitig ins Projekt uebernehmen oder extern sichern.", L"Map-Editor", MB_OK | MB_ICONWARNING);
 		spawn = { game.player.x, game.player.y };
 		camera = spawn;
 		if (!game.activeMapPath.empty())
@@ -60,12 +59,12 @@ public:
 		while (window.isOpen() && gameWindow.isOpen())
 		{
 			while (const std::optional event = gameWindow.pollEvent())
-				if (event->is<sf::Event::Closed>() && ConfirmDiscard()) gameWindow.close();
+				if (event->is<sf::Event::Closed>() && ConfirmEditorClose()) gameWindow.close();
 			while (const std::optional event = window.pollEvent())
 			{
 				if (event->is<sf::Event::Closed>())
 				{
-					if (ConfirmDiscard()) window.close();
+					if (ConfirmEditorClose()) window.close();
 				}
 				else if (const auto* key = event->getIf<sf::Event::KeyPressed>()) HandleKey(key->code, window);
 				else if (const auto* text = event->getIf<sf::Event::TextEntered>())
@@ -140,7 +139,7 @@ public:
 					{
 						// The map properties dialog handles scrolling only over its weather list.
 					}
-					else if (TriggerPanelVisible() && position.x >= 960 && position.y >= 70 && position.y < 580)
+					else if (TriggerPanelVisible() && position.x >= 960 && position.y >= 70 && position.y < 660)
 					{
 						if (triggerDropdown != TriggerDropdown::None)
 						{
@@ -207,7 +206,7 @@ private:
 	int resizeEdges = 0;
 	MapObjectType newType = MapObjectType::Scenery;
 	bool newSolid = false;
-	enum class TriggerDropdown { None, Maps, Effects };
+	enum class TriggerDropdown { None, Maps, Effects, Weather };
 	TriggerDropdown triggerDropdown = TriggerDropdown::None;
 	std::vector<std::string> dropdownEntries;
 	int dropdownOffset = 0;
@@ -501,6 +500,11 @@ private:
 	{
 		return !document.dirty || MessageBoxW(owner, L"Ungespeicherte Aenderungen verwerfen?", L"Map-Editor", MB_YESNO | MB_ICONWARNING) == IDYES;
 	}
+	bool ConfirmEditorClose() const
+	{
+		return document.dirty ? ConfirmDiscard() :
+			MessageBoxW(owner, L"Map-Editor wirklich schliessen?", L"Map-Editor", MB_YESNO | MB_ICONQUESTION) == IDYES;
+	}
 	static bool SafeName(const std::string& value)
 	{
 		return !value.empty() && std::all_of(value.begin(), value.end(), [](unsigned char c) { return std::isalnum(c) || c == '_' || c == '-'; });
@@ -538,10 +542,14 @@ private:
 			}
 			std::sort(entries.begin(), entries.end());
 		}
+		else if (type == TriggerDropdown::Effects)
+		{
+			entries = { "screen_shake" };
+			for (const auto& effect : GetMagicEffectDefinitions()) entries.push_back("magic_" + effect.id);
+		}
 		else
 		{
-			entries = { "screen_shake", "weather_none" };
-			for (const auto& effect : GetMagicEffectDefinitions()) entries.push_back("magic_" + effect.id);
+			entries = { "weather_none" };
 			for (const auto& effect : GetWeatherEffectDefinitions()) entries.push_back("weather_" + effect.id);
 		}
 		entries.insert(entries.begin(), NoTriggerEvent);
@@ -613,11 +621,12 @@ private:
 		}
 		else if (y >= 150 && y < 180) OpenTriggerDropdown(TriggerDropdown::Maps);
 		else if (y >= 205 && y < 235) OpenTriggerDropdown(TriggerDropdown::Effects);
-		else if (triggerDropdown == TriggerDropdown::None && y >= 310 && y < 344 && document.map.triggers[selectedTrigger].eventName.starts_with("Load_")) BeginTargetPick();
-		else if (y >= 480 && y < 508) ToggleTriggerGlow();
-		else if (triggerDropdown != TriggerDropdown::None && y >= 250 && y < 442)
+		else if (y >= 260 && y < 290) OpenTriggerDropdown(TriggerDropdown::Weather);
+		else if (triggerDropdown == TriggerDropdown::None && y >= 340 && y < 374 && document.map.triggers[selectedTrigger].eventName.starts_with("Load_")) BeginTargetPick();
+		else if (y >= 530 && y < 555) ToggleTriggerGlow();
+		else if (triggerDropdown != TriggerDropdown::None && y >= 300 && y < 492)
 		{
-			const std::size_t index = static_cast<std::size_t>(dropdownOffset + (y - 250) / 24);
+			const std::size_t index = static_cast<std::size_t>(dropdownOffset + (y - 300) / 24);
 			if (index < dropdownEntries.size())
 			{
 				auto& eventName = document.map.triggers[selectedTrigger].eventName;
@@ -852,7 +861,7 @@ private:
 			if (key == sf::Keyboard::Key::Escape) mapPropertiesOpen = false;
 			return;
 		}
-		if (key == sf::Keyboard::Key::Escape) { if (ConfirmDiscard()) window.close(); }
+		if (key == sf::Keyboard::Key::Escape) { if (ConfirmEditorClose()) window.close(); }
 		else if (key == sf::Keyboard::Key::Tab) ToggleSelectMode();
 		else if (key == sf::Keyboard::Key::G) ToggleSheet();
 		else if (key == sf::Keyboard::Key::P) { spawnMode = true; draggingTrigger = creatingTrigger = false; resizeEdges = 0; }
@@ -946,7 +955,7 @@ private:
 			if (event.button == sf::Mouse::Button::Left) HandleMapPropertiesClick(position);
 			return;
 		}
-		if (TriggerPanelVisible() && x >= 960 && y >= 70 && y < 580)
+		if (TriggerPanelVisible() && x >= 960 && y >= 70 && y < 660)
 		{
 			if (event.button == sf::Mouse::Button::Left) HandleTriggerPanelClick(x, y);
 			return;
@@ -1202,8 +1211,10 @@ private:
 		{
 			return text.size() > 30 ? text.substr(0, 27) + "..." : text;
 		};
-		rectangle(960, 70, 320, 510, sf::Color(35, 38, 45, 245));
+		rectangle(960, 70, 320, 590, sf::Color(35, 38, 45, 245));
 		const bool noEvent = trigger.eventName == NoTriggerEvent;
+		const bool mapEvent = trigger.eventName.starts_with("Load_");
+		const bool weatherEvent = trigger.eventName.starts_with("weather_");
 		const std::string title = trigger.id.size() > 15 ? trigger.id.substr(0, 12) + "..." : trigger.id;
 		Label(window, font, "TRIGGER: " + title, 970, 80, 14);
 		rectangle(1165, 75, 105, 25, sf::Color(65, 70, 80));
@@ -1211,38 +1222,44 @@ private:
 		Label(window, font, "Ereignis: " + (noEvent ? std::string("Kein Ereignis") : shortText(trigger.eventName)), 970, 105, 13);
 		Label(window, font, "Load Map", 970, 130, 13);
 		rectangle(970, 150, 300, 30, sf::Color(65, 70, 80));
-		Label(window, font, noEvent ? "Kein Ereignis  v" : trigger.eventName.starts_with("Load_") ? shortText(trigger.eventName.substr(5)) + "  v" : "Karte auswaehlen  v", 978, 156, 13);
+		Label(window, font, noEvent ? "Kein Ereignis  v" : mapEvent ? shortText(trigger.eventName.substr(5)) + "  v" : "Karte auswaehlen  v", 978, 156, 13);
 		Label(window, font, "Effekte", 970, 185, 13);
 		rectangle(970, 205, 300, 30, sf::Color(65, 70, 80));
-		Label(window, font, noEvent ? "Kein Ereignis  v" : !trigger.eventName.starts_with("Load_") ? shortText(trigger.eventName) + "  v" : "Effekt auswaehlen  v", 978, 211, 13);
+		Label(window, font, noEvent ? "Kein Ereignis  v" : !mapEvent && !weatherEvent ? shortText(trigger.eventName) + "  v" : "Effekt auswaehlen  v", 978, 211, 13);
+		Label(window, font, "Wetter", 970, 240, 13);
+		rectangle(970, 260, 300, 30, sf::Color(65, 70, 80));
+		Label(window, font, noEvent ? "Kein Ereignis  v" : weatherEvent ? shortText(trigger.eventName.substr(8)) + "  v" : "Wetter auswaehlen  v", 978, 266, 13);
 		if (triggerDropdown != TriggerDropdown::None)
 		{
 			for (int row = 0; row < 8 && dropdownOffset + row < static_cast<int>(dropdownEntries.size()); ++row)
 			{
 				const auto& entry = dropdownEntries[static_cast<std::size_t>(dropdownOffset + row)];
-				const float y = static_cast<float>(250 + row * 24);
+				const float y = static_cast<float>(300 + row * 24);
 				rectangle(970, y, 300, 23, entry == trigger.eventName ? sf::Color(70, 105, 110) : sf::Color(60, 64, 72));
-				Label(window, font, entry == NoTriggerEvent ? "Kein Ereignis" : shortText(triggerDropdown == TriggerDropdown::Maps ? entry.substr(5) : entry), 978, y + 3, 13);
+				const std::string label = entry == NoTriggerEvent ? "Kein Ereignis" :
+					triggerDropdown == TriggerDropdown::Maps ? entry.substr(5) :
+					triggerDropdown == TriggerDropdown::Weather ? entry.substr(8) : entry;
+				Label(window, font, shortText(label), 978, y + 3, 13);
 			}
-			Label(window, font, "Mausrad: Liste scrollen", 970, 448, 12);
+			Label(window, font, "Mausrad: Liste scrollen", 970, 500, 12);
 		}
 		else
 		{
-			Label(window, font, "Ein Trigger hat hoechstens ein Ereignis.", 970, 255, 13);
-			if (trigger.eventName.starts_with("Load_"))
+			Label(window, font, "Ein Trigger hat hoechstens ein Ereignis.", 970, 300, 13);
+			if (mapEvent)
 			{
-				Label(window, font, "Zielposition: " + std::to_string(trigger.spawnX) + ", " + std::to_string(trigger.spawnY), 970, 280, 12);
-				rectangle(970, 310, 300, 34, sf::Color(65, 70, 80));
-				Label(window, font, "Zielposition auf Karte waehlen", 978, 319, 13);
+				Label(window, font, "Zielposition: " + std::to_string(trigger.spawnX) + ", " + std::to_string(trigger.spawnY), 970, 320, 12);
+				rectangle(970, 340, 300, 34, sf::Color(65, 70, 80));
+				Label(window, font, "Zielposition auf Karte waehlen", 978, 349, 13);
 			}
 		}
-		rectangle(970, 482, 20, 20, sf::Color(185, 190, 195));
-		rectangle(972, 484, 16, 16, trigger.glow ? sf::Color(70, 145, 150) : sf::Color(35, 38, 45));
-		if (trigger.glow) Label(window, font, "X", 975, 482, 14);
-		Label(window, font, "Glow aktivieren", 998, 483, 14);
-		Label(window, font, "Laesst die Zone sichtbar pulsieren,", 970, 515, 13);
-		Label(window, font, "auch im Release. Nur Darstellung;", 970, 533, 13);
-		Label(window, font, "aendert weder Ereignis noch Kollision.", 970, 551, 13);
+		rectangle(970, 530, 20, 20, sf::Color(185, 190, 195));
+		rectangle(972, 532, 16, 16, trigger.glow ? sf::Color(70, 145, 150) : sf::Color(35, 38, 45));
+		if (trigger.glow) Label(window, font, "X", 975, 530, 14);
+		Label(window, font, "Glow aktivieren", 998, 531, 14);
+		Label(window, font, "Laesst die Zone sichtbar pulsieren,", 970, 563, 13);
+		Label(window, font, "auch im Release. Nur Darstellung;", 970, 581, 13);
+		Label(window, font, "aendert weder Ereignis noch Kollision.", 970, 599, 13);
 	}
 	void DrawRenameTriggerDialog(sf::RenderWindow& window, const sf::Font& font) const
 	{

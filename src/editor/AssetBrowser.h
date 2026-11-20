@@ -67,8 +67,6 @@ public:
 		}
 		if (!selected.empty() && std::none_of(all.begin(), all.end(), [&](const Entry& entry) { return !entry.folder && entry.path == selected; })) selected.clear();
 		Rebuild();
-		if (selected.empty())
-			for (const auto& entry : visible) if (!entry.folder) { selected = entry.path; break; }
 		return true;
 	}
 	void Toggle(const std::string& path)
