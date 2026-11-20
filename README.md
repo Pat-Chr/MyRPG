@@ -4,7 +4,7 @@ MyRPG ist ein Windows-Projekt, in dem ich meine eigene kleine RPG-Engine mit C++
 
 > Ich schreibe meine eigene kleine RPG-Engine. Sie soll später auch ohne Programmierkenntnisse das Erstellen eines eigenen kleinen Adventures ermöglichen. Durch das Erstellen eigener Assets, Skripte und Maps soll man einfach seine eigene Welt erschaffen können.
 >
-> **Das ist das langfristige Ziel, noch nicht der aktuelle Funktionsumfang:** Der Prototyp enthält einen einfachen Map-Editor, aber noch keine Skript-Laufzeit. Trigger-Ereignisse müssen in der Engine unterstützt werden.
+> **Das ist das langfristige Ziel, noch nicht der aktuelle Funktionsumfang:** Der Prototyp enthält einen einfachen Map-Editor und datengetriebene Trigger-Ereignisse, aber noch keine Skript-Laufzeit.
 
 ## 📚 Dokumentation
 
@@ -23,9 +23,9 @@ Das [DesignDocument.md](./DesignDocument.md) beschreibt die technische Architekt
 - **Trigger** für den visuellen Magieeffekt und für dynamische Kartenwechsel
 - **Kartenwechsel** mit Fade-out/Fade-in und pro Trigger festlegbarer Spawn-Position
 - **Spieleranimationen**: Laufanimationen in acht Richtungen und Stillstandsanimationen in vier Richtungen, beschrieben in `.anim`-Dateien. Diagonale Blickrichtungen verwenden im Stillstand die linke bzw. rechte Animation.
-- **Magieeffekte**: sieben GPU-Shader-Effekte (Sparkle, Fire, Lightning, Frost, Vortex, Heal, Shockwave) in `Assets/Shaders/Effects/`. `M` startet Sparkle an der Spielerposition; auf der Testkarte gibt es rechts vom Startpunkt für jeden Effekt eine Trigger-Zone (von links nach rechts in obiger Reihenfolge).
-- **Screen Shake**: Ein eigenständiges Trigger-Ereignis erschüttert kurz die Spielwelt. Die Testzone liegt rechts hinter den Magie-Testzonen; auch der Lightning-Trigger löst den Shake aus.
-- **Wetter**: Regen und Nebel als Shader-Overlays in `Assets/Shaders/Weather/`; das Standardwetter ist pro Karte festlegbar und kann über Trigger geändert oder ausgeschaltet werden. Die Waldkarte startet mit Nebel; auf der Testkarte liegen drei Wetter-Testzonen südlich des Startpunkts.
+- **Magieeffekte**: acht automatisch erkannte GPU-Shader-Effekte (Sparkle, Fire, Lightning, Frost, Vortex, Heal, Shockwave und ein bildschirmfüllender Testeffekt) in `Assets/Shaders/Effects/`. `M` startet Sparkle an der Spielerposition; auf der Testkarte gibt es rechts vom Startpunkt Trigger-Zonen für die Effekte.
+- **Screen Shake**: Ein eigenständiges Trigger-Ereignis erschüttert kurz die Spielwelt. Die Testzone liegt rechts hinter den Magie-Testzonen; Lightning und konfigurierbare Magieeffekte können den Shake zusätzlich auslösen.
+- **Wetter**: Regen, Nebel und Hitze als Shader-Overlays in `Assets/Shaders/Weather/`; das Standardwetter ist pro Karte festlegbar und kann über Trigger geändert oder ausgeschaltet werden. Die Waldkarte startet mit Nebel; auf der Testkarte liegen vier Wetter-Testzonen südlich des Startpunkts.
 - **Textur-Cache** zur Wiederverwendung geladener Texturen
 - **Kamera und Letterbox-Viewport** mit einer Basisauflösung von 1024 × 768; das Seitenverhältnis bleibt beim Ändern der Fenstergröße erhalten
 - **Debug-Anzeigen** für Karten-ID, Position, letztes Ereignis, Raster und Triggerbereiche nur im Debug-Build. Ein Linksklick auf die Koordinaten kopiert X und Y in die Zwischenablage. Im Release-Build bleiben diese Anzeigen verborgen; die Trigger-Funktion selbst bleibt aktiv.
@@ -92,25 +92,34 @@ Damit lässt sich das Programm direkt aus dem jeweiligen Build-Ausgabeverzeichni
 ```
 MyRPG/
 ├── main.cpp                       # Win32-Einstiegspunkt, Spielschleife, Eingabe und Viewport
-├── src/engine/
-│   ├── GameTypes.h                # Spielzustand und Datenstrukturen
-│   ├── GameEngine.h               # Bewegung, Kollisionen, Trigger und Kartenwechsel
-│   ├── GameRenderer.h              # Rendering, Kamera und Textur-Cache
-│   ├── MagicEffects.h              # Zustand und Start-API für visuelle Effekte
-│   ├── MagicRenderer.h             # Darstellung der Effekte
-│   ├── Weather.h                   # Wetterzustand und Steuerung
-│   ├── WeatherRenderer.h           # Wetter-Shader-Overlay
-│   ├── MapLoader.h                # Parser für .map-Dateien
-│   ├── MainMenu.h                 # Titelbildschirm und Hauptmenü
-│   ├── MenuFont.h                 # Gemeinsame Systemschrift für Menüs
-│   ├── SettingsMenu.h             # Einstellungsmenü und VSync
-│   ├── SettingsStore.h            # JSON-Einstellungen laden und speichern
-│   └── AnimationLoader.h          # Parser für .anim-Dateien
+├── src/
+│   ├── BuildConfig.h              # Freischaltung des Map-Editors
+│   ├── engine/
+│   │   ├── GameTypes.h            # Spielzustand und Datenstrukturen
+│   │   ├── GameEngine.h           # Bewegung, Kollisionen, Trigger und Kartenwechsel
+│   │   ├── GameRenderer.h         # Rendering, Kamera und Textur-Cache
+│   │   ├── MagicEffectRegistry.h  # Automatische Magie-Shader-Erkennung
+│   │   ├── MagicEffects.h         # Zustand der laufenden Magieeffekte
+│   │   ├── MagicRenderer.h        # Darstellung der Magieeffekte
+│   │   ├── Weather.h              # Wetterzustand und Shader-Erkennung
+│   │   ├── WeatherRenderer.h      # Wetter-Shader-Overlay
+│   │   ├── MapLoader.h            # Parser für .map-Dateien
+│   │   ├── MainMenu.h             # Titelbildschirm und Hauptmenü
+│   │   ├── MenuFont.h             # Gemeinsame Systemschrift für Menüs
+│   │   ├── SaveGameStore.h        # Mehrere benannte Spielstände
+│   │   ├── SettingsMenu.h         # Einstellungsmenü und VSync
+│   │   ├── SettingsStore.h        # JSON-Einstellungen laden und speichern
+│   │   ├── UserDataFiles.h        # Gemeinsame Speicher-/Benutzerdaten-Hilfen
+│   │   └── AnimationLoader.h      # Parser für .anim-Dateien
+│   └── editor/
+│       ├── AssetBrowser.h         # Sprite-Auswahl des Map-Editors
+│       ├── MapDocument.h          # Kartenmodell und sicheres Speichern
+│       └── MapEditor.h            # Editorfenster und Bedienlogik
 ├── Assets/
 │   ├── Animations/Characters/     # Spieleranimationen im .anim-Format
 │   ├── Maps/                      # 0001_TestMap.map und 0001_Forest.map
 │   ├── Shaders/Effects/           # GLSL-Shader der Magieeffekte
-│   ├── Shaders/Weather/           # GLSL-Shader für Regen und Nebel
+│   ├── Shaders/Weather/           # GLSL-Shader für Regen, Nebel und Hitze
 │   ├── UI/                        # Titelbildschirm
 │   └── Sprites/
 │       ├── Characters/            # Spieler-Spritesheets
@@ -156,7 +165,7 @@ TRIGGER north_path_to_forest -64 -260 220 120 Load_0001_Forest glow=1 spawn_x=-1
 
 `screen_shake` startet unabhängig von einem Magieeffekt einen kurzen Screen Shake (Stärke 8 Pixel, Dauer 0,32 Sekunden). Nach Verlassen und erneutem Betreten der Zone wird er erneut ausgelöst. Die Testzone liegt bei x=1408, y=-32. Wetter-Overlay und UI bleiben bildschirmfest.
 
-Trigger-Ereignisse der Form `weather_<shaderName>` schalten auf den gleichnamigen automatisch erkannten Shader um; `weather_none` schaltet das Wetter aus. Beispielsweise aktiviert `weather_rain` die Datei `rain.frag`. Das Wetter bleibt bis zur nächsten Änderung aktiv. Beim erfolgreichen Kartenwechsel übernimmt die Zielkarte ihr eigenes Standardwetter; schlägt der Wechsel fehl, bleibt das bisherige Wetter erhalten. Auf der Testkarte liegen die Wetterzonen südlich des Startpunkts bei x=-32 und y=224, 384 und 544 (Regen, Nebel, aus).
+Trigger-Ereignisse der Form `weather_<shaderName>` schalten auf den gleichnamigen automatisch erkannten Shader um; `weather_none` schaltet das Wetter aus. Beispielsweise aktiviert `weather_rain` die Datei `rain.frag`. Das Wetter bleibt bis zur nächsten Änderung aktiv. Beim erfolgreichen Kartenwechsel übernimmt die Zielkarte ihr eigenes Standardwetter; schlägt der Wechsel fehl, bleibt das bisherige Wetter erhalten. Auf der Testkarte liegen die Wetterzonen südlich des Startpunkts bei x=-32 und y=224, 384, 544 und 704 (Regen, Nebel, aus, Hitze).
 
 `Load_<dateiname>` lädt `Assets/Maps/<dateiname>.map`, zum Beispiel lädt `Load_0002_Cave` die Datei `Assets/Maps/0002_Cave.map`. Der Dateiname ohne Endung darf keine Leerzeichen oder Pfadtrennzeichen enthalten; die `MAP`-ID in der Datei muss vorhanden sein, aber nicht dem Dateinamen entsprechen. Neue Karten benötigen keinen Codeeintrag. Die optionalen Trigger-Angaben `spawn_x` und `spawn_y` legen gemeinsam die Zielposition fest; ohne sie gilt `(0, 0)`. So können verschiedene Übergänge unterschiedliche Einstiegspunkte verwenden. Die Zielposition sollte frei von Hindernissen und nicht innerhalb eines sofort zurückführenden Triggers liegen. Wenn das Laden fehlschlägt, bleibt die bisherige Karte aktiv und ein Fehler wird auf stderr ausgegeben. Die Startkarte ist weiterhin in der Engine festgelegt.
 
@@ -168,7 +177,7 @@ Trigger-Ereignisse der Form `weather_<shaderName>` schalten auf den gleichnamige
 
 ## 🔭 Ausblick
 
-MyRPG ist noch im Prototyp-Stadium. Zum langfristigen Ziel gehören eine einfachere Erstellung von Inhalten ohne Programmierkenntnisse sowie weitere Adventure-Systeme wie Dialoge, Kampf und Spielstände. Neue Karten können bereits als `.map`-Dateien angelegt werden; Animationen und Sprites liegen ebenfalls getrennt von der Engine in `Assets/`.
+MyRPG ist noch im Prototyp-Stadium. Zum langfristigen Ziel gehören eine einfachere Erstellung von Inhalten ohne Programmierkenntnisse sowie weitere Adventure-Systeme wie Dialoge, Kampf, Inventar und Story-Skripte. Benannte Spielstände, Karten, Animationen und Sprites sind bereits als datengetrennte Inhalte vorhanden; Skript-Laufzeit und komplexere Spielsysteme folgen schrittweise.
 
 ## 🔧 Entwicklungshinweise
 

@@ -55,10 +55,10 @@ inline bool TryParseCoordinate(const std::string& token, const std::string& key,
  * - "untergrund" -> MapObjectType::Untergrund (Bodenobjekte)
  * - "wall"       -> MapObjectType::Wall (Wände/Barrieren)
  * - "npc"        -> MapObjectType::Npc (NPC-Charaktere)
+ * - "scenery"    -> MapObjectType::Scenery (Dekoration)
  * 
  * @param value Der String-Wert, der interpretiert werden soll.
- * @return MapObjectType Das zugehörige Enum-Wert, falls bekannt.
- * @return MapObjectType::Scenery als Default für unbekannte Typen.
+ * @return MapObjectType Das zugehörige Enum-Wert; unbekannte Typen werden als Dekoration behandelt.
  */
 inline MapObjectType ParseMapObjectType(const std::string& value)
 {

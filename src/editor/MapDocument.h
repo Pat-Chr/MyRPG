@@ -187,6 +187,8 @@ public:
 		dirty = true;
 	}
 
+	// Speichert nur geaenderte Kartenzeilen und legt beim ersten Ueberschreiben eine unveraenderliche Sicherung an.
+	// Vorher wird geprüft, ob die Datei seit dem Öffnen durch einen externen Prozess geaendert wurde.
 	bool Save(std::string& error)
 	{
 		if (path.empty() || map.id.empty() || map.defaultGroundPath.empty())
