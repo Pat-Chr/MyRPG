@@ -5,6 +5,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <filesystem>
 #include <optional>
 #include <string>
 
@@ -16,6 +17,7 @@
 #include "src/engine/GameEngine.h"
 #include "src/engine/GameRenderer.h"
 #include "src/engine/MainMenu.h"
+#include "src/engine/SaveGameStore.h"
 #include "src/engine/SettingsMenu.h"
 #ifdef MYRPG_MAP_EDITOR
 #include "src/editor/MapEditor.h"
@@ -165,28 +167,136 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     }
 
     GameState game{};
+    SaveGameStore saveGameStore;
+    std::optional<SaveGameSlot::Id> activeSave;
+    std::string activeSaveName;
     bool inMainMenu = true;
     PreloadMagicShaders();
     PreloadWeatherShaders();
 
     sf::Clock frameClock;
     sf::FloatRect debugCoordinatesBounds{};
+    const auto showSaveGameError = [&](const std::string& error)
+    {
+        std::fprintf(stderr, "Savegame: %s\n", error.c_str());
+        MessageBoxA(window.getNativeHandle(), error.c_str(), "MyRPG - Spielstand", MB_OK | MB_ICONERROR);
+        frameClock.restart();
+    };
+    const auto getSavePosition = [](const GameState& state, const std::string& name)
+    {
+        return SaveGamePosition{ std::filesystem::path(state.activeMapPath).filename().string(),
+            state.player.x, state.player.y, name };
+    };
+    const auto beginGame = [&](SaveGameSlot::Id id, std::string name)
+    {
+        activeSave = id;
+        activeSaveName = std::move(name);
+        mainMenu.Reset();
+        inMainMenu = false;
+        frameClock.restart();
+    };
     const auto handleMainMenuAction = [&](MainMenu::Action action)
     {
-        if (action == MainMenu::Action::StartGame)
-        {
-            game = GameState{};
-            InitializeGameState(game);
-            inMainMenu = false;
-            frameClock.restart();
-        }
-        else if (action == MainMenu::Action::ExitGame)
+        std::string error;
+        if (action == MainMenu::Action::ExitGame)
         {
             window.close();
         }
+        else if (action == MainMenu::Action::OpenNewGame)
+        {
+            mainMenu.OpenNewGame();
+        }
+        else if (action == MainMenu::Action::StartNewGame)
+        {
+            auto name = mainMenu.NewGameName();
+            game = GameState{};
+            InitializeGameState(game);
+            SaveGameSlot::Id id{};
+            if (IsSolidObjectBlockingPosition(game, game.player.x, game.player.y))
+            {
+                showSaveGameError("Die Startposition liegt in einem Hindernis und kann nicht gespeichert werden.");
+                return;
+            }
+            if (!saveGameStore.Create(getSavePosition(game, name), id, error))
+            {
+                showSaveGameError(error);
+                return;
+            }
+            beginGame(id, std::move(name));
+        }
+        else if (action == MainMenu::Action::OpenSaves)
+        {
+            std::vector<SaveGameSlot> slots;
+            if (saveGameStore.List(slots, error)) mainMenu.OpenSaves(std::move(slots));
+            else showSaveGameError(error);
+        }
+        else if (action == MainMenu::Action::LoadSelected || action == MainMenu::Action::DeleteSelected)
+        {
+            const SaveGameSlot* slot = mainMenu.SelectedSave();
+            if (!slot) return;
+            if (action == MainMenu::Action::LoadSelected)
+            {
+                SaveGamePosition position;
+                if (!saveGameStore.Load(slot->id, position, error) ||
+                    !TryRestorePlayerPosition(game, (std::filesystem::path(L"Assets\\Maps") / position.mapFile).generic_string(),
+                        position.x, position.y, error))
+                {
+                    showSaveGameError(error);
+                    return;
+                }
+                beginGame(slot->id, std::move(position.name));
+                return;
+            }
+
+            const std::string label = slot->Label();
+            const std::wstring question = L"„" + sf::String::fromUtf8(label.begin(), label.end()).toWideString() + L"“ endgültig löschen?";
+            if (MessageBoxW(window.getNativeHandle(), question.c_str(), L"MyRPG - Spielstand löschen",
+                MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) != IDYES) return;
+            if (saveGameStore.Delete(slot->id, error)) mainMenu.RemoveSelectedSave();
+            else showSaveGameError(error);
+        }
     };
-    const auto returnToMainMenu = [&]()
+    const auto saveCurrentGame = [&]() -> bool
     {
+        if (IsSolidObjectBlockingPosition(game, game.player.x, game.player.y))
+        {
+            showSaveGameError("Die Spielerposition liegt in einem Hindernis und kann nicht gespeichert werden.");
+            return false;
+        }
+
+        if (!activeSave)
+        {
+            showSaveGameError("Dem laufenden Spiel ist kein Spielstand zugeordnet.");
+            return false;
+        }
+        std::string error;
+        if (!saveGameStore.Save(*activeSave, getSavePosition(game, activeSaveName), error))
+        {
+            showSaveGameError(error);
+            return false;
+        }
+        return true;
+    };
+    const auto confirmGameClose = [&]() -> bool
+    {
+        if (inMainMenu) return true;
+
+        const int choice = MessageBoxW(window.getNativeHandle(), L"Möchten Sie vor dem Beenden speichern?",
+            L"MyRPG - Spiel beenden", MB_YESNOCANCEL | MB_ICONQUESTION | MB_DEFBUTTON3);
+        frameClock.restart();
+        if (choice == 0)
+        {
+            showSaveGameError("Die Speicherabfrage konnte nicht angezeigt werden.");
+            return false;
+        }
+        return choice == IDNO || (choice == IDYES && saveCurrentGame());
+    };
+    const auto saveAndReturnToMainMenu = [&]()
+    {
+        if (!saveCurrentGame()) return;
+
+        activeSave.reset();
+        activeSaveName.clear();
         settingsMenu.Close();
         mainMenu.Reset();
         inMainMenu = true;
@@ -194,9 +304,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     };
     const auto handleSettingsAction = [&](SettingsMenu::Action action)
     {
-        if (action == SettingsMenu::Action::MainMenu)
+        if (action == SettingsMenu::Action::SaveAndMainMenu)
         {
-            returnToMainMenu();
+            saveAndReturnToMainMenu();
         }
         else if (action == SettingsMenu::Action::SettingsChanged &&
                  !settingsStore.Save(settingsMenu.GetSettings(), settingsError))
@@ -213,7 +323,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         {
             if (event->is<sf::Event::Closed>())
             {
-                window.close();
+                if (confirmGameClose())
+                {
+                    window.close();
+                    break;
+                }
             }
             else if (const auto* resized = event->getIf<sf::Event::Resized>())
             {
@@ -222,6 +336,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 view.setCenter({ static_cast<float>(baseResolution.x) * 0.5f, static_cast<float>(baseResolution.y) * 0.5f });
                 view.setViewport(ComputeLetterboxViewport(resized->size, baseResolution));
                 window.setView(view);
+            }
+            else if (const auto* text = event->getIf<sf::Event::TextEntered>())
+            {
+                if (inMainMenu && window.hasFocus()) mainMenu.HandleText(text->unicode);
             }
             else if (const auto* key = event->getIf<sf::Event::KeyPressed>())
             {
@@ -266,7 +384,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                     SetMovementState(game.input, false, false, false, false);
                     game.player.moving = false;
                     MapEditor editor;
-                    editor.Run(window, game);
+                    editor.Run(window, game, confirmGameClose);
                     frameClock.restart();
                 }
 #endif

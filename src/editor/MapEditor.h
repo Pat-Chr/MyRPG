@@ -11,6 +11,7 @@
 #include <cctype>
 #include <cmath>
 #include <filesystem>
+#include <functional>
 #include <optional>
 #include <string>
 #include <system_error>
@@ -27,7 +28,7 @@
 class MapEditor
 {
 public:
-	void Run(sf::RenderWindow& gameWindow, GameState& game)
+	void Run(sf::RenderWindow& gameWindow, GameState& game, const std::function<bool()>& confirmGameClose)
 	{
 		sf::Font font;
 		if (!LoadMenuFont(font))
@@ -59,7 +60,13 @@ public:
 		while (window.isOpen() && gameWindow.isOpen())
 		{
 			while (const std::optional event = gameWindow.pollEvent())
-				if (event->is<sf::Event::Closed>() && ConfirmEditorClose()) gameWindow.close();
+			{
+				if (event->is<sf::Event::Closed>() && ConfirmEditorClose() && confirmGameClose())
+				{
+					gameWindow.close();
+					return;
+				}
+			}
 			while (const std::optional event = window.pollEvent())
 			{
 				if (event->is<sf::Event::Closed>())

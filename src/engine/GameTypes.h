@@ -199,12 +199,10 @@ struct GameState
 	
 	// Aktueller Eingabe-Zustand (Tasten/Haltungen)
 	InputState input;
-	
+
 	// Aktive Karte, die gerade angezeigt wird
 	MapData activeMap;
-#ifdef MYRPG_MAP_EDITOR
 	std::string activeMapPath;
-#endif
 
 	// Zuletzt ausgelöstes Ereignis (für Debugging/Logging)
 	std::string lastTriggeredEvent;

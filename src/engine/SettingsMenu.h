@@ -9,11 +9,11 @@
 #include "MenuFont.h"
 #include "SettingsStore.h"
 
-// Wendet Fensteroptionen direkt an; das Speichern bei SettingsChanged übernimmt der Aufrufer.
+// Wendet Fensteroptionen direkt an; das Speichern übernimmt der Aufrufer.
 class SettingsMenu
 {
 public:
-	enum class Action { None, SettingsChanged, MainMenu };
+	enum class Action { None, SettingsChanged, SaveAndMainMenu };
 
 	void ApplySettings(const GameSettings& settings, sf::RenderWindow& window)
 	{
@@ -92,7 +92,7 @@ public:
 		{
 			if (selected == Selection::MainMenu)
 			{
-				return (key == sf::Keyboard::Key::Enter || key == sf::Keyboard::Key::Space) ? Action::MainMenu : Action::None;
+				return (key == sf::Keyboard::Key::Enter || key == sf::Keyboard::Key::Space) ? Action::SaveAndMainMenu : Action::None;
 			}
 			if (selected == Selection::FpsLimit)
 			{
@@ -125,7 +125,7 @@ public:
 	{
 		if (MainMenuButtonBounds(resolution).contains(position))
 		{
-			return Action::MainMenu;
+			return Action::SaveAndMainMenu;
 		}
 
 		for (int index = 0; index < SettingCount; ++index)
@@ -209,7 +209,7 @@ public:
 		button.setOutlineColor(selected == Selection::MainMenu ? sf::Color(255, 220, 140) : sf::Color(160, 150, 115));
 		target.draw(button);
 
-		sf::Text buttonText(font, sf::String(L"Zurück zum Hauptmenü"), 22);
+		sf::Text buttonText(font, sf::String(L"Speichern und zum Hauptmenü"), 22);
 		buttonText.setFillColor(selected == Selection::MainMenu ? sf::Color(255, 220, 140) : sf::Color::White);
 		buttonText.setPosition({ buttonBounds.position.x + 12.0f, buttonBounds.position.y + 7.0f });
 		target.draw(buttonText);
@@ -236,7 +236,7 @@ private:
 	static sf::FloatRect MainMenuButtonBounds(sf::Vector2u resolution)
 	{
 		return { { static_cast<float>(resolution.x) * 0.5f - 230.0f,
-			static_cast<float>(resolution.y) * 0.5f + 20.0f + ExtraHeight }, { 300.0f, 42.0f } };
+			static_cast<float>(resolution.y) * 0.5f + 20.0f + ExtraHeight }, { 460.0f, 42.0f } };
 	}
 
 	enum class Selection { VSync, FpsLimit, ShowFps, MapEditor, MainMenu };
