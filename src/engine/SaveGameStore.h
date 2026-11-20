@@ -16,6 +16,7 @@ struct SaveGamePosition
 	std::string mapFile;
 	float x = 0.0f;
 	float y = 0.0f;
+	std::string name;
 };
 
 struct SaveGameSlot
@@ -25,9 +26,11 @@ struct SaveGameSlot
 
 	Id id;
 	std::string mapFile;
+	std::string name;
 
 	std::string Label() const
 	{
+		if (!name.empty()) return name + " (#" + std::to_string(id) + ")";
 		return id == LegacyId ? "Bisheriger Spielstand" : "Spielstand " + std::to_string(id);
 	}
 };
@@ -48,8 +51,8 @@ public:
 			SaveGamePosition position;
 			std::string loadError;
 			// Unlesbare Dateien bleiben sichtbar und können gezielt gelöscht werden.
-			const bool readable = Load(id, position, loadError);
-			result.push_back({ id, readable ? std::move(position.mapFile) : std::string{} });
+			if (!Load(id, position, loadError)) position = {};
+			result.push_back({ id, std::move(position.mapFile), std::move(position.name) });
 		}
 		slots = std::move(result);
 		return true;
@@ -72,12 +75,14 @@ public:
 			!document["version"].is_number_integer() || document["version"] != Version ||
 			!document.contains("map") || !document["map"].is_string() ||
 			!document.contains("x") || !ReadCoordinate(document["x"], loaded.x) ||
-			!document.contains("y") || !ReadCoordinate(document["y"], loaded.y))
+			!document.contains("y") || !ReadCoordinate(document["y"], loaded.y) ||
+			(document.contains("name") && !document["name"].is_string()))
 		{
 			error = "Der Spielstand ist beschaedigt oder hat ein nicht unterstuetztes Format.";
 			return false;
 		}
 		loaded.mapFile = document["map"].get<std::string>();
+		if (document.contains("name")) loaded.name = document["name"].get<std::string>();
 		if (!IsMapFileName(loaded.mapFile))
 		{
 			error = "Der Spielstand enthaelt einen ungueltigen Kartendateinamen.";
@@ -131,8 +136,9 @@ private:
 		}
 		std::filesystem::path path;
 		if (!ResolveSlot(id, path, error)) return false;
-		const nlohmann::json document{ { "version", Version }, { "map", position.mapFile },
+		nlohmann::json document{ { "version", Version }, { "map", position.mapFile },
 			{ "x", position.x }, { "y", position.y } };
+		if (!position.name.empty()) document["name"] = position.name;
 		return UserDataFiles::WriteAtomically(path, document.dump(2) + '\n', replaceExisting, error);
 	}
 
