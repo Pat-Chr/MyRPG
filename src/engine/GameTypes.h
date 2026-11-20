@@ -26,9 +26,14 @@ struct Player
 	
 	// Bewegungsgeschwindigkeit (Pixel pro Sekunde)
 	float speed = 220.0f;
-	
-	// Kollisionsradius oder Sprite-Größe in Pixeln
+
 	int size = 64;
+
+	// Seitenlänge der quadratischen Kollisionsfläche, unabhängig von der Sprite-Größe.
+	static constexpr float hitboxSize = 24.0f;
+	static constexpr float hitboxOffsetY = 20.0f; // Positiv = nach unten schieben
+
+	static constexpr float HitboxCenterY(float playerY) { return playerY + hitboxOffsetY; }
 
 	PlayerDirection direction = PlayerDirection::Down;
 	bool moving = false;
@@ -87,7 +92,7 @@ struct MapObject
 	// Pfad zum Sprite-Datei (z.B. "assets/sprites/tree.png")
 	std::string spritePath;
 	
-	// Ob das Objekt Kollisionen verursacht (wahr für Wände)
+	// Bestimmt die Kollision unabhängig vom Objekttyp.
 	bool solid = false;
 
 	// Optionaler Ausschnitt (Tile) aus einem Spritesheet in Texturpixeln
@@ -160,13 +165,13 @@ struct MapTransitionState
 {
 	// Aktueller Übergangs-Phasenstatus
 	MapTransitionPhase phase = MapTransitionPhase::None;
-	
-	// Verstrichene Zeit seit Beginn des Übergangs (für Animation)
+
+	// Verstrichene Zeit in der aktuellen Phase, in Sekunden.
 	float timer = 0.0f;
-	
-	// Gesamtdauer des Übergangs in Sekunden
+
+	// Dauer je Fade-Phase, nicht die Gesamtdauer des Kartenwechsels.
 	float duration = 0.28f;
-	
+
 	// Pfad zur Ziel-Karte (z.B. "maps/level_2.map")
 	std::string targetMapPath;
 	

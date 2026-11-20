@@ -47,7 +47,6 @@ public:
 			return;
 		}
 		RefreshAssets();
-		MessageBoxW(owner, L"Karten und Originalsicherungen liegen im Build-Ausgabeordner. Ein Build oder Bereinigen kann sie ueberschreiben oder entfernen. Bitte wichtige Aenderungen rechtzeitig ins Projekt uebernehmen oder extern sichern.", L"Map-Editor", MB_OK | MB_ICONWARNING);
 		spawn = { game.player.x, game.player.y };
 		camera = spawn;
 		if (!game.activeMapPath.empty())
@@ -60,12 +59,12 @@ public:
 		while (window.isOpen() && gameWindow.isOpen())
 		{
 			while (const std::optional event = gameWindow.pollEvent())
-				if (event->is<sf::Event::Closed>() && ConfirmDiscard()) gameWindow.close();
+				if (event->is<sf::Event::Closed>() && ConfirmEditorClose()) gameWindow.close();
 			while (const std::optional event = window.pollEvent())
 			{
 				if (event->is<sf::Event::Closed>())
 				{
-					if (ConfirmDiscard()) window.close();
+					if (ConfirmEditorClose()) window.close();
 				}
 				else if (const auto* key = event->getIf<sf::Event::KeyPressed>()) HandleKey(key->code, window);
 				else if (const auto* text = event->getIf<sf::Event::TextEntered>())
@@ -99,11 +98,11 @@ public:
 						object.y = object.type == MapObjectType::Scenery || object.type == MapObjectType::Untergrund ? SnapToGrid(pos.y, 64.0f) : pos.y;
 						document.dirty = true;
 					}
-					else if (resizeEdges && triggerMode && !spawnMode && selectedTrigger < document.map.triggers.size())
+					else if (resizeEdges && TriggerPanelVisible())
 					{
 						ResizeTrigger(WorldPosition(window, move->position));
 					}
-					else if ((draggingTrigger || creatingTrigger) && triggerMode && !spawnMode && selectedTrigger < document.map.triggers.size())
+					else if ((draggingTrigger || creatingTrigger) && TriggerPanelVisible())
 					{
 						const sf::Vector2f pos = WorldPosition(window, move->position);
 						auto& trigger = document.map.triggers[selectedTrigger];
@@ -118,7 +117,7 @@ public:
 						document.dirty = true;
 					}
 					else if (placementDragActive && sf::Mouse::isButtonPressed(sf::Mouse::Button::Left) &&
-						!triggerMode && !selectMode && !spawnMode && IsMapArea(position))
+						mode == Mode::Place && IsMapArea(position) && !IsOverObjectPanel(position))
 					{
 						PlaceDraggedSprites(WorldPosition(window, move->position));
 					}
@@ -140,7 +139,7 @@ public:
 					{
 						// The map properties dialog handles scrolling only over its weather list.
 					}
-					else if (TriggerPanelVisible() && position.x >= 960 && position.y >= 70 && position.y < 580)
+					else if (IsOverTriggerPanel(position))
 					{
 						if (triggerDropdown != TriggerDropdown::None)
 						{
@@ -148,16 +147,13 @@ public:
 							dropdownOffset = std::clamp(dropdownOffset - (wheel->delta > 0 ? 3 : -3), 0, maxOffset);
 						}
 					}
-					else if (ObjectPanelVisible() && position.x >= 960 && position.y >= 70 && position.y < 270)
+					else if (IsBrowserArea(position))
 					{
-						// Scrolling over the properties panel must not zoom the map.
-					}
-					else if (position.x < 280)
-					{
-						const int maxOffset = (std::max)(0, static_cast<int>(browser.visible.size()) - 17);
+						const int maxOffset = (std::max)(0, static_cast<int>(browser.visible.size()) - BrowserRows);
 						browser.offset = std::clamp(browser.offset - (wheel->delta > 0 ? 3 : -3), 0, maxOffset);
 					}
-					else zoom = std::clamp(zoom * (wheel->delta > 0 ? 1.2f : 1.0f / 1.2f), 0.25f, 4.0f);
+					else if (IsMapArea(position) && !IsOverObjectPanel(position))
+						zoom = std::clamp(zoom * (wheel->delta > 0 ? 1.2f : 1.0f / 1.2f), 0.25f, 4.0f);
 				}
 			}
 			const float panDelta = panClock.restart().asSeconds();
@@ -202,15 +198,51 @@ private:
 	MapData targetMap;
 	sf::Vector2f sourceCamera{};
 	float sourceZoom = 1.0f;
-	bool selectMode = false, spawnMode = false, triggerMode = false, panning = false, draggingObject = false, draggingTrigger = false, creatingTrigger = false;
+	enum class Mode { Place, Select, Trigger, Spawn };
+	Mode mode = Mode::Place, modeBeforeSpawn = Mode::Place;
+	bool panning = false, draggingObject = false, draggingTrigger = false, creatingTrigger = false;
 	enum TriggerEdge { Left = 1, Right = 2, Top = 4, Bottom = 8 };
 	int resizeEdges = 0;
 	MapObjectType newType = MapObjectType::Scenery;
 	bool newSolid = false;
-	enum class TriggerDropdown { None, Maps, Effects };
+	enum class TriggerDropdown { None, Maps, Effects, Weather };
 	TriggerDropdown triggerDropdown = TriggerDropdown::None;
 	std::vector<std::string> dropdownEntries;
 	int dropdownOffset = 0;
+
+	static constexpr float EditorWidth = 1280.0f, EditorHeight = 800.0f;
+	static constexpr float MapTop = 88.0f, StatusTop = 770.0f, BrowserWidth = 280.0f;
+	static constexpr float MapWidth = EditorWidth - BrowserWidth, MapHeight = StatusTop - MapTop;
+	static constexpr int BrowserFirstRow = 122, BrowserRowHeight = 38;
+	static constexpr int BrowserRows = (static_cast<int>(StatusTop) - BrowserFirstRow) / BrowserRowHeight;
+	static constexpr int PanelOffset = static_cast<int>(MapTop) - 60;
+	static constexpr float RibbonButtonTop = 7.0f, RibbonButtonHeight = 35.0f;
+
+	enum class RibbonAction { New, Open, Save, Apply, Properties, ReloadAssets, SelectMode, ObjectType, Sheet };
+	struct RibbonButton
+	{
+		float x, width;
+		const char* label;
+		const char* help;
+		RibbonAction action;
+		Mode targetMode = Mode::Place;
+
+		sf::FloatRect Bounds() const { return { { x, RibbonButtonTop }, { width, RibbonButtonHeight } }; }
+	};
+	static constexpr RibbonButton RibbonButtons[] = {
+		{  10,  58, "Neu", "Erstellt eine neue Karte in Assets/Maps.", RibbonAction::New },
+		{  73,  68, "Oeffnen", "Oeffnet eine vorhandene Karte aus Assets/Maps.", RibbonAction::Open },
+		{ 146,  80, "Speichern", "Speichert die bearbeitete Karte im Spielordner.", RibbonAction::Save },
+		{ 244, 146, "Im Spiel uebernehmen", "Aktiviert die gespeicherte Karte im Spiel und setzt die Figur auf den Startpunkt.", RibbonAction::Apply },
+		{ 395, 106, "Eigenschaften", "Standardboden und Standardwetter der Karte einstellen.", RibbonAction::Properties },
+		{ 519,  84, "Platzieren", "Sprite links waehlen; auf der Karte klicken oder ziehen, um Objekte zu platzieren.", RibbonAction::SelectMode, Mode::Place },
+		{ 608, 120, "Auswaehlen (Tab)", "Objekt anklicken oder ziehen. Rechts: Kollision einstellen. Entf: Objekt loeschen.", RibbonAction::SelectMode, Mode::Select },
+		{ 733,  91, "Trigger (T)", "Auf freier Stelle klicken/ziehen: Zone anlegen. Innen ziehen: bewegen. Rand ziehen: Groesse. Rechts: Ereignis beim Betreten festlegen.", RibbonAction::SelectMode, Mode::Trigger },
+		{ 829, 104, "Startpunkt (P)", "Auf die Karte klicken: Startposition fuer 'Im Spiel uebernehmen' setzen. Esc: zurueck zum bisherigen Modus.", RibbonAction::SelectMode, Mode::Spawn },
+		{ 951,  83, "Objekttyp", "Aendert den Typ des ausgewaehlten Objekts oder die Vorgabe fuer neue Objekte.", RibbonAction::ObjectType },
+		{ 1039, 124, "Sheet-Ansicht (G)", "Oeffnet das gewaehlte Sprite als Raster, um einzelne Tiles auszuwaehlen.", RibbonAction::Sheet },
+		{ 1168, 102, "Assets neu", "Liest die Sprite-Dateien und Ordner fuer den Asset-Browser erneut ein.", RibbonAction::ReloadAssets },
+	};
 
 	// Spritesheet-Ansicht: eigenes Fenster, Inhaltsbereich ab y=70 (Fensterpixel)
 	static constexpr float SheetContentY = 70.0f;
@@ -285,11 +317,8 @@ private:
 		{
 			brushRect = *tile;
 			brushTile = true;
+			SetMode(Mode::Place);
 			sheetDragging = true;
-			selectedObject = selectedTrigger = static_cast<std::size_t>(-1);
-			selectMode = triggerMode = spawnMode = false;
-			draggingTrigger = creatingTrigger = false;
-			resizeEdges = 0;
 		}
 	}
 	// releasePixel liegt in Sheet-Fensterkoordinaten; ausserhalb des Sheet-Fensters wird auf die Karte gesetzt
@@ -303,8 +332,7 @@ private:
 		const sf::Vector2u size = window.getSize();
 		if (pixel.x < 0 || pixel.y < 0 || pixel.x >= static_cast<int>(size.x) || pixel.y >= static_cast<int>(size.y)) return;
 		const sf::Vector2f position = EditorPosition(window, pixel);
-		if (mapPropertiesOpen || !IsMapArea(position)) return;
-		if (ObjectPanelVisible() && position.x >= 960 && position.y >= 70 && position.y < 270) return;
+		if (mapPropertiesOpen || mode != Mode::Place || !IsMapArea(position) || IsOverObjectPanel(position)) return;
 		if (document.path.empty()) return;
 		hasLastPlacementPosition = false;
 		PlaceSelectedSprite(WorldPosition(window, pixel));
@@ -377,7 +405,7 @@ private:
 		sf::Texture* texture = GetCachedTexture(browser.selected);
 		if (!texture || brushRect.size.x <= 0 || brushRect.size.y <= 0) return;
 		const sf::Vector2f mouse = EditorPosition(window, sf::Mouse::getPosition(window));
-		if (!IsMapArea(mouse)) return;
+		if (!IsMapArea(mouse) || IsOverObjectPanel(mouse)) return;
 		sf::Sprite ghost(*texture);
 		ghost.setTextureRect(brushRect);
 		ghost.setScale({ 64.0f / brushRect.size.x, 64.0f / brushRect.size.y });
@@ -449,11 +477,23 @@ private:
 
 	bool TriggerPanelVisible() const
 	{
-		return triggerMode && !spawnMode && selectedTrigger < document.map.triggers.size();
+		return mode == Mode::Trigger && selectedTrigger < document.map.triggers.size();
 	}
 	bool ObjectPanelVisible() const
 	{
-		return !triggerMode && !spawnMode && (!selectMode || selectedObject < document.map.objects.size());
+		return mode == Mode::Place || (mode == Mode::Select && selectedObject < document.map.objects.size());
+	}
+	static sf::FloatRect PropertiesBounds(float height)
+	{
+		return { { 960.0f, 70.0f + PanelOffset }, { 320.0f, height } };
+	}
+	bool IsOverTriggerPanel(sf::Vector2f position) const
+	{
+		return TriggerPanelVisible() && PropertiesBounds(590.0f).contains(position);
+	}
+	bool IsOverObjectPanel(sf::Vector2f position) const
+	{
+		return ObjectPanelVisible() && PropertiesBounds(200.0f).contains(position);
 	}
 
 	int TriggerEdgesAt(const TriggerZone& trigger, sf::Vector2f pos) const
@@ -501,6 +541,11 @@ private:
 	{
 		return !document.dirty || MessageBoxW(owner, L"Ungespeicherte Aenderungen verwerfen?", L"Map-Editor", MB_YESNO | MB_ICONWARNING) == IDYES;
 	}
+	bool ConfirmEditorClose() const
+	{
+		return document.dirty ? ConfirmDiscard() :
+			MessageBoxW(owner, L"Map-Editor wirklich schliessen?", L"Map-Editor", MB_YESNO | MB_ICONQUESTION) == IDYES;
+	}
 	static bool SafeName(const std::string& value)
 	{
 		return !value.empty() && std::all_of(value.begin(), value.end(), [](unsigned char c) { return std::isalnum(c) || c == '_' || c == '-'; });
@@ -538,10 +583,14 @@ private:
 			}
 			std::sort(entries.begin(), entries.end());
 		}
+		else if (type == TriggerDropdown::Effects)
+		{
+			entries = { "screen_shake" };
+			for (const auto& effect : GetMagicEffectDefinitions()) entries.push_back("magic_" + effect.id);
+		}
 		else
 		{
-			entries = { "screen_shake", "weather_none" };
-			for (const auto& effect : GetMagicEffectDefinitions()) entries.push_back("magic_" + effect.id);
+			entries = { "weather_none" };
 			for (const auto& effect : GetWeatherEffectDefinitions()) entries.push_back("weather_" + effect.id);
 		}
 		entries.insert(entries.begin(), NoTriggerEvent);
@@ -613,11 +662,12 @@ private:
 		}
 		else if (y >= 150 && y < 180) OpenTriggerDropdown(TriggerDropdown::Maps);
 		else if (y >= 205 && y < 235) OpenTriggerDropdown(TriggerDropdown::Effects);
-		else if (triggerDropdown == TriggerDropdown::None && y >= 310 && y < 344 && document.map.triggers[selectedTrigger].eventName.starts_with("Load_")) BeginTargetPick();
-		else if (y >= 480 && y < 508) ToggleTriggerGlow();
-		else if (triggerDropdown != TriggerDropdown::None && y >= 250 && y < 442)
+		else if (y >= 260 && y < 290) OpenTriggerDropdown(TriggerDropdown::Weather);
+		else if (triggerDropdown == TriggerDropdown::None && y >= 340 && y < 374 && document.map.triggers[selectedTrigger].eventName.starts_with("Load_")) BeginTargetPick();
+		else if (y >= 530 && y < 555) ToggleTriggerGlow();
+		else if (triggerDropdown != TriggerDropdown::None && y >= 300 && y < 492)
 		{
-			const std::size_t index = static_cast<std::size_t>(dropdownOffset + (y - 250) / 24);
+			const std::size_t index = static_cast<std::size_t>(dropdownOffset + (y - 300) / 24);
 			if (index < dropdownEntries.size())
 			{
 				auto& eventName = document.map.triggers[selectedTrigger].eventName;
@@ -726,7 +776,7 @@ private:
 	{
 		if (windowSize.x == 0u || windowSize.y == 0u) return { { 0.0f, 0.0f }, { 1.0f, 1.0f } };
 		const float windowRatio = static_cast<float>(windowSize.x) / static_cast<float>(windowSize.y);
-		constexpr float editorRatio = 1280.0f / 800.0f;
+		constexpr float editorRatio = EditorWidth / EditorHeight;
 		if (windowRatio > editorRatio)
 		{
 			const float width = editorRatio / windowRatio;
@@ -741,23 +791,19 @@ private:
 	}
 	sf::View EditorView(const sf::RenderWindow& window) const
 	{
-		sf::View view;
-		view.setSize({ 1280.0f, 800.0f });
-		view.setCenter({ 640.0f, 400.0f });
+		sf::View view(sf::FloatRect({ 0.0f, 0.0f }, { EditorWidth, EditorHeight }));
 		view.setViewport(EditorViewport(window.getSize()));
 		return view;
 	}
 	sf::View MapView(const sf::RenderWindow& window) const
 	{
 		const sf::FloatRect editorViewport = EditorViewport(window.getSize());
-		sf::View view;
-		view.setSize({ 1000.0f / zoom, 710.0f / zoom });
-		view.setCenter({ 500.0f / zoom, 355.0f / zoom });
+		sf::View view(sf::FloatRect({ 0.0f, 0.0f }, { MapWidth / zoom, MapHeight / zoom }));
 		view.setViewport({
-			{ editorViewport.position.x + (280.0f / 1280.0f) * editorViewport.size.x,
-			  editorViewport.position.y + (60.0f / 800.0f) * editorViewport.size.y },
-			{ (1000.0f / 1280.0f) * editorViewport.size.x,
-			  (710.0f / 800.0f) * editorViewport.size.y }
+			{ editorViewport.position.x + (BrowserWidth / EditorWidth) * editorViewport.size.x,
+			  editorViewport.position.y + (MapTop / EditorHeight) * editorViewport.size.y },
+			{ (MapWidth / EditorWidth) * editorViewport.size.x,
+			  (MapHeight / EditorHeight) * editorViewport.size.y }
 		});
 		return view;
 	}
@@ -767,7 +813,11 @@ private:
 	}
 	static bool IsMapArea(sf::Vector2f position)
 	{
-		return position.x >= 280.0f && position.x < 1280.0f && position.y >= 60.0f && position.y < 770.0f;
+		return sf::FloatRect({ BrowserWidth, MapTop }, { MapWidth, MapHeight }).contains(position);
+	}
+	static bool IsBrowserArea(sf::Vector2f position)
+	{
+		return sf::FloatRect({ 0.0f, MapTop }, { BrowserWidth, MapHeight }).contains(position);
 	}
 	bool PlaceSelectedSprite(sf::Vector2f position)
 	{
@@ -816,23 +866,27 @@ private:
 	sf::Vector2f WorldPosition(const sf::RenderWindow& window, sf::Vector2i pixel) const
 	{
 		const sf::Vector2f pos = window.mapPixelToCoords(pixel, MapView(window));
-		const int width = static_cast<int>(1000.0f / zoom), height = static_cast<int>(710.0f / zoom);
+		const int width = static_cast<int>(MapWidth / zoom), height = static_cast<int>(MapHeight / zoom);
 		return { pos.x + camera.x - width * 0.5f, pos.y + camera.y - height * 0.5f };
 	}
-	void ToggleSelectMode()
+	void SetMode(Mode next)
 	{
-		triggerMode = false;
-		selectedTrigger = static_cast<std::size_t>(-1);
-		triggerDropdown = TriggerDropdown::None;
-		draggingTrigger = creatingTrigger = false;
-		resizeEdges = 0;
-		selectMode = !selectMode;
-		spawnMode = false;
-		if (!selectMode)
+		if (mode == next) return;
+		if (next == Mode::Spawn) modeBeforeSpawn = mode;
+		else
 		{
-			selectedObject = static_cast<std::size_t>(-1);
-			draggingObject = false;
+			selectedObject = selectedTrigger = static_cast<std::size_t>(-1);
 		}
+		mode = next;
+		triggerDropdown = TriggerDropdown::None;
+		panning = draggingObject = draggingTrigger = creatingTrigger = false;
+		placementDragActive = hasLastPlacementPosition = sheetDragging = false;
+		resizeEdges = 0;
+	}
+	void ToggleMode(Mode next)
+	{
+		const Mode editingMode = mode == Mode::Spawn ? modeBeforeSpawn : mode;
+		SetMode(editingMode == next ? Mode::Place : next);
 	}
 	void HandleKey(sf::Keyboard::Key key, sf::RenderWindow& window)
 	{
@@ -852,19 +906,16 @@ private:
 			if (key == sf::Keyboard::Key::Escape) mapPropertiesOpen = false;
 			return;
 		}
-		if (key == sf::Keyboard::Key::Escape) { if (ConfirmDiscard()) window.close(); }
-		else if (key == sf::Keyboard::Key::Tab) ToggleSelectMode();
-		else if (key == sf::Keyboard::Key::G) ToggleSheet();
-		else if (key == sf::Keyboard::Key::P) { spawnMode = true; draggingTrigger = creatingTrigger = false; resizeEdges = 0; }
-		else if (key == sf::Keyboard::Key::T)
+		if (key == sf::Keyboard::Key::Escape)
 		{
-			triggerMode = !triggerMode; selectMode = false; spawnMode = false;
-			selectedObject = selectedTrigger = static_cast<std::size_t>(-1);
-			triggerDropdown = TriggerDropdown::None;
-			draggingTrigger = creatingTrigger = false;
-			resizeEdges = 0;
+			if (mode == Mode::Spawn) mode = modeBeforeSpawn;
+			else if (ConfirmEditorClose()) window.close();
 		}
-		else if (key == sf::Keyboard::Key::Delete && triggerMode)
+		else if (key == sf::Keyboard::Key::Tab) ToggleMode(Mode::Select);
+		else if (key == sf::Keyboard::Key::G) ToggleSheet();
+		else if (key == sf::Keyboard::Key::P) SetMode(Mode::Spawn);
+		else if (key == sf::Keyboard::Key::T) ToggleMode(Mode::Trigger);
+		else if (key == sf::Keyboard::Key::Delete && mode == Mode::Trigger)
 		{
 			if (selectedTrigger < document.map.triggers.size())
 			{
@@ -876,10 +927,10 @@ private:
 				document.dirty = true;
 			}
 		}
-		else if (key == sf::Keyboard::Key::Delete)
+		else if (key == sf::Keyboard::Key::Delete && mode != Mode::Spawn)
 		{
 			std::optional<std::size_t> target;
-			if (selectMode && selectedObject < document.map.objects.size())
+			if (mode == Mode::Select && selectedObject < document.map.objects.size())
 			{
 				target = selectedObject;
 			}
@@ -887,8 +938,7 @@ private:
 			{
 				const sf::Vector2i pixel = sf::Mouse::getPosition(window);
 				const sf::Vector2f position = EditorPosition(window, pixel);
-				const bool overPanel = ObjectPanelVisible() && position.x >= 960 && position.y >= 70 && position.y < 270;
-				if (!overPanel && position.x >= 280 && position.x < 1280 && position.y >= 60 && position.y < 770)
+				if (IsMapArea(position) && !IsOverObjectPanel(position))
 				{
 					const sf::Vector2f worldPosition = WorldPosition(window, pixel);
 					target = document.FindObjectAt(worldPosition.x, worldPosition.y);
@@ -900,6 +950,49 @@ private:
 				selectedObject = static_cast<std::size_t>(-1);
 				draggingObject = false;
 			}
+		}
+	}
+	static const RibbonButton* RibbonButtonAt(sf::Vector2f position)
+	{
+		for (const RibbonButton& button : RibbonButtons)
+			if (button.Bounds().contains(position)) return &button;
+		return nullptr;
+	}
+	bool RibbonButtonEnabled(const RibbonButton& button) const
+	{
+		return button.action != RibbonAction::ObjectType || mode == Mode::Place || mode == Mode::Select;
+	}
+	void CycleObjectType()
+	{
+		MapObject* object = mode == Mode::Select && selectedObject < document.map.objects.size() ? &document.map.objects[selectedObject] : nullptr;
+		MapObjectType& type = object ? object->type : newType;
+		type = type == MapObjectType::Scenery ? MapObjectType::Untergrund : type == MapObjectType::Untergrund ? MapObjectType::Wall : type == MapObjectType::Wall ? MapObjectType::Npc : MapObjectType::Scenery;
+		if (object)
+		{
+			if (type == MapObjectType::Scenery || type == MapObjectType::Untergrund)
+			{
+				object->x = SnapToGrid(object->x, 64);
+				object->y = SnapToGrid(object->y, 64);
+			}
+			document.dirty = true;
+		}
+	}
+	void HandleRibbonClick(sf::Vector2f position, GameState& game)
+	{
+		const RibbonButton* button = RibbonButtonAt(position);
+		if (!button || !RibbonButtonEnabled(*button)) return;
+		triggerDropdown = TriggerDropdown::None;
+		switch (button->action)
+		{
+		case RibbonAction::New: Open(true); break;
+		case RibbonAction::Open: Open(false); break;
+		case RibbonAction::Save: Save(); break;
+		case RibbonAction::Apply: Apply(game); break;
+		case RibbonAction::Properties: mapPropertiesOpen = true; mapWeatherOffset = 0; break;
+		case RibbonAction::ReloadAssets: RefreshAssets(); break;
+		case RibbonAction::SelectMode: SetMode(button->targetMode); break;
+		case RibbonAction::ObjectType: CycleObjectType(); break;
+		case RibbonAction::Sheet: ToggleSheet(); break;
 		}
 	}
 	void HandlePress(const sf::Event::MouseButtonPressed& event, sf::RenderWindow& window, GameState& game)
@@ -946,16 +1039,16 @@ private:
 			if (event.button == sf::Mouse::Button::Left) HandleMapPropertiesClick(position);
 			return;
 		}
-		if (TriggerPanelVisible() && x >= 960 && y >= 70 && y < 580)
+		if (IsOverTriggerPanel(position))
 		{
-			if (event.button == sf::Mouse::Button::Left) HandleTriggerPanelClick(x, y);
+			if (event.button == sf::Mouse::Button::Left) HandleTriggerPanelClick(x, y - PanelOffset);
 			return;
 		}
-		if (ObjectPanelVisible() && x >= 960 && y >= 70 && y < 270)
+		if (IsOverObjectPanel(position))
 		{
-			if (event.button == sf::Mouse::Button::Left && x >= 970 && x < 1270 && y >= 150 && y < 180)
+			if (event.button == sf::Mouse::Button::Left && x >= 970 && x < 1270 && y >= 150 + PanelOffset && y < 180 + PanelOffset)
 			{
-				if (selectMode)
+				if (mode == Mode::Select)
 				{
 					auto& object = document.map.objects[selectedObject];
 					object.solid = !object.solid;
@@ -965,71 +1058,37 @@ private:
 			}
 			return;
 		}
-		if (event.button == sf::Mouse::Button::Middle && x >= 280 && y >= 60 && y < 770)
+		if (event.button == sf::Mouse::Button::Middle && IsMapArea(position))
 		{ panning = true; lastMouse = position; return; }
 		if (event.button != sf::Mouse::Button::Left) return;
+		if (position.y < MapTop)
+		{
+			HandleRibbonClick(position, game);
+			return;
+		}
 		triggerDropdown = TriggerDropdown::None;
-		if (y < 50)
+		if (IsBrowserArea(position) && y >= BrowserFirstRow && y < BrowserFirstRow + BrowserRows * BrowserRowHeight)
 		{
-			if (x < 100) Open(true);
-			else if (x < 200) Open(false);
-			else if (x < 300) Save();
-			else if (x < 450) Apply(game);
-			else if (x < 560) RefreshAssets();
-			else if (x < 820)
-			{
-				mapPropertiesOpen = true;
-				mapWeatherOffset = 0;
-			}
-			else if (x < 940 && triggerMode)
-			{
-				OpenTriggerDropdown(TriggerDropdown::Effects);
-			}
-			else if (x < 1040 && triggerMode)
-			{
-				ToggleTriggerGlow();
-			}
-			else if (x < 940)
-			{
-				MapObjectType& type = selectedObject < document.map.objects.size() ? document.map.objects[selectedObject].type : newType;
-				type = type == MapObjectType::Scenery ? MapObjectType::Untergrund : type == MapObjectType::Untergrund ? MapObjectType::Wall : type == MapObjectType::Wall ? MapObjectType::Npc : MapObjectType::Scenery;
-				if (selectedObject < document.map.objects.size())
-				{
-					MapObject& object = document.map.objects[selectedObject];
-					if (type == MapObjectType::Scenery || type == MapObjectType::Untergrund) { object.x = SnapToGrid(object.x, 64); object.y = SnapToGrid(object.y, 64); }
-					document.dirty = true;
-				}
-			}
-			else if (x < 1040) { }
-			else if (x < 1150) HandleKey(sf::Keyboard::Key::P, window);
-			else ToggleSelectMode();
-			return;
-		}
-		if (x < 280 && y >= 764 && y < 796)
-		{
-			ToggleSheet();
-			return;
-		}
-		if (x < 280 && y >= 720 && y < 760)
-		{
-			HandleKey(sf::Keyboard::Key::T, window);
-			return;
-		}
-		if (x < 280 && y >= 100 && y < 100 + 17 * 36)
-		{
-			const std::size_t index = static_cast<std::size_t>(browser.offset + (y - 100) / 36);
+			const std::size_t index = static_cast<std::size_t>(browser.offset + (y - BrowserFirstRow) / BrowserRowHeight);
 			if (index < browser.visible.size())
 			{
 				const auto entry = browser.visible[index];
 				if (entry.folder) browser.Toggle(entry.path);
-				else { browser.selected = entry.path; brushTile = false; sheetScrollX = sheetScrollY = 0.0f; sheetDragging = false; selectedObject = selectedTrigger = static_cast<std::size_t>(-1); selectMode = triggerMode = spawnMode = false; draggingTrigger = creatingTrigger = false; resizeEdges = 0; placementDragActive = true; }
+				else
+				{
+					SetMode(Mode::Place);
+					browser.selected = entry.path;
+					brushTile = sheetDragging = false;
+					sheetScrollX = sheetScrollY = 0.0f;
+					placementDragActive = true;
+				}
 			}
 			return;
 		}
-		if (x < 280 || y < 60 || y >= 770 || document.path.empty()) return;
-		sf::Vector2f pos = WorldPosition(window, event.position);
-		if (spawnMode) { spawn = pos; spawnMode = false; return; }
-		if (triggerMode)
+		if (!IsMapArea(position) || document.path.empty()) return;
+		const sf::Vector2f pos = WorldPosition(window, event.position);
+		if (mode == Mode::Spawn) { spawn = pos; mode = modeBeforeSpawn; return; }
+		if (mode == Mode::Trigger)
 		{
 			if (selectedTrigger < document.map.triggers.size())
 			{
@@ -1069,7 +1128,7 @@ private:
 			}
 			return;
 		}
-		if (selectMode)
+		if (mode == Mode::Select)
 		{
 			const auto object = document.FindObjectAt(pos.x, pos.y);
 			selectedObject = object.value_or(static_cast<std::size_t>(-1));
@@ -1082,6 +1141,20 @@ private:
 	static const char* TypeName(MapObjectType type)
 	{
 		return type == MapObjectType::Untergrund ? "untergrund" : type == MapObjectType::Wall ? "wall" : type == MapObjectType::Npc ? "npc" : "scenery";
+	}
+	std::string ObjectTypeHelp() const
+	{
+		const MapObject* object = mode == Mode::Select && selectedObject < document.map.objects.size() ? &document.map.objects[selectedObject] : nullptr;
+		const MapObjectType type = object ? object->type : newType;
+		const std::string prefix = std::string(TypeName(type)) + " - ";
+		switch (type)
+		{
+		case MapObjectType::Scenery: return prefix + "Deko; Positionen beim Platzieren/Verschieben im 64-Pixel-Raster. Kollision nur ueber Solid.";
+		case MapObjectType::Untergrund: return prefix + "Bodenobjekt; Positionen im 64-Pixel-Raster. Kollision nur ueber Solid.";
+		case MapObjectType::Wall: return prefix + "Barriere ohne Rasterbindung; blockiert nur, wenn Solid aktiv ist.";
+		case MapObjectType::Npc: return prefix + "Charakterkategorie ohne Rasterbindung; Kollision nur ueber Solid.";
+		}
+		return prefix;
 	}
 	void HandleMapPropertiesClick(sf::Vector2f position)
 	{
@@ -1157,38 +1230,86 @@ private:
 		if (weatherCount > visibleRows)
 			Label(window, font, std::to_string(mapWeatherOffset + 1) + "-" + std::to_string(mapWeatherOffset + visibleRows) + " / " + std::to_string(weatherCount), 440, 610, 12);
 	}
-	static void Label(sf::RenderTarget& target, const sf::Font& font, const std::string& text, float x, float y, unsigned int size = 14)
+	static void Label(sf::RenderTarget& target, const sf::Font& font, const std::string& text, float x, float y, unsigned int size = 14, sf::Color color = sf::Color::White)
 	{
 		sf::Text label(font, text, size);
 		label.setPosition({ x, y });
+		label.setFillColor(color);
 		target.draw(label);
+	}
+	static void FillRect(sf::RenderTarget& target, sf::FloatRect bounds, sf::Color color)
+	{
+		sf::RectangleShape rect(bounds.size);
+		rect.setPosition(bounds.position);
+		rect.setFillColor(color);
+		target.draw(rect);
+	}
+	void DrawRibbon(sf::RenderWindow& window, const sf::Font& font) const
+	{
+		const sf::Color ink(29, 47, 70), muted(76, 96, 119), divider(195, 207, 220), accent(35, 94, 157);
+		FillRect(window, { { 0, 0 }, { EditorWidth, MapTop } }, sf::Color(240, 244, 249));
+		FillRect(window, { { 0, 63 }, { EditorWidth, MapTop - 63 } }, sf::Color(225, 235, 247));
+		FillRect(window, { { 0, 62 }, { EditorWidth, 1 } }, divider);
+		FillRect(window, { { 0, MapTop - 1 }, { EditorWidth, 1 } }, divider);
+		if (pickingTarget)
+		{
+			Label(window, font, "Zielkarte: " + document.map.triggers[selectedTrigger].eventName.substr(5), 10, 16, 18, ink);
+			Label(window, font, "Klick: Zielposition setzen. Esc: abbrechen. WASD/Pfeile oder Mitteltaste: Ansicht bewegen. Mausrad: Zoom.", 10, 66, 14, ink);
+			return;
+		}
+		const RibbonButton* hovered = !mapPropertiesOpen && !renameTriggerOpen && window.hasFocus() ?
+			RibbonButtonAt(EditorPosition(window, sf::Mouse::getPosition(window))) : nullptr;
+		const RibbonButton* activeMode = nullptr;
+		for (const RibbonButton& button : RibbonButtons)
+		{
+			const bool active = button.action == RibbonAction::SelectMode && mode == button.targetMode;
+			const bool checked = active || (button.action == RibbonAction::Sheet && sheetWindow);
+			const bool enabled = RibbonButtonEnabled(button);
+			if (active) activeMode = &button;
+			const auto bounds = button.Bounds();
+			FillRect(window, bounds, checked ? accent : enabled && hovered == &button ? sf::Color(222, 234, 249) : divider);
+			if (!checked)
+				FillRect(window, { bounds.position + sf::Vector2f(1, 1), bounds.size - sf::Vector2f(2, 2) },
+					enabled && hovered == &button ? sf::Color(222, 234, 249) : enabled ? sf::Color::White : sf::Color(235, 239, 244));
+			sf::Text text(font, button.label, 13);
+			if (text.getLocalBounds().size.x > bounds.size.x - 8.0f) text.setCharacterSize(11);
+			const auto textBounds = text.getLocalBounds();
+			text.setPosition(bounds.position + (bounds.size - textBounds.size) * 0.5f - textBounds.position);
+			text.setFillColor(checked ? sf::Color::White : enabled ? ink : muted);
+			window.draw(text);
+		}
+		for (float x : { 235.0f, 510.0f, 942.0f })
+			FillRect(window, { { x, 7 }, { 1, 48 } }, divider);
+		Label(window, font, "DATEI", 10, 45, 11, muted);
+		Label(window, font, "KARTE", 244, 45, 11, muted);
+		Label(window, font, "BEARBEITUNGSMODUS", 519, 45, 11, muted);
+		Label(window, font, "WERKZEUGE", 951, 45, 11, muted);
+		const RibbonButton* hint = hovered ? hovered : activeMode;
+		if (hint)
+		{
+			std::string description = RibbonButtonEnabled(*hint) ? hint->help : "Verfuegbar beim Platzieren oder Auswaehlen von Objekten.";
+			if (hint->action == RibbonAction::ObjectType && RibbonButtonEnabled(*hint))
+				description = ObjectTypeHelp();
+			Label(window, font, std::string(hint->label) + ": " + description, 10, 66, 14, ink);
+		}
 	}
 	void DrawObjectPanel(sf::RenderWindow& window, const sf::Font& font) const
 	{
 		if (!ObjectPanelVisible()) return;
-		const MapObject* object = selectMode ? &document.map.objects[selectedObject] : nullptr;
+		const MapObject* object = mode == Mode::Select ? &document.map.objects[selectedObject] : nullptr;
 		const bool solid = object ? object->solid : newSolid;
-		sf::RectangleShape panel({ 320, 200 });
-		panel.setPosition({ 960, 70 });
-		panel.setFillColor(sf::Color(35, 38, 45, 245));
-		window.draw(panel);
+		FillRect(window, PropertiesBounds(200.0f), sf::Color(35, 38, 45, 245));
 		std::string title = object ? "OBJEKT: " + object->id : "NEUE OBJEKTE";
 		if (title.size() > 33) title = title.substr(0, 30) + "...";
-		Label(window, font, title, 970, 80, 14);
-		Label(window, font, std::string("Typ: ") + TypeName(object ? object->type : newType), 970, 105, 13);
-		sf::RectangleShape box({ 20, 20 });
-		box.setPosition({ 970, 152 });
-		box.setFillColor(sf::Color(185, 190, 195));
-		window.draw(box);
-		box.setSize({ 16, 16 });
-		box.setPosition({ 972, 154 });
-		box.setFillColor(solid ? sf::Color(70, 145, 150) : sf::Color(35, 38, 45));
-		window.draw(box);
-		if (solid) Label(window, font, "X", 975, 152, 14);
-		Label(window, font, "Solid aktivieren", 998, 153, 14);
-		Label(window, font, "Blockiert die Spielerfigur bei", 970, 190, 13);
-		Label(window, font, "Kollision; unabhaengig vom Typ.", 970, 208, 13);
-		if (!object) Label(window, font, "Vorgabe fuer neu platzierte Objekte.", 970, 236, 13);
+		Label(window, font, title, 970, 80 + PanelOffset, 14);
+		Label(window, font, std::string("Typ: ") + TypeName(object ? object->type : newType), 970, 105 + PanelOffset, 13);
+		FillRect(window, { { 970, 152 + PanelOffset }, { 20, 20 } }, sf::Color(185, 190, 195));
+		FillRect(window, { { 972, 154 + PanelOffset }, { 16, 16 } }, solid ? sf::Color(70, 145, 150) : sf::Color(35, 38, 45));
+		if (solid) Label(window, font, "X", 975, 152 + PanelOffset, 14);
+		Label(window, font, "Solid aktivieren", 998, 153 + PanelOffset, 14);
+		Label(window, font, "Blockiert die Spielerfigur bei", 970, 190 + PanelOffset, 13);
+		Label(window, font, "Kollision; unabhaengig vom Typ.", 970, 208 + PanelOffset, 13);
+		if (!object) Label(window, font, "Vorgabe fuer neu platzierte Objekte.", 970, 236 + PanelOffset, 13);
 	}
 	void DrawTriggerPanel(sf::RenderWindow& window, const sf::Font& font) const
 	{
@@ -1196,53 +1317,66 @@ private:
 		const auto& trigger = document.map.triggers[selectedTrigger];
 		auto rectangle = [&](float x, float y, float width, float height, sf::Color color)
 		{
-			sf::RectangleShape shape({ width, height }); shape.setPosition({ x, y }); shape.setFillColor(color); window.draw(shape);
+			FillRect(window, { { x, y + PanelOffset }, { width, height } }, color);
+		};
+		auto panelLabel = [&](const std::string& text, float x, float y, unsigned int size)
+		{
+			Label(window, font, text, x, y + PanelOffset, size);
 		};
 		auto shortText = [](const std::string& text)
 		{
 			return text.size() > 30 ? text.substr(0, 27) + "..." : text;
 		};
-		rectangle(960, 70, 320, 510, sf::Color(35, 38, 45, 245));
+		FillRect(window, PropertiesBounds(590.0f), sf::Color(35, 38, 45, 245));
 		const bool noEvent = trigger.eventName == NoTriggerEvent;
+		const bool mapEvent = trigger.eventName.starts_with("Load_");
+		const bool weatherEvent = trigger.eventName.starts_with("weather_");
 		const std::string title = trigger.id.size() > 15 ? trigger.id.substr(0, 12) + "..." : trigger.id;
-		Label(window, font, "TRIGGER: " + title, 970, 80, 14);
+		panelLabel("TRIGGER: " + title, 970, 80, 14);
 		rectangle(1165, 75, 105, 25, sf::Color(65, 70, 80));
-		Label(window, font, "Umbenennen", 1170, 80, 12);
-		Label(window, font, "Ereignis: " + (noEvent ? std::string("Kein Ereignis") : shortText(trigger.eventName)), 970, 105, 13);
-		Label(window, font, "Load Map", 970, 130, 13);
+		panelLabel("Umbenennen", 1170, 80, 12);
+		panelLabel("Ereignis: " + (noEvent ? std::string("Kein Ereignis") : shortText(trigger.eventName)), 970, 105, 13);
+		panelLabel("Kartenwechsel", 970, 130, 13);
 		rectangle(970, 150, 300, 30, sf::Color(65, 70, 80));
-		Label(window, font, noEvent ? "Kein Ereignis  v" : trigger.eventName.starts_with("Load_") ? shortText(trigger.eventName.substr(5)) + "  v" : "Karte auswaehlen  v", 978, 156, 13);
-		Label(window, font, "Effekte", 970, 185, 13);
+		panelLabel(noEvent ? "Kein Ereignis  v" : mapEvent ? shortText(trigger.eventName.substr(5)) + "  v" : "Karte auswaehlen  v", 978, 156, 13);
+		panelLabel("Effekte", 970, 185, 13);
 		rectangle(970, 205, 300, 30, sf::Color(65, 70, 80));
-		Label(window, font, noEvent ? "Kein Ereignis  v" : !trigger.eventName.starts_with("Load_") ? shortText(trigger.eventName) + "  v" : "Effekt auswaehlen  v", 978, 211, 13);
+		panelLabel(noEvent ? "Kein Ereignis  v" : !mapEvent && !weatherEvent ? shortText(trigger.eventName) + "  v" : "Effekt auswaehlen  v", 978, 211, 13);
+		panelLabel("Wetter", 970, 240, 13);
+		rectangle(970, 260, 300, 30, sf::Color(65, 70, 80));
+		panelLabel(noEvent ? "Kein Ereignis  v" : weatherEvent ? shortText(trigger.eventName.substr(8)) + "  v" : "Wetter auswaehlen  v", 978, 266, 13);
 		if (triggerDropdown != TriggerDropdown::None)
 		{
 			for (int row = 0; row < 8 && dropdownOffset + row < static_cast<int>(dropdownEntries.size()); ++row)
 			{
 				const auto& entry = dropdownEntries[static_cast<std::size_t>(dropdownOffset + row)];
-				const float y = static_cast<float>(250 + row * 24);
+				const float y = static_cast<float>(300 + row * 24);
 				rectangle(970, y, 300, 23, entry == trigger.eventName ? sf::Color(70, 105, 110) : sf::Color(60, 64, 72));
-				Label(window, font, entry == NoTriggerEvent ? "Kein Ereignis" : shortText(triggerDropdown == TriggerDropdown::Maps ? entry.substr(5) : entry), 978, y + 3, 13);
+				const std::string label = entry == NoTriggerEvent ? "Kein Ereignis" :
+					triggerDropdown == TriggerDropdown::Maps ? entry.substr(5) :
+					triggerDropdown == TriggerDropdown::Weather ? entry.substr(8) : entry;
+				panelLabel(shortText(label), 978, y + 3, 13);
 			}
-			Label(window, font, "Mausrad: Liste scrollen", 970, 448, 12);
+			panelLabel("Mausrad: Liste scrollen", 970, 500, 12);
 		}
 		else
 		{
-			Label(window, font, "Ein Trigger hat hoechstens ein Ereignis.", 970, 255, 13);
-			if (trigger.eventName.starts_with("Load_"))
+			panelLabel("Ein Trigger hat hoechstens ein Ereignis.", 970, 300, 13);
+			if (mapEvent)
 			{
-				Label(window, font, "Zielposition: " + std::to_string(trigger.spawnX) + ", " + std::to_string(trigger.spawnY), 970, 280, 12);
-				rectangle(970, 310, 300, 34, sf::Color(65, 70, 80));
-				Label(window, font, "Zielposition auf Karte waehlen", 978, 319, 13);
+				panelLabel("Zielposition: " + std::to_string(trigger.spawnX) + ", " + std::to_string(trigger.spawnY), 970, 320, 12);
+				rectangle(970, 340, 300, 34, sf::Color(65, 70, 80));
+				panelLabel("Zielposition auf Karte waehlen", 978, 349, 13);
 			}
 		}
-		rectangle(970, 482, 20, 20, sf::Color(185, 190, 195));
-		rectangle(972, 484, 16, 16, trigger.glow ? sf::Color(70, 145, 150) : sf::Color(35, 38, 45));
-		if (trigger.glow) Label(window, font, "X", 975, 482, 14);
-		Label(window, font, "Glow aktivieren", 998, 483, 14);
-		Label(window, font, "Laesst die Zone sichtbar pulsieren,", 970, 515, 13);
-		Label(window, font, "auch im Release. Nur Darstellung;", 970, 533, 13);
-		Label(window, font, "aendert weder Ereignis noch Kollision.", 970, 551, 13);
+		rectangle(970, 530, 20, 20, sf::Color(185, 190, 195));
+		rectangle(972, 532, 16, 16, trigger.glow ? sf::Color(70, 145, 150) : sf::Color(35, 38, 45));
+		if (trigger.glow) panelLabel("X", 975, 530, 14);
+		panelLabel("Glow aktivieren", 998, 531, 14);
+		panelLabel("Laesst die Zone sichtbar pulsieren,", 970, 563, 13);
+		panelLabel("auch im Release. Nur Darstellung;", 970, 581, 13);
+		panelLabel("aendert weder Ereignis noch Kollision.", 970, 599, 13);
+		panelLabel("Umschalt + Ziehen: auch am Rand bewegen.", 970, 632, 12);
 	}
 	void DrawRenameTriggerDialog(sf::RenderWindow& window, const sf::Font& font) const
 	{
@@ -1266,9 +1400,10 @@ private:
 	}
 	void DrawPlacementPreview(sf::RenderWindow& window, float left, float top)
 	{
-		if (browser.selected.empty() || triggerMode || selectMode || spawnMode) return;
+		if (browser.selected.empty() || mode != Mode::Place || sheetDragging) return;
 		const sf::Vector2i pixel = sf::Mouse::getPosition(window);
-		if (!IsMapArea(EditorPosition(window, pixel))) return;
+		const sf::Vector2f mouse = EditorPosition(window, pixel);
+		if (!IsMapArea(mouse) || IsOverObjectPanel(mouse)) return;
 		sf::Vector2f position = WorldPosition(window, pixel);
 		if (newType == MapObjectType::Scenery || newType == MapObjectType::Untergrund)
 		{
@@ -1296,7 +1431,7 @@ private:
 	{
 		window.clear(sf::Color(22, 34, 26));
 		window.setView(MapView(window));
-		Viewport viewport{ static_cast<int>(1000.0f / zoom), static_cast<int>(710.0f / zoom) };
+		Viewport viewport{ static_cast<int>(MapWidth / zoom), static_cast<int>(MapHeight / zoom) };
 		GameState preview;
 		preview.activeMap = pickingTarget ? targetMap : document.map;
 		preview.player.x = camera.x; preview.player.y = camera.y;
@@ -1317,7 +1452,7 @@ private:
 		marker.setPosition({ markerPosition.x - left, markerPosition.y - top });
 		marker.setFillColor(sf::Color::Cyan);
 		window.draw(marker);
-		if (!pickingTarget && selectedObject < document.map.objects.size())
+		if (!pickingTarget && mode == Mode::Select && selectedObject < document.map.objects.size())
 		{
 			const auto& item = document.map.objects[selectedObject];
 			sf::RectangleShape selection({ 64, 64 });
@@ -1328,7 +1463,7 @@ private:
 			selection.setOutlineThickness(2.0f / zoom);
 			window.draw(selection);
 		}
-		if (!pickingTarget && triggerMode && selectedTrigger < document.map.triggers.size())
+		if (!pickingTarget && TriggerPanelVisible())
 		{
 			const auto& trigger = document.map.triggers[selectedTrigger];
 			sf::RectangleShape selection({ trigger.width, trigger.height });
@@ -1351,41 +1486,25 @@ private:
 		}
 		if (!pickingTarget) DrawPlacementPreview(window, left, top);
 		window.setView(EditorView(window));
+		FillRect(window, { { 0, MapTop }, { BrowserWidth, MapHeight } }, sf::Color(40, 43, 48));
+		FillRect(window, { { 0, StatusTop }, { EditorWidth, EditorHeight - StatusTop } }, sf::Color(35, 38, 45));
+		DrawRibbon(window, font);
 		if (pickingTarget)
 		{
-			sf::RectangleShape bar({ 1280, 60 }); bar.setFillColor(sf::Color(35, 38, 45)); window.draw(bar);
-			sf::RectangleShape side({ 280, 740 }); side.setPosition({ 0, 60 }); side.setFillColor(sf::Color(40, 43, 48)); window.draw(side);
-			Label(window, font, "ZIELKARTE: " + document.map.triggers[selectedTrigger].eventName.substr(5), 10, 15, 16);
-			Label(window, font, "Klick: Zielposition waehlen", 10, 80, 13);
-			Label(window, font, "Esc: Abbrechen", 10, 100, 13);
-			Label(window, font, "WASD/Pfeile oder Mitteltaste:", 10, 130, 12);
-			Label(window, font, "Ansicht bewegen", 10, 148, 12);
-			Label(window, font, "Mausrad: Zoom", 10, 170, 12);
+			Label(window, font, "VORSCHAU", 10, MapTop + 10);
+			Label(window, font, "Die Zielkarte wird nicht bearbeitet.", 10, MapTop + 36, 13);
 			window.setTitle("Map-Editor - Zielposition waehlen");
 			window.display();
 			return;
 		}
-		sf::RectangleShape bar({ 1280, 60 }); bar.setFillColor(sf::Color(35, 38, 45)); window.draw(bar);
-		sf::RectangleShape side({ 280, 740 }); side.setPosition({ 0, 60 }); side.setFillColor(sf::Color(40, 43, 48)); window.draw(side);
-		const char* buttons[] = { "Neu", "Oeffnen", "Speichern", "Im Spiel uebernehmen", "Assets neu", "Map Eigenschaften", triggerMode ? "Effekt" : "Typ", triggerMode ? "Glow" : "", "Startpunkt", "Modus" };
-		const float positions[] = { 5, 105, 205, 305, 455, 565, 825, 945, 1045, 1155 };
-		const float ends[] = { 100, 200, 300, 450, 560, 820, 940, 1040, 1150, 1280 };
-		for (int i = 0; i < 10; ++i)
-		{
-			if (buttons[i][0] == '\0') continue;
-			sf::RectangleShape button({ ends[i] - positions[i] - 4, 38 });
-			button.setPosition({ positions[i], 5 });
-			button.setFillColor(sf::Color(65, 70, 80));
-			window.draw(button);
-			Label(window, font, buttons[i], positions[i] + 3, 15, 13);
-		}
-		Label(window, font, "SPRITES (Mausrad)", 8, 70);
-		for (int row = 0; row < 17 && browser.offset + row < static_cast<int>(browser.visible.size()); ++row)
+		Label(window, font, "SPRITES (Mausrad)", 8, MapTop + 9);
+		for (int row = 0; row < BrowserRows && browser.offset + row < static_cast<int>(browser.visible.size()); ++row)
 		{
 			const auto& entry = browser.visible[static_cast<std::size_t>(browser.offset + row)];
-			const float y = static_cast<float>(100 + row * 36);
+			const float y = static_cast<float>(BrowserFirstRow + row * BrowserRowHeight);
 			const float indent = static_cast<float>((std::min)(entry.depth, 6) * 16);
-			if (!entry.folder && entry.path == browser.selected) { sf::RectangleShape highlight({ 278, 35 }); highlight.setPosition({ 0, y }); highlight.setFillColor(sf::Color(75, 85, 100)); window.draw(highlight); }
+			if (!entry.folder && entry.path == browser.selected)
+				FillRect(window, { { 0, y }, { BrowserWidth - 2, BrowserRowHeight - 1 } }, sf::Color(53, 79, 111));
 			if (!entry.folder)
 			{
 				if (sf::Texture* texture = GetCachedTexture(entry.path))
@@ -1401,37 +1520,27 @@ private:
 			if (name.size() > limit) name = name.substr(0, limit - 3) + "...";
 			Label(window, font, name, (entry.folder ? 8.0f : 38.0f) + indent, y + 7, 12);
 		}
-		sf::RectangleShape triggerButton({ 270, 36 });
-		triggerButton.setPosition({ 5, 720 });
-		triggerButton.setFillColor(triggerMode ? sf::Color(70, 105, 110) : sf::Color(65, 70, 80));
-		window.draw(triggerButton);
-		Label(window, font, "Trigger-Werkzeug (T)", 12, 730, 14);
-		sf::RectangleShape sheetButton({ 270, 32 });
-		sheetButton.setPosition({ 5, 764 });
-		sheetButton.setFillColor(sheetWindow ? sf::Color(70, 105, 110) : sf::Color(65, 70, 80));
-		window.draw(sheetButton);
-		Label(window, font, "Sheet-Ansicht (G)", 12, 772, 14);
+		DrawSheetGhost(window);
 		DrawTriggerPanel(window, font);
 		DrawObjectPanel(window, font);
-		DrawSheetGhost(window);
 		DrawMapPropertiesPanel(window, font);
 		DrawRenameTriggerDialog(window, font);
-		const MapObject* selected = selectedObject < document.map.objects.size() ? &document.map.objects[selectedObject] : nullptr;
-		std::string info = std::string(spawnMode ? "Startpunkt: Klick auf Karte" : selectMode ? "Auswaehlen/Verschieben" : "Platzieren") + " | Typ: " + TypeName(selected ? selected->type : newType) + " | solid=" + ((selected ? selected->solid : newSolid) ? "1" : "0") + " | Wetter: " + document.map.defaultWeather;
-		if (selected) info += " | " + selected->id + " (" + std::to_string(static_cast<int>(selected->x)) + ", " + std::to_string(static_cast<int>(selected->y)) + ")";
-		if (triggerMode && !spawnMode)
+		const sf::Color statusText(211, 222, 236);
+		Label(window, font, "Wetter: " + document.map.defaultWeather, 10, StatusTop + 6, 12, statusText);
+		if (TriggerPanelVisible())
 		{
-			info = "Trigger: Freie Stelle ziehen = neu | Zone ziehen = verschieben | Entf = loeschen";
-			if (selectedTrigger < document.map.triggers.size())
-			{
-				const auto& trigger = document.map.triggers[selectedTrigger];
-				info = trigger.id + " | " + trigger.eventName + " | glow=" + (trigger.glow ? "1" : "0") + " | " + std::to_string(static_cast<int>(trigger.width)) + " x " + std::to_string(static_cast<int>(trigger.height)) + " | Rand ziehen = Groesse";
-			}
+			const auto& trigger = document.map.triggers[selectedTrigger];
+			Label(window, font, "Zonengroesse: " + std::to_string(static_cast<int>(trigger.width)) + " x " + std::to_string(static_cast<int>(trigger.height)), BrowserWidth + 10, StatusTop + 6, 12, statusText);
 		}
-		Label(window, font, info, 285, 773, 12);
+		else if (mode == Mode::Select && selectedObject < document.map.objects.size())
+		{
+			const auto& object = document.map.objects[selectedObject];
+			Label(window, font, "Objektposition: " + std::to_string(static_cast<int>(object.x)) + ", " + std::to_string(static_cast<int>(object.y)), BrowserWidth + 10, StatusTop + 6, 12, statusText);
+		}
+		Label(window, font, "WASD / Pfeile / Mitteltaste: Ansicht bewegen    |    Mausrad: Zoom", 805, StatusTop + 6, 12, statusText);
 		std::string title = document.path.empty() ? "Keine Karte" : document.path.filename().string();
 		if (document.dirty) title += " *";
-		window.setTitle("Map-Editor - " + title + " | Spielordner: " + root.string() + " | T: Trigger, Tab: Objekte, P: Startpunkt, Entf: Loeschen, Mitteltaste: Verschieben");
+		window.setTitle("Map-Editor - " + title + " | Spielordner: " + root.string());
 		window.display();
 	}
 };

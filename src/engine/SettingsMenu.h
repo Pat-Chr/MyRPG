@@ -9,6 +9,7 @@
 #include "MenuFont.h"
 #include "SettingsStore.h"
 
+// Wendet Fensteroptionen direkt an; das Speichern bei SettingsChanged übernimmt der Aufrufer.
 class SettingsMenu
 {
 public:
@@ -24,6 +25,7 @@ public:
 		const auto found = std::find(GameSettings::fpsLimits.begin(), GameSettings::fpsLimits.end(), settings.fpsLimit);
 		fpsLimitIndex = static_cast<std::size_t>(std::distance(GameSettings::fpsLimits.begin(), found));
 		window.setVerticalSyncEnabled(verticalSync);
+		// VSync setzt nur das aktive Limit aus; die gewählte Stufe bleibt gespeichert.
 		window.setFramerateLimit(verticalSync ? 0u : settings.fpsLimit);
 	}
 

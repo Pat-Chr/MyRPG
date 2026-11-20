@@ -81,14 +81,13 @@ inline MapObjectType ParseMapObjectType(const std::string& value)
 }
 
 /**
- * @brief Rundet eine Koordinaten auf das nächste Grid-Gitter.
- * 
- * Wird verwendet, um Positionsdaten von NPCs oder Scenery-Objekten
- * an das 64px-Grid des Spiels zu schnappen (Snap-to-Grid).
- * 
- * @param value Die Roh-Koordinate, die gerundet werden soll.
- * @param gridSize Die Größe eines Grid-Zells in Pixeln (Standard: 64).
- * @return float Die auf das nächste Grid gerundete Koordinate.
+ * @brief Rundet eine Koordinate auf das vorgegebene Raster.
+ *
+ * Der Kartenlader nutzt das 64-Pixel-Raster nur für Untergrund und Scenery.
+ *
+ * @param value Koordinate vor dem Runden.
+ * @param gridSize Rasterabstand in Pixeln.
+ * @return Gerundete Koordinate.
  */
 inline float SnapToGrid(float value, float gridSize)
 {
@@ -96,30 +95,15 @@ inline float SnapToGrid(float value, float gridSize)
 }
 
 /**
- * @brief Lädt eine Map-Datei aus einer Textdatei und parsst sie in ein MapData-Objekt.
- * 
- * Unterstützt folgende Keywords im Dateiformat:
- * - MAP ID         : Setzt die Map-ID
- * - GROUND path    : Setzt den Pfad zum Boden-Sprite
- * - WEATHER none|<shaderName> : Setzt das Standardwetter
- * - OBJECT id type x y spritePath solid=0|1 : Lädt ein Objekt (wird auf Grid gesnapped)
- * - TRIGGER id x y width height eventName [glow=0|1] [spawn_x=x spawn_y=y] : Definiert eine Trigger-Zone
- * 
- * Zeilen, die leer sind oder mit '#' beginnen, werden ignoriert.
- * 
- * @param filePath Der Pfad zur Map-Textdatei.
- * @param outMap Referenz auf das MapData-Objekt zum Ausfüllen.
- * @return true Wenn die Map erfolgreich geladen wurde (MAP ID vorhanden).
- * @return false Wenn die Datei nicht gefunden, leer oder ohne MAP ID ist.
- * 
- * Beispiel Dateiformat:
- * # This is a comment
- * MAP my_level_01
- * GROUND grass.png
- * OBJECT 1 npc 128 64 player_sprite.png solid=1
- * OBJECT 2 wall 320 480 stone_wall.png solid=1
- * OBJECT 3 untergrund 0 0 ground_tile.png solid=0
- * TRIGGER 5 100 200 150 on_level_complete
+ * @brief Lädt eine Karte im Textformat (siehe DesignDocument.md).
+ *
+ * Eine MAP-ID ist Pflicht. Unlesbare OBJECT- und TRIGGER-Grunddaten werden
+ * übersprungen; ungültige WEATHER-, Glow- oder Spawn-Angaben brechen das Laden ab.
+ * Spawn-Koordinaten müssen paarweise angegeben werden.
+ *
+ * @param filePath Pfad zur Kartendatei.
+ * @param outMap Wird nur nach erfolgreichem Laden ersetzt.
+ * @return true, wenn die Karte geladen wurde.
  */
 inline bool TryLoadMapFromFile(const std::string& filePath, MapData& outMap)
 {

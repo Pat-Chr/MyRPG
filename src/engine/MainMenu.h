@@ -6,6 +6,7 @@
 
 #include "MenuFont.h"
 
+// Verwaltet den Titelbildschirm; Start und Beenden führt die Hauptschleife anhand von Action aus.
 class MainMenu
 {
 public:

@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+// ID aus der Shader-Registry; hier wird nur die Laufzeit der Effektinstanzen verwaltet.
 using MagicEffectType = std::string;
 
 struct MagicEffect
