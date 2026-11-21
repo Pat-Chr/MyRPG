@@ -81,6 +81,62 @@ inline sf::Texture* GetCachedTexture(const std::string& path)
     return &created->second;
 }
 
+// NPC-Sheets werden über vier gleichnamige Animationsdateien konfiguriert.
+inline const SpriteAnimation* GetNpcAnimation(const MapObject& object, const sf::Texture& texture)
+{
+    if (object.type != MapObjectType::Npc || object.hasTile) return nullptr;
+    using Animations = std::array<SpriteAnimation, 4>;
+    static std::unordered_map<std::string, std::optional<Animations>> cache;
+    auto found = cache.find(object.spritePath);
+    if (found == cache.end())
+    {
+        const std::string base = "Assets/Animations/Characters/" + std::filesystem::path(object.spritePath).stem().string();
+        std::error_code ec;
+        const bool exists = std::filesystem::exists(base + "_down.anim", ec);
+        std::optional<Animations> loaded;
+        if (ec)
+            std::fprintf(stderr, "Failed to inspect NPC animation: %s (%s)\n", base.c_str(), ec.message().c_str());
+        else if (exists)
+        {
+            Animations animations;
+            const std::array<const char*, 4> suffixes{ "_down.anim", "_up.anim", "_left.anim", "_right.anim" };
+            bool valid = true;
+            const sf::Vector2u size = texture.getSize();
+            for (std::size_t i = 0; i < animations.size(); ++i)
+            {
+                if (!LoadAnimationFromFile(base + suffixes[i], animations[i])) { valid = false; break; }
+                if (animations[i].texturePath != object.spritePath)
+                {
+                    std::fprintf(stderr, "NPC animation texture does not match object: %s%s\n", base.c_str(), suffixes[i]);
+                    valid = false; break;
+                }
+                for (const sf::IntRect& frame : animations[i].frames)
+                {
+                    if (static_cast<unsigned>(frame.position.x) > size.x || static_cast<unsigned>(frame.position.y) > size.y ||
+                        static_cast<unsigned>(frame.size.x) > size.x - static_cast<unsigned>(frame.position.x) ||
+                        static_cast<unsigned>(frame.size.y) > size.y - static_cast<unsigned>(frame.position.y))
+                    {
+                        std::fprintf(stderr, "NPC animation frame is outside sprite sheet: %s%s\n", base.c_str(), suffixes[i]);
+                        valid = false; break;
+                    }
+                }
+                if (!valid) break;
+            }
+            if (valid) loaded = std::move(animations);
+        }
+        found = cache.emplace(object.spritePath, std::move(loaded)).first;
+    }
+    if (!found->second) return nullptr;
+    const std::size_t direction = static_cast<std::size_t>(object.npcDirection);
+    return direction < found->second->size() ? &(*found->second)[direction] : &(*found->second)[0];
+}
+
+inline sf::IntRect GetNpcFrame(const SpriteAnimation& animation, double elapsed)
+{
+    const auto index = static_cast<std::size_t>(std::fmod(elapsed / animation.frameDuration, static_cast<double>(animation.frames.size())));
+    return animation.frames[index];
+}
+
 /**
  * @brief Rendert den Hintergrund-Grund (Boden/Karte).
  * 
@@ -178,17 +234,25 @@ inline void RenderMapObjects(sf::RenderTarget& target, const Viewport& viewport,
         {
             sf::Sprite sprite(*texture);
             sf::Vector2u textureSize = texture->getSize();
+            float animationScale = 1.0f;
             if (object.hasTile)
             {
                 sprite.setTextureRect(sf::IntRect({ object.tileX, object.tileY }, { object.tileWidth, object.tileHeight }));
                 textureSize = { static_cast<unsigned>(object.tileWidth), static_cast<unsigned>(object.tileHeight) };
+            }
+            else if (const SpriteAnimation* animation = GetNpcAnimation(object, *texture))
+            {
+                const sf::IntRect frame = GetNpcFrame(*animation, object.npcAnimationTime);
+                sprite.setTextureRect(frame);
+                textureSize = { static_cast<unsigned>(frame.size.x), static_cast<unsigned>(frame.size.y) };
+                animationScale = animation->scale;
             }
 
             // Zentriert und skaliert das Sprite auf die Standard-Objektgröße (64x64)
             if (textureSize.x > 0u && textureSize.y > 0u)
             {
                 sprite.setOrigin({ textureSize.x * 0.5f, textureSize.y * 0.5f });
-                sprite.setScale({ objectSize / textureSize.x, objectSize / textureSize.y });
+                sprite.setScale({ animationScale * objectSize / textureSize.x, animationScale * objectSize / textureSize.y });
             }
 
             sprite.setPosition(screenPos);

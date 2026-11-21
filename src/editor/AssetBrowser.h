@@ -24,7 +24,6 @@ public:
 		std::vector<Entry> entries;
 		std::error_code ec;
 		const auto sprites = root / L"Assets" / L"Sprites";
-		const std::set<std::filesystem::path> excludedDirectories{ L"Characters" };
 		std::filesystem::recursive_directory_iterator it(sprites, ec), end;
 		if (ec) { error = "Sprite-Ordner konnte nicht gelesen werden: " + ec.message(); return false; }
 		while (it != end)
@@ -32,9 +31,11 @@ public:
 			const auto path = it->path();
 			const bool folder = it->is_directory(ec);
 			if (ec) { error = "Asset konnte nicht geprueft werden: " + ec.message(); return false; }
-			if (folder && excludedDirectories.contains(path.lexically_relative(sprites)))
+			const auto localPath = path.lexically_relative(sprites);
+			const bool characterChild = localPath.parent_path() == L"Characters";
+			if (characterChild && (folder || !path.filename().wstring().starts_with(L"NPC_")))
 			{
-				it.disable_recursion_pending();
+				if (folder) it.disable_recursion_pending();
 			}
 			else
 			{

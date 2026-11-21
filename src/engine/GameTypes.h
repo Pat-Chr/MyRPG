@@ -101,6 +101,9 @@ struct MapObject
 	int tileY = 0;
 	int tileWidth = 0;
 	int tileHeight = 0;
+
+	PlayerDirection npcDirection = PlayerDirection::Down;
+	double npcAnimationTime = 0.0;
 };
 
 // Auslöse-Zone für Ereignisse (Trigger)

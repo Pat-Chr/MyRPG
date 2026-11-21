@@ -1421,14 +1421,26 @@ private:
 		{
 			sf::Vector2u size = texture->getSize();
 			sf::Sprite sprite(*texture);
+			float animationScale = 1.0f;
 			if (brushTile)
 			{
 				sprite.setTextureRect(brushRect);
 				size = { static_cast<unsigned>(brushRect.size.x), static_cast<unsigned>(brushRect.size.y) };
 			}
+			else
+			{
+				MapObject preview{ "", newType, position.x, position.y, browser.selected };
+				if (const SpriteAnimation* animation = GetNpcAnimation(preview, *texture))
+				{
+					const sf::IntRect frame = GetNpcFrame(*animation, 0.0);
+					sprite.setTextureRect(frame);
+					size = { static_cast<unsigned>(frame.size.x), static_cast<unsigned>(frame.size.y) };
+					animationScale = animation->scale;
+				}
+			}
 			if (size.x == 0u || size.y == 0u) return;
 			sprite.setOrigin({ size.x * 0.5f, size.y * 0.5f });
-			sprite.setScale({ 64.0f / size.x, 64.0f / size.y });
+			sprite.setScale({ animationScale * 64.0f / size.x, animationScale * 64.0f / size.y });
 			sprite.setColor(sf::Color(255, 255, 255, 150));
 			sprite.setPosition({ position.x - left, position.y - top });
 			window.draw(sprite);

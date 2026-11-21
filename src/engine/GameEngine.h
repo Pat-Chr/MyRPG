@@ -373,12 +373,63 @@ inline bool TryRestorePlayerPosition(GameState& game, const std::string& mapPath
     return true;
 }
 
+// Spricht den nächsten NPC im Blickfeld an und meldet, ob einer gefunden wurde.
+inline bool InteractWithNpc(GameState& game)
+{
+    if (IsMapTransitionActive(game)) return false;
+
+    float facingX = 0.0f, facingY = 0.0f;
+    switch (game.player.direction)
+    {
+    case PlayerDirection::Down: facingY = 1.0f; break;
+    case PlayerDirection::Up: facingY = -1.0f; break;
+    case PlayerDirection::Left: facingX = -1.0f; break;
+    case PlayerDirection::Right: facingX = 1.0f; break;
+    case PlayerDirection::Northwest: facingX = -0.70710678f; facingY = -0.70710678f; break;
+    case PlayerDirection::Northeast: facingX = 0.70710678f; facingY = -0.70710678f; break;
+    case PlayerDirection::Southwest: facingX = -0.70710678f; facingY = 0.70710678f; break;
+    case PlayerDirection::Southeast: facingX = 0.70710678f; facingY = 0.70710678f; break;
+    }
+
+    constexpr float maxDistance = 100.0f;
+    constexpr float maxSideDistance = 48.0f;
+    float closestDistanceSquared = maxDistance * maxDistance;
+    MapObject* closest = nullptr;
+    for (MapObject& object : game.activeMap.objects)
+    {
+        if (object.type != MapObjectType::Npc) continue;
+        const float dx = object.x - game.player.x, dy = object.y - game.player.y;
+        const float distanceSquared = dx * dx + dy * dy;
+        if (dx * facingX + dy * facingY <= 0.0f ||
+            std::abs(dx * facingY - dy * facingX) > maxSideDistance || distanceSquared > closestDistanceSquared) continue;
+        closest = &object;
+        closestDistanceSquared = distanceSquared;
+    }
+    if (!closest) return false;
+
+    const float dx = game.player.x - closest->x, dy = game.player.y - closest->y;
+    const PlayerDirection direction = std::abs(dx) > std::abs(dy)
+        ? (dx < 0.0f ? PlayerDirection::Left : PlayerDirection::Right)
+        : (dy < 0.0f ? PlayerDirection::Up : PlayerDirection::Down);
+    if (closest->npcDirection != direction)
+    {
+        closest->npcDirection = direction;
+        closest->npcAnimationTime = 0.0;
+    }
+    return true;
+}
+
 // Effekte laufen während eines Kartenübergangs weiter; Bewegung und Triggerprüfung pausieren.
 inline void UpdateGame(GameState& game, float deltaTime)
 {
     UpdateMagicEffects(game.magicEffects, deltaTime);
     UpdateCameraShake(game.cameraShake, deltaTime);
     UpdateWeather(game.weather, deltaTime);
+    for (MapObject& object : game.activeMap.objects)
+    {
+        if (object.type == MapObjectType::Npc)
+            object.npcAnimationTime += deltaTime;
+    }
 
     if (IsMapTransitionActive(game))
     {

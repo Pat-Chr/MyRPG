@@ -101,6 +101,7 @@
     <ClInclude Include="src\editor\MapDocument.h" />
     <ClInclude Include="src\editor\MapEditor.h" />
     <ClInclude Include="src\engine\AnimationLoader.h" />
+    <ClInclude Include="src\engine\DialogBox.h" />
     <ClInclude Include="src\engine\GameEngine.h" />
     <ClInclude Include="src\engine\GameRenderer.h" />
     <ClInclude Include="src\engine\GameTypes.h" />
@@ -131,6 +132,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include=".github\copilot-instructions.md" />
+    <None Include="Assets\Animations\Characters\NPC_Trader1_Idle_down.anim" />
+    <None Include="Assets\Animations\Characters\NPC_Trader1_Idle_left.anim" />
+    <None Include="Assets\Animations\Characters\NPC_Trader1_Idle_right.anim" />
+    <None Include="Assets\Animations\Characters\NPC_Trader1_Idle_up.anim" />
     <None Include="Assets\Animations\Characters\player_idle_down.anim" />
     <None Include="Assets\Animations\Characters\player_idle_left.anim" />
     <None Include="Assets\Animations\Characters\player_idle_right.anim" />
@@ -159,6 +164,7 @@
     <None Include="Assets\Shaders\Weather\weather.vert" />
     <None Include="DesignDocument.md" />
     <Content Include="Assets\**\*" />
+    <None Include="Directory.Build.props" />
   </ItemGroup>
   <Target Name="InstallManifestDependencies" BeforeTargets="PrepareForBuild;ClCompile" Condition="'$(DesignTimeBuild)' != 'true'">
     <Message Importance="High" Text="Installing vcpkg manifest dependencies (x64-windows) using $(MyRPGVcpkgExe)." />

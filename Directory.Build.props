@@ -1,0 +1,5 @@
+<Project>
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'MyRPG'">
+	<UpToDateCheckInput Include="$(MSBuildProjectDirectory)\Assets\**\*" />
+  </ItemGroup>
+</Project>

@@ -14,6 +14,7 @@
 #include <SFML/Window/Keyboard.hpp>
 #include <SFML/Window/Mouse.hpp>
 
+#include "src/engine/DialogBox.h"
 #include "src/engine/GameEngine.h"
 #include "src/engine/GameRenderer.h"
 #include "src/engine/MainMenu.h"
@@ -167,6 +168,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     }
 
     GameState game{};
+    DialogBox dialog;
     SaveGameStore saveGameStore;
     std::optional<SaveGameSlot::Id> activeSave;
     std::string activeSaveName;
@@ -352,6 +354,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 {
                     handleMainMenuAction(mainMenu.HandleKey(key->code));
                 }
+                else if (dialog.IsOpen())
+                {
+                    dialog.HandleKey(key->code);
+                }
                 else if (key->code == sf::Keyboard::Key::Escape)
                 {
                     if (settingsMenu.IsOpen())
@@ -392,6 +398,20 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 {
                     StartMagicEffect(game.magicEffects, "sparkle", game.player.x, game.player.y);
                 }
+                else if (key->code == sf::Keyboard::Key::E && InteractWithNpc(game))
+                {
+                    if (dialog.Open("hi"))
+                    {
+                        SetMovementState(game.input, false, false, false, false);
+                        game.player.moving = false;
+                    }
+                    else
+                    {
+                        MessageBoxW(window.getNativeHandle(), L"Die Schrift fuer den Dialog konnte nicht geladen werden.",
+                                    L"MyRPG", MB_OK | MB_ICONERROR);
+                        frameClock.restart();
+                    }
+                }
             }
             else if (const auto* mouseButton = event->getIf<sf::Event::MouseButtonPressed>())
             {
@@ -407,7 +427,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                         handleSettingsAction(settingsMenu.HandleClick(position, baseResolution, window));
                     }
 #ifdef _DEBUG
-                    else if (debugCoordinatesBounds.contains(position))
+                    else if (!dialog.IsOpen() && debugCoordinatesBounds.contains(position))
                     {
                         char coordinates[64];
                         std::snprintf(coordinates, sizeof(coordinates), "X: %.1f  Y: %.1f", game.player.x, game.player.y);
@@ -424,7 +444,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             break;
         }
 
-        const bool hasFocus = window.hasFocus() && !inMainMenu && !settingsMenu.IsOpen();
+        const bool hasFocus = window.hasFocus() && !inMainMenu && !settingsMenu.IsOpen() && !dialog.IsOpen();
         SetMovementState(
             game.input,
             hasFocus && (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up)),
@@ -434,7 +454,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
         const float deltaTime = frameClock.restart().asSeconds();
         const float fps = deltaTime > 0.0f ? (1.0f / deltaTime) : 0.0f;
-        if (!inMainMenu && !settingsMenu.IsOpen())
+        if (!inMainMenu && !settingsMenu.IsOpen() && !dialog.IsOpen())
         {
             UpdateGame(game, deltaTime);
         }
@@ -463,6 +483,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             if (settingsMenu.IsOpen())
             {
                 settingsMenu.Draw(window, baseResolution);
+            }
+            else if (dialog.IsOpen())
+            {
+                dialog.Draw(window, baseResolution);
             }
         }
         window.display();
