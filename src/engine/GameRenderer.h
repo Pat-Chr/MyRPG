@@ -131,10 +131,150 @@ inline const SpriteAnimation* GetNpcAnimation(const MapObject& object, const sf:
     return direction < found->second->size() ? &(*found->second)[direction] : &(*found->second)[0];
 }
 
+inline std::size_t GetAnimationFrameIndex(const SpriteAnimation& animation, double elapsed)
+{
+    return static_cast<std::size_t>(std::fmod(elapsed / animation.frameDuration, static_cast<double>(animation.frames.size())));
+}
+
 inline sf::IntRect GetNpcFrame(const SpriteAnimation& animation, double elapsed)
 {
-    const auto index = static_cast<std::size_t>(std::fmod(elapsed / animation.frameDuration, static_cast<double>(animation.frames.size())));
-    return animation.frames[index];
+    return animation.frames[GetAnimationFrameIndex(animation, elapsed)];
+}
+
+struct SpriteShadowData
+{
+    std::vector<std::optional<sf::Texture>> frames;
+    std::vector<float> bottoms;
+};
+
+inline SpriteShadowData BuildSpriteShadowData(const SpriteAnimation& animation, const sf::Texture& texture, const char* owner)
+{
+    constexpr int shadowBlurX = 3;
+    constexpr int shadowBlurY = 7;
+    SpriteShadowData data;
+    const sf::Image mask = texture.copyToImage();
+    const sf::Vector2u maskSize = mask.getSize();
+    if (maskSize.x == 0u || maskSize.y == 0u)
+    {
+        std::fprintf(stderr, "Failed to create %s shadow mask: %s\n", owner, animation.texturePath.c_str());
+        return data;
+    }
+
+    for (const sf::IntRect& frame : animation.frames)
+    {
+        float bottom = static_cast<float>(frame.size.y);
+        const unsigned int left = (std::min)(static_cast<unsigned int>(frame.position.x), maskSize.x);
+        const unsigned int top = (std::min)(static_cast<unsigned int>(frame.position.y), maskSize.y);
+        const unsigned int right = static_cast<unsigned int>((std::min)(
+            static_cast<std::uint64_t>(frame.position.x) + frame.size.x, static_cast<std::uint64_t>(maskSize.x)));
+        const unsigned int endY = static_cast<unsigned int>((std::min)(
+            static_cast<std::uint64_t>(frame.position.y) + frame.size.y, static_cast<std::uint64_t>(maskSize.y)));
+        bool found = false;
+        for (unsigned int y = endY; y > top && !found; --y)
+        {
+            for (unsigned int x = left; x < right; ++x)
+            {
+                if (mask.getPixel({ x, y - 1 }).a != 0)
+                {
+                    bottom = static_cast<float>(y - static_cast<unsigned int>(frame.position.y));
+                    found = true;
+                    break;
+                }
+            }
+        }
+
+        data.bottoms.push_back(bottom);
+        data.frames.emplace_back();
+        if (static_cast<std::uint64_t>(frame.position.x) + frame.size.x > maskSize.x ||
+            static_cast<std::uint64_t>(frame.position.y) + frame.size.y > maskSize.y)
+        {
+            std::fprintf(stderr, "%s shadow frame is outside sprite sheet: %s\n", owner, animation.texturePath.c_str());
+            continue;
+        }
+
+        const int width = frame.size.x + 2 * shadowBlurX;
+        const int height = frame.size.y + 2 * shadowBlurY;
+        std::vector<float> horizontal(static_cast<std::size_t>(width) * height, 0.0f);
+        for (int y = 0; y < frame.size.y; ++y)
+        {
+            for (int x = 0; x < width; ++x)
+            {
+                unsigned int sum = 0;
+                for (int dx = -shadowBlurX; dx <= shadowBlurX; ++dx)
+                {
+                    const int sourceX = x - shadowBlurX + dx;
+                    if (sourceX >= 0 && sourceX < frame.size.x)
+                    {
+                        sum += mask.getPixel({ static_cast<unsigned int>(frame.position.x + sourceX),
+                                               static_cast<unsigned int>(frame.position.y + y) }).a;
+                    }
+                }
+                horizontal[static_cast<std::size_t>(y + shadowBlurY) * width + x] =
+                    static_cast<float>(sum) / (2 * shadowBlurX + 1);
+            }
+        }
+
+        sf::Image blurred({ static_cast<unsigned int>(width), static_cast<unsigned int>(height) }, sf::Color(64, 64, 64, 0));
+        for (int y = 0; y < height; ++y)
+        {
+            for (int x = 0; x < width; ++x)
+            {
+                float sum = 0.0f;
+                for (int dy = -shadowBlurY; dy <= shadowBlurY; ++dy)
+                {
+                    const int sourceY = y + dy;
+                    if (sourceY >= 0 && sourceY < height)
+                        sum += horizontal[static_cast<std::size_t>(sourceY) * width + x];
+                }
+                const auto alpha = static_cast<std::uint8_t>(std::round(sum / (2 * shadowBlurY + 1)));
+                blurred.setPixel({ static_cast<unsigned int>(x), static_cast<unsigned int>(y) }, sf::Color(64, 64, 64, alpha));
+            }
+        }
+
+        auto& shadowFrame = data.frames.back();
+        shadowFrame.emplace();
+        if (!shadowFrame->loadFromImage(blurred))
+        {
+            std::fprintf(stderr, "Failed to upload %s shadow mask: %s\n", owner, animation.texturePath.c_str());
+            shadowFrame.reset();
+        }
+        else
+        {
+            shadowFrame->setSmooth(true);
+        }
+    }
+    return data;
+}
+
+inline void DrawSpriteShadow(sf::RenderTarget& target, const SpriteShadowData& data, std::size_t frameIndex,
+                             const sf::IntRect& frame, const sf::Vector2f& spritePosition,
+                             float scaleX, float scaleY)
+{
+    constexpr int shadowBlurX = 3;
+    constexpr int shadowBlurY = 7;
+    constexpr float shadowHeightScale = 0.4f;
+    if (frameIndex >= data.frames.size() || frameIndex >= data.bottoms.size() || !data.frames[frameIndex].has_value())
+        return;
+
+    const float frameHeight = static_cast<float>(frame.size.y);
+    sf::Sprite shadow(*data.frames[frameIndex]);
+    shadow.setOrigin({ static_cast<float>(frame.size.x) * 0.5f + shadowBlurX, data.bottoms[frameIndex] + shadowBlurY });
+    shadow.setScale({ scaleX, -scaleY * shadowHeightScale });
+    shadow.setPosition({ spritePosition.x, spritePosition.y + (data.bottoms[frameIndex] - frameHeight * 0.5f) * scaleY - 5.0f });
+    shadow.setColor(sf::Color(255, 255, 255, 100));
+    target.draw(shadow);
+}
+
+inline const SpriteShadowData* GetNpcShadowData(const MapObject& object, const SpriteAnimation& animation, const sf::Texture& texture)
+{
+    static std::unordered_map<std::string, std::optional<SpriteShadowData>> cache;
+    const std::string key = object.spritePath + "#" + std::to_string(static_cast<int>(object.npcDirection));
+    auto found = cache.find(key);
+    if (found == cache.end())
+    {
+        found = cache.emplace(key, BuildSpriteShadowData(animation, texture, "NPC")).first;
+    }
+    return &found->second.value();
 }
 
 /**
@@ -234,15 +374,19 @@ inline void RenderMapObjects(sf::RenderTarget& target, const Viewport& viewport,
         {
             sf::Sprite sprite(*texture);
             sf::Vector2u textureSize = texture->getSize();
+            const SpriteAnimation* animation = nullptr;
+            std::size_t frameIndex = 0;
+            sf::IntRect frame;
             float animationScale = 1.0f;
             if (object.hasTile)
             {
                 sprite.setTextureRect(sf::IntRect({ object.tileX, object.tileY }, { object.tileWidth, object.tileHeight }));
                 textureSize = { static_cast<unsigned>(object.tileWidth), static_cast<unsigned>(object.tileHeight) };
             }
-            else if (const SpriteAnimation* animation = GetNpcAnimation(object, *texture))
+            else if ((animation = GetNpcAnimation(object, *texture)) != nullptr)
             {
-                const sf::IntRect frame = GetNpcFrame(*animation, object.npcAnimationTime);
+                frameIndex = GetAnimationFrameIndex(*animation, object.npcAnimationTime);
+                frame = animation->frames[frameIndex];
                 sprite.setTextureRect(frame);
                 textureSize = { static_cast<unsigned>(frame.size.x), static_cast<unsigned>(frame.size.y) };
                 animationScale = animation->scale;
@@ -256,6 +400,11 @@ inline void RenderMapObjects(sf::RenderTarget& target, const Viewport& viewport,
             }
 
             sprite.setPosition(screenPos);
+            if (animation != nullptr)
+            {
+                const SpriteShadowData* shadowData = GetNpcShadowData(object, *animation, *texture);
+                DrawSpriteShadow(target, *shadowData, frameIndex, frame, screenPos, sprite.getScale().x, sprite.getScale().y);
+            }
             target.draw(sprite);
             continue;
         }
@@ -483,15 +632,11 @@ inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewpo
 
     // Spieler-Charakter rendern (animiertes Sprite oder Fallback-Rechteck)
     const float playerSize = static_cast<float>(game.player.size);
-    // Radien in Texturpixeln; der größere Y-Radius gleicht die spätere vertikale Stauchung aus.
-    constexpr int shadowBlurX = 3;
-    constexpr int shadowBlurY = 7;
     struct PlayerAnimation
     {
         SpriteAnimation animation;
         sf::Texture* texture = nullptr;
-        std::vector<std::optional<sf::Texture>> shadowFrames;
-        std::vector<float> frameBottoms;
+        SpriteShadowData shadow;
     };
     const auto loadPlayerAnimations = []<std::size_t N>(const std::array<const char*, N>& paths)
     {
@@ -507,101 +652,7 @@ inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewpo
                     continue;
                 }
 
-                // Schattenmasken einmal beim Laden vorbereiten, nicht bei jedem Renderdurchlauf.
-                sf::Image mask = animations[i].texture->copyToImage();
-                const sf::Vector2u maskSize = mask.getSize();
-                if (maskSize.x == 0u || maskSize.y == 0u)
-                {
-                    std::fprintf(stderr, "Failed to create player shadow mask: %s\n", animations[i].animation.texturePath.c_str());
-                    continue;
-                }
-                for (const sf::IntRect& frame : animations[i].animation.frames)
-                {
-                    float bottom = static_cast<float>(frame.size.y);
-                    const unsigned int left = (std::min)(static_cast<unsigned int>(frame.position.x), maskSize.x);
-                    const unsigned int top = (std::min)(static_cast<unsigned int>(frame.position.y), maskSize.y);
-                    const unsigned int right = static_cast<unsigned int>((std::min)(
-                        static_cast<std::uint64_t>(frame.position.x) + frame.size.x, static_cast<std::uint64_t>(maskSize.x)));
-                    const unsigned int endY = static_cast<unsigned int>((std::min)(
-                        static_cast<std::uint64_t>(frame.position.y) + frame.size.y, static_cast<std::uint64_t>(maskSize.y)));
-                    // An der Unterkante der sichtbaren Silhouette spiegeln, nicht am transparenten Frame-Rand.
-                    bool found = false;
-                    for (unsigned int y = endY; y > top && !found; --y)
-                    {
-                        for (unsigned int x = left; x < right; ++x)
-                        {
-                            if (mask.getPixel({ x, y - 1 }).a != 0)
-                            {
-                                bottom = static_cast<float>(y - static_cast<unsigned int>(frame.position.y));
-                                found = true;
-                                break;
-                            }
-                        }
-                    }
-                    animations[i].frameBottoms.push_back(bottom);
-                    animations[i].shadowFrames.emplace_back();
-                    if (static_cast<std::uint64_t>(frame.position.x) + frame.size.x > maskSize.x ||
-                        static_cast<std::uint64_t>(frame.position.y) + frame.size.y > maskSize.y)
-                    {
-                        std::fprintf(stderr, "Player shadow frame is outside sprite sheet: %s\n", animations[i].animation.texturePath.c_str());
-                        continue;
-                    }
-
-                    // Ein transparenter Rand lässt den Schatten auslaufen, ohne Nachbarframes einzumischen.
-                    const int width = frame.size.x + 2 * shadowBlurX;
-                    const int height = frame.size.y + 2 * shadowBlurY;
-                    // Den Alphakanal in zwei Durchgängen weichzeichnen (horizontal, dann vertikal).
-                    std::vector<float> horizontal(static_cast<std::size_t>(width) * height, 0.0f);
-                    for (int y = 0; y < frame.size.y; ++y)
-                    {
-                        for (int x = 0; x < width; ++x)
-                        {
-                            unsigned int sum = 0;
-                            for (int dx = -shadowBlurX; dx <= shadowBlurX; ++dx)
-                            {
-                                const int sourceX = x - shadowBlurX + dx;
-                                if (sourceX >= 0 && sourceX < frame.size.x)
-                                {
-                                    sum += mask.getPixel({ static_cast<unsigned int>(frame.position.x + sourceX),
-                                                           static_cast<unsigned int>(frame.position.y + y) }).a;
-                                }
-                            }
-                            horizontal[static_cast<std::size_t>(y + shadowBlurY) * width + x] =
-                                static_cast<float>(sum) / (2 * shadowBlurX + 1);
-                        }
-                    }
-
-                    sf::Image blurred({ static_cast<unsigned int>(width), static_cast<unsigned int>(height) }, sf::Color(64, 64, 64, 0));
-                    for (int y = 0; y < height; ++y)
-                    {
-                        for (int x = 0; x < width; ++x)
-                        {
-                            float sum = 0.0f;
-                            for (int dy = -shadowBlurY; dy <= shadowBlurY; ++dy)
-                            {
-                                const int sourceY = y + dy;
-                                if (sourceY >= 0 && sourceY < height)
-                                {
-                                    sum += horizontal[static_cast<std::size_t>(sourceY) * width + x];
-                                }
-                            }
-                            const auto alpha = static_cast<std::uint8_t>(std::round(sum / (2 * shadowBlurY + 1)));
-                            blurred.setPixel({ static_cast<unsigned int>(x), static_cast<unsigned int>(y) }, sf::Color(64, 64, 64, alpha));
-                        }
-                    }
-
-                    auto& shadowFrame = animations[i].shadowFrames.back();
-                    shadowFrame.emplace();
-                    if (!shadowFrame->loadFromImage(blurred))
-                    {
-                        std::fprintf(stderr, "Failed to upload player shadow mask: %s\n", animations[i].animation.texturePath.c_str());
-                        shadowFrame.reset();
-                    }
-                    else
-                    {
-                        shadowFrame->setSmooth(true);
-                    }
-                }
+                animations[i].shadow = BuildSpriteShadowData(animations[i].animation, *animations[i].texture, "player");
             }
         }
         return animations;
@@ -654,20 +705,7 @@ inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewpo
         playerSprite.setScale({ frameScale, frameScale });
         playerSprite.setPosition({ viewport.width * 0.5f + game.cameraShake.offsetX,
                                    viewport.height * 0.5f + game.cameraShake.offsetY });
-        if (frameIndex < selected.shadowFrames.size() && selected.shadowFrames[frameIndex].has_value())
-        {
-            constexpr float shadowHeightScale = 0.4f;
-            const float bottom = selected.frameBottoms[frameIndex];
-            sf::Sprite shadow(*selected.shadowFrames[frameIndex]);
-            // Den Ursprung um den transparenten Rand korrigieren, damit die Spiegelachse an der Silhouette bleibt.
-            shadow.setOrigin({ static_cast<float>(frame.size.x) * 0.5f + shadowBlurX, bottom + shadowBlurY });
-            shadow.setScale({ frameScale, -frameScale * shadowHeightScale });
-            // Vom Sprite-Mittelpunkt zur Spiegelachse; der Abzug verschiebt den Schatten 5 Pixel nach oben.
-            shadow.setPosition({ playerSprite.getPosition().x,
-                                 playerSprite.getPosition().y + (bottom - frameHeight * 0.5f) * frameScale - 5.0f});
-            shadow.setColor(sf::Color(255, 255, 255, 100));
-            target.draw(shadow);
-        }
+        DrawSpriteShadow(target, selected.shadow, frameIndex, frame, playerSprite.getPosition(), frameScale, frameScale);
         target.draw(playerSprite);
     }
     else

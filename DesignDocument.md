@@ -194,6 +194,7 @@ Warm/erdig
 ### Animation
 - Spieler: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 - Gegner: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
+- NPCs und Spieler verwenden aus der Sprite-Silhouette erzeugte, weichgezeichnete Bodenschatten.
 - VFX: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 
 ---
