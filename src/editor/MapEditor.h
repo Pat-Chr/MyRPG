@@ -81,6 +81,13 @@ public:
 						if (text->unicode == 8 && !triggerNameInput.empty()) triggerNameInput.pop_back();
 						else if (text->unicode >= 32 && text->unicode < 127 && triggerNameInput.size() < 64) triggerNameInput += static_cast<char>(text->unicode);
 					}
+					else if (renameNpcOpen)
+					{
+						if (text->unicode == 8 && !npcNameInput.isEmpty()) npcNameInput.erase(npcNameInput.getSize() - 1);
+						else if (text->unicode >= 32 && text->unicode != 127 && text->unicode <= 0x10ffff &&
+							!(text->unicode >= 0xd800 && text->unicode <= 0xdfff) && npcNameInput.getSize() < 32)
+							npcNameInput += text->unicode;
+					}
 				}
 				else if (const auto* button = event->getIf<sf::Event::MouseButtonPressed>()) HandlePress(*button, window, game);
 				else if (const auto* button = event->getIf<sf::Event::MouseButtonReleased>())
@@ -132,7 +139,7 @@ public:
 				else if (const auto* wheel = event->getIf<sf::Event::MouseWheelScrolled>())
 				{
 					const sf::Vector2f position = EditorPosition(window, wheel->position);
-					if (renameTriggerOpen) continue;
+					if (renameTriggerOpen || renameNpcOpen) continue;
 					if (pickingTarget)
 					{
 						if (IsMapArea(position)) zoom = std::clamp(zoom * (wheel->delta > 0 ? 1.2f : 1.0f / 1.2f), 0.25f, 4.0f);
@@ -164,7 +171,7 @@ public:
 				}
 			}
 			const float panDelta = panClock.restart().asSeconds();
-			if (window.hasFocus() && !mapPropertiesOpen && !renameTriggerOpen)
+			if (window.hasFocus() && !mapPropertiesOpen && !renameTriggerOpen && !renameNpcOpen)
 			{
 				float panX = static_cast<float>(sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right)) -
 					static_cast<float>(sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left));
@@ -199,8 +206,9 @@ private:
 	bool placementDragActive = false, hasLastPlacementPosition = false;
 	bool mapPropertiesOpen = false;
 	int mapWeatherOffset = 0;
-	bool renameTriggerOpen = false;
+	bool renameTriggerOpen = false, renameNpcOpen = false;
 	std::string triggerNameInput;
+	sf::String npcNameInput;
 	bool pickingTarget = false;
 	MapData targetMap;
 	sf::Vector2f sourceCamera{};
@@ -654,6 +662,19 @@ private:
 		if (!document.RenameTrigger(selectedTrigger, triggerNameInput, error)) { Error(error); return; }
 		renameTriggerOpen = false;
 	}
+	void ConfirmNpcName()
+	{
+		if (selectedObject >= document.map.objects.size() || document.map.objects[selectedObject].type != MapObjectType::Npc)
+		{
+			Error("Bitte zuerst einen NPC auswaehlen.");
+			return;
+		}
+		const auto utf8 = npcNameInput.toUtf8();
+		const std::string name(utf8.begin(), utf8.end());
+		auto& object = document.map.objects[selectedObject];
+		if (object.npcName != name) { object.npcName = name; document.dirty = true; }
+		renameNpcOpen = false;
+	}
 	void HandleTriggerPanelClick(int x, int y)
 	{
 		if (x < 970 || x >= 1270) return;
@@ -897,10 +918,10 @@ private:
 	}
 	void HandleKey(sf::Keyboard::Key key, sf::RenderWindow& window)
 	{
-		if (renameTriggerOpen)
+		if (renameTriggerOpen || renameNpcOpen)
 		{
-			if (key == sf::Keyboard::Key::Escape) renameTriggerOpen = false;
-			else if (key == sf::Keyboard::Key::Enter) ConfirmTriggerName();
+			if (key == sf::Keyboard::Key::Escape) { renameTriggerOpen = false; renameNpcOpen = false; }
+			else if (key == sf::Keyboard::Key::Enter) { if (renameTriggerOpen) ConfirmTriggerName(); else ConfirmNpcName(); }
 			return;
 		}
 		if (pickingTarget)
@@ -1011,12 +1032,12 @@ private:
 		}
 		const sf::Vector2f position = EditorPosition(window, event.position);
 		const int x = static_cast<int>(position.x), y = static_cast<int>(position.y);
-		if (renameTriggerOpen)
+		if (renameTriggerOpen || renameNpcOpen)
 		{
 			if (event.button == sf::Mouse::Button::Left && y >= 460 && y < 500)
 			{
-				if (x >= 450 && x < 625) ConfirmTriggerName();
-				else if (x >= 655 && x < 830) renameTriggerOpen = false;
+				if (x >= 450 && x < 625) { if (renameTriggerOpen) ConfirmTriggerName(); else ConfirmNpcName(); }
+				else if (x >= 655 && x < 830) { renameTriggerOpen = false; renameNpcOpen = false; }
 			}
 			return;
 		}
@@ -1053,7 +1074,17 @@ private:
 		}
 		if (IsOverObjectPanel(position))
 		{
-			if (event.button == sf::Mouse::Button::Left && x >= 970 && x < 1270 && y >= 150 + PanelOffset && y < 180 + PanelOffset)
+			if (event.button == sf::Mouse::Button::Left && mode == Mode::Select &&
+				document.map.objects[selectedObject].type == MapObjectType::Npc && x >= 970 && x < 1270 && y >= 230 + PanelOffset && y < 262 + PanelOffset)
+			{
+				const auto& name = document.map.objects[selectedObject].npcName;
+				npcNameInput = sf::String::fromUtf8(name.begin(), name.end());
+				renameNpcOpen = true;
+				panning = draggingObject = false;
+				sheetWindow.reset();
+				sheetDragging = sheetPanning = false;
+			}
+			else if (event.button == sf::Mouse::Button::Left && x >= 970 && x < 1270 && y >= 150 + PanelOffset && y < 180 + PanelOffset)
 			{
 				if (mode == Mode::Select)
 				{
@@ -1084,6 +1115,10 @@ private:
 				else
 				{
 					SetMode(Mode::Place);
+					const bool wasNpc = std::filesystem::path(browser.selected).parent_path().generic_string() == "Assets/Sprites/Characters";
+					const bool isNpc = std::filesystem::path(entry.path).parent_path().generic_string() == "Assets/Sprites/Characters";
+					if (isNpc) newType = MapObjectType::Npc;
+					else if (wasNpc && newType == MapObjectType::Npc) newType = MapObjectType::Scenery;
 					browser.selected = entry.path;
 					brushTile = sheetDragging = false;
 					sheetScrollX = sheetScrollY = 0.0f;
@@ -1264,7 +1299,7 @@ private:
 			Label(window, font, "Klick: Zielposition setzen. Esc: abbrechen. WASD/Pfeile oder Mitteltaste: Ansicht bewegen. Mausrad: Zoom.", 10, 66, 14, ink);
 			return;
 		}
-		const RibbonButton* hovered = !mapPropertiesOpen && !renameTriggerOpen && window.hasFocus() ?
+		const RibbonButton* hovered = !mapPropertiesOpen && !renameTriggerOpen && !renameNpcOpen && window.hasFocus() ?
 			RibbonButtonAt(EditorPosition(window, sf::Mouse::getPosition(window))) : nullptr;
 		const RibbonButton* activeMode = nullptr;
 		for (const RibbonButton& button : RibbonButtons)
@@ -1317,6 +1352,15 @@ private:
 		Label(window, font, "Blockiert die Spielerfigur bei", 970, 190 + PanelOffset, 13);
 		Label(window, font, "Kollision; unabhaengig vom Typ.", 970, 208 + PanelOffset, 13);
 		if (!object) Label(window, font, "Vorgabe fuer neu platzierte Objekte.", 970, 236 + PanelOffset, 13);
+		else if (object->type == MapObjectType::Npc)
+		{
+			FillRect(window, { { 970, 230 + PanelOffset }, { 300, 32 } }, sf::Color(65, 70, 80));
+			sf::Text name(font, sf::String::fromUtf8(object->npcName.begin(), object->npcName.end()), 13);
+			name.setString(sf::String("Name: ") + (object->npcName.empty() ? sf::String("(kein Name)") : name.getString()));
+			while (name.getLocalBounds().size.x > 280.0f && name.getCharacterSize() > 8) name.setCharacterSize(name.getCharacterSize() - 1);
+			name.setPosition({ 978, 238 + PanelOffset });
+			window.draw(name);
+		}
 	}
 	void DrawTriggerPanel(sf::RenderWindow& window, const sf::Font& font) const
 	{
@@ -1387,18 +1431,28 @@ private:
 	}
 	void DrawRenameTriggerDialog(sf::RenderWindow& window, const sf::Font& font) const
 	{
-		if (!renameTriggerOpen) return;
+		if (!renameTriggerOpen && !renameNpcOpen) return;
 		auto rectangle = [&](float x, float y, float width, float height, sf::Color color)
 		{
 			sf::RectangleShape shape({ width, height }); shape.setPosition({ x, y }); shape.setFillColor(color); window.draw(shape);
 		};
 		rectangle(420, 270, 440, 250, sf::Color(28, 31, 37, 250));
 		rectangle(420, 270, 440, 48, sf::Color(48, 52, 60));
-		Label(window, font, "TRIGGER UMBENENNEN", 440, 285, 18);
-		Label(window, font, "Name (Buchstaben, Ziffern, _ und -):", 450, 335, 14);
+		Label(window, font, renameNpcOpen ? "NPC-NAME" : "TRIGGER UMBENENNEN", 440, 285, 18);
+		Label(window, font, renameNpcOpen ? "Anzeigename (bis zu 32 Zeichen, leer = kein Name):" : "Name (Buchstaben, Ziffern, _ und -):", 450, 335, 14);
 		rectangle(450, 365, 380, 36, sf::Color(65, 70, 80));
-		const std::string visible = triggerNameInput.size() > 38 ? "..." + triggerNameInput.substr(triggerNameInput.size() - 35) : triggerNameInput;
-		Label(window, font, visible + "_", 458, 374, 14);
+		if (renameNpcOpen)
+		{
+			sf::Text input(font, npcNameInput + sf::String("_"), 14);
+			while (input.getLocalBounds().size.x > 360.0f && input.getCharacterSize() > 8) input.setCharacterSize(input.getCharacterSize() - 1);
+			input.setPosition({ 458, 374 });
+			window.draw(input);
+		}
+		else
+		{
+			const std::string visible = triggerNameInput.size() > 38 ? "..." + triggerNameInput.substr(triggerNameInput.size() - 35) : triggerNameInput;
+			Label(window, font, visible + "_", 458, 374, 14);
+		}
 		Label(window, font, "Enter: Uebernehmen | Esc: Abbrechen", 450, 420, 13);
 		rectangle(450, 460, 175, 40, sf::Color(70, 105, 110));
 		rectangle(655, 460, 175, 40, sf::Color(65, 70, 80));

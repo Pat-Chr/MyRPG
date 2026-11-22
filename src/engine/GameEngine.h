@@ -373,10 +373,10 @@ inline bool TryRestorePlayerPosition(GameState& game, const std::string& mapPath
     return true;
 }
 
-// Spricht den nächsten NPC im Blickfeld an und meldet, ob einer gefunden wurde.
-inline bool InteractWithNpc(GameState& game)
+// Spricht den nächsten NPC im Blickfeld an und gibt ihn zurück.
+inline MapObject* InteractWithNpc(GameState& game)
 {
-    if (IsMapTransitionActive(game)) return false;
+    if (IsMapTransitionActive(game)) return nullptr;
 
     float facingX = 0.0f, facingY = 0.0f;
     switch (game.player.direction)
@@ -405,7 +405,7 @@ inline bool InteractWithNpc(GameState& game)
         closest = &object;
         closestDistanceSquared = distanceSquared;
     }
-    if (!closest) return false;
+    if (!closest) return nullptr;
 
     const float dx = game.player.x - closest->x, dy = game.player.y - closest->y;
     const PlayerDirection direction = std::abs(dx) > std::abs(dy)
@@ -416,7 +416,7 @@ inline bool InteractWithNpc(GameState& game)
         closest->npcDirection = direction;
         closest->npcAnimationTime = 0.0;
     }
-    return true;
+    return closest;
 }
 
 // Effekte laufen während eines Kartenübergangs weiter; Bewegung und Triggerprüfung pausieren.

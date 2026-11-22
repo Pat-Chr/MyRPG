@@ -10,7 +10,7 @@
 class DialogBox
 {
 public:
-	bool Open(const std::string& text)
+	bool Open(const std::string& text, const std::string& speaker)
 	{
 		if (!fontLoaded)
 		{
@@ -18,6 +18,7 @@ public:
 			if (!fontLoaded) return false;
 		}
 		message = text;
+		speakerName = speaker;
 		open = true;
 		return true;
 	}
@@ -47,8 +48,15 @@ public:
 		inner.setOutlineColor(sf::Color(105, 146, 173));
 		target.draw(inner);
 
+		if (!speakerName.empty())
+		{
+			sf::Text name(font, sf::String::fromUtf8(speakerName.begin(), speakerName.end()), 22);
+			name.setPosition({ 84.0f, height - 184.0f });
+			name.setFillColor(sf::Color(183, 199, 215));
+			target.draw(name);
+		}
 		sf::Text text(font, sf::String::fromUtf8(message.begin(), message.end()), 30);
-		text.setPosition({ 84.0f, height - 180.0f });
+		text.setPosition({ 84.0f, height - (speakerName.empty() ? 180.0f : 150.0f) });
 		text.setFillColor(sf::Color::White);
 		target.draw(text);
 
@@ -61,7 +69,7 @@ public:
 
 private:
 	sf::Font font;
-	std::string message;
+	std::string message, speakerName;
 	bool fontLoaded = false;
 	bool open = false;
 };

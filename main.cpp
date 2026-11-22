@@ -398,14 +398,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 {
                     StartMagicEffect(game.magicEffects, "sparkle", game.player.x, game.player.y);
                 }
-                else if (key->code == sf::Keyboard::Key::E && InteractWithNpc(game))
+                else if (key->code == sf::Keyboard::Key::E)
                 {
-                    if (dialog.Open("hi"))
+                    MapObject* npc = InteractWithNpc(game);
+                    if (npc && dialog.Open("hi", npc->npcName))
                     {
                         SetMovementState(game.input, false, false, false, false);
                         game.player.moving = false;
                     }
-                    else
+                    else if (npc)
                     {
                         MessageBoxW(window.getNativeHandle(), L"Die Schrift fuer den Dialog konnte nicht geladen werden.",
                                     L"MyRPG", MB_OK | MB_ICONERROR);
