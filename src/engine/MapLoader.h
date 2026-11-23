@@ -10,6 +10,45 @@
 
 #include "GameTypes.h"
 
+inline std::string EncodeObjectName(const std::string& name)
+{
+	constexpr char hex[] = "0123456789ABCDEF";
+	std::string encoded;
+	for (unsigned char c : name)
+	{
+		if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '-' || c == '.') encoded += static_cast<char>(c);
+		else { encoded += '%'; encoded += hex[c >> 4]; encoded += hex[c & 15]; }
+	}
+	return encoded;
+}
+
+inline bool DecodeObjectName(const std::string& encoded, std::string& name)
+{
+	auto digit = [](char c) -> int {
+		if (c >= '0' && c <= '9') return c - '0';
+		if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+		if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+		return -1;
+	};
+	std::string result;
+	for (std::size_t i = 0; i < encoded.size(); ++i)
+	{
+		unsigned char c = static_cast<unsigned char>(encoded[i]);
+		if (c == '%')
+		{
+			if (i + 2 >= encoded.size()) return false;
+			const int high = digit(encoded[i + 1]), low = digit(encoded[i + 2]);
+			if (high < 0 || low < 0) return false;
+			c = static_cast<unsigned char>((high << 4) | low);
+			i += 2;
+		}
+		if (c < 32 || c == 127) return false;
+		result += static_cast<char>(c);
+	}
+	name = std::move(result);
+	return true;
+}
+
 // Parst ein Flag der Form "<key>=0" oder "<key>=1".
 inline bool TryParseFlag(const std::string& token, const std::string& key, int& outValue)
 {
@@ -188,14 +227,27 @@ inline bool TryLoadMapFromFile(const std::string& filePath, MapData& outMap)
 				
 				object.solid = solidFlag != 0; // Festkörper-Objekte wenn Flag != 0
 
-				std::string tileToken;
-				if (lineStream >> tileToken && tileToken.starts_with("tile="))
+				std::string token;
+				bool hasName = false;
+				while (lineStream >> token)
 				{
-					char comma1 = 0, comma2 = 0, comma3 = 0;
-					std::istringstream tileStream(tileToken.substr(5));
-					tileStream >> object.tileX >> comma1 >> object.tileY >> comma2 >> object.tileWidth >> comma3 >> object.tileHeight;
-					object.hasTile = !tileStream.fail() && comma1 == ',' && comma2 == ',' && comma3 == ',' &&
-						object.tileX >= 0 && object.tileY >= 0 && object.tileWidth > 0 && object.tileHeight > 0;
+					if (token.starts_with("tile="))
+					{
+						char comma1 = 0, comma2 = 0, comma3 = 0;
+						std::istringstream tileStream(token.substr(5));
+						tileStream >> object.tileX >> comma1 >> object.tileY >> comma2 >> object.tileWidth >> comma3 >> object.tileHeight;
+						object.hasTile = !tileStream.fail() && comma1 == ',' && comma2 == ',' && comma3 == ',' &&
+							object.tileX >= 0 && object.tileY >= 0 && object.tileWidth > 0 && object.tileHeight > 0;
+					}
+					else if (token.starts_with("name="))
+					{
+						if (hasName || !DecodeObjectName(token.substr(5), object.npcName))
+						{
+							std::cerr << filePath << ':' << lineNumber << ": Invalid object name: " << token << '\n';
+							return false;
+						}
+						hasName = true;
+					}
 				}
 				loadedMap.objects.push_back(object);
 			}

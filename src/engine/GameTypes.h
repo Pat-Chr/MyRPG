@@ -102,6 +102,7 @@ struct MapObject
 	int tileWidth = 0;
 	int tileHeight = 0;
 
+	std::string npcName;
 	PlayerDirection npcDirection = PlayerDirection::Down;
 	double npcAnimationTime = 0.0;
 };

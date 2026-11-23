@@ -50,7 +50,8 @@ public:
 					{
 						const auto local = path.lexically_relative(sprites);
 						const int depth = static_cast<int>(std::distance(local.begin(), local.end())) - 1;
-						entries.push_back({ relative, path.filename().string(), depth, folder });
+						const std::string label = local == L"Characters" && folder ? "NPCs" : path.filename().string();
+						entries.push_back({ relative, label, depth, folder });
 					}
 					else std::fprintf(stderr, "Map-Editor: Asset-Pfad enthaelt Leerzeichen: %s\n", relative.c_str());
 				}

@@ -124,15 +124,23 @@ public:
 			Line line{ text, cr ? "\r\n" : "\n", {} };
 			if (keyword == "OBJECT")
 			{
-				std::string id, type, sprite, solid, tile, extra;
+				std::string id, type, sprite, solid;
 				float x, y;
-				if (!(fields >> id >> type >> x >> y >> sprite >> solid) || ((fields >> tile) && (!tile.starts_with("tile=") || (fields >> extra))) ||
+				if (!(fields >> id >> type >> x >> y >> sprite >> solid) ||
 					!std::isfinite(x) || !std::isfinite(y) ||
 					(type != "scenery" && type != "untergrund" && type != "wall" && type != "npc") ||
 					(solid != "solid=0" && solid != "solid=1") || !ids.insert(id).second)
 				{
 					error = "Ungueltige oder nicht unterstuetzte OBJECT-Zeile; die Karte wird nicht bearbeitet.";
 					return false;
+				}
+				std::string option, decodedName;
+				bool hasTile = false, hasName = false;
+				while (fields >> option)
+				{
+					if (option.starts_with("tile=") && !hasTile) hasTile = true;
+					else if (option.starts_with("name=") && !hasName && DecodeObjectName(option.substr(5), decodedName)) hasName = true;
+					else { error = "Ungueltige oder nicht unterstuetzte OBJECT-Option; die Karte wird nicht bearbeitet."; return false; }
 				}
 				line.objectId = id;
 				++objects;
@@ -385,7 +393,7 @@ private:
 	static bool Equal(const MapObject& a, const MapObject& b)
 	{
 		return a.id == b.id && a.type == b.type && a.x == b.x && a.y == b.y && a.spritePath == b.spritePath && a.solid == b.solid &&
-			   a.hasTile == b.hasTile && (!a.hasTile || (a.tileX == b.tileX && a.tileY == b.tileY && a.tileWidth == b.tileWidth && a.tileHeight == b.tileHeight));
+			   a.npcName == b.npcName && a.hasTile == b.hasTile && (!a.hasTile || (a.tileX == b.tileX && a.tileY == b.tileY && a.tileWidth == b.tileWidth && a.tileHeight == b.tileHeight));
 	}
 	static std::string Format(const MapObject& object)
 	{
@@ -394,6 +402,7 @@ private:
 		stream << "OBJECT " << object.id << ' ' << type << ' ' << std::setprecision(std::numeric_limits<float>::max_digits10)
 			   << object.x << ' ' << object.y << ' ' << object.spritePath << " solid=" << (object.solid ? 1 : 0);
 		if (object.hasTile) stream << " tile=" << object.tileX << ',' << object.tileY << ',' << object.tileWidth << ',' << object.tileHeight;
+		if (!object.npcName.empty()) stream << " name=" << EncodeObjectName(object.npcName);
 		return stream.str();
 	}
 };
