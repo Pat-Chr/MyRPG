@@ -334,14 +334,9 @@ inline bool IsSolidObjectBlockingPosition(const GameState& game, float playerX, 
 
 inline bool IsNpcPositionBlocked(const GameState& game, const MapObject& npc, float x, float y);
 
-inline bool TryRestorePlayerPosition(GameState& game, const std::string& mapPath, float x, float y, std::string& error)
+inline bool TryResolvePlayerPositionCollisions(GameState& restored, const std::string& mapPath,
+    float x, float y, std::string& error)
 {
-    GameState restored{};
-    if (!TryLoadMapFromFile(mapPath, restored.activeMap))
-    {
-        error = "Die gespeicherte Karte konnte nicht geladen werden: " + mapPath;
-        return false;
-    }
     restored.player.x = x;
     restored.player.y = y;
     std::vector<std::size_t> blockingNpcs;
@@ -422,12 +417,49 @@ inline bool TryRestorePlayerPosition(GameState& game, const std::string& mapPath
         npc.solid = true;
     }
 
+    for (TriggerZone& trigger : restored.activeMap.triggers)
+        trigger.isPlayerInside = IsInsideTrigger(trigger, x, y);
+    return true;
+}
+
+inline bool ValidateMapPlayerCollisionRecovery(const MapData& map, const std::string& mapPath, std::string& error)
+{
+    for (std::size_t i = 0; i < map.objects.size(); ++i)
+    {
+        const MapObject& object = map.objects[i];
+        if (object.type != MapObjectType::Npc || !object.solid) continue;
+        std::vector<std::pair<float, float>> positions{ { object.x, object.y } };
+        if (object.walkingAreaEnabled)
+            for (const WalkingCell& cell : object.walkingCells)
+                positions.emplace_back(cell.x * 64.0f + 32.0f, cell.y * 64.0f + 32.0f);
+        for (const auto& [x, y] : positions)
+        {
+            GameState candidate{};
+            candidate.activeMap = map;
+            candidate.activeMap.objects[i].x = x;
+            candidate.activeMap.objects[i].y = y;
+            if (!TryResolvePlayerPositionCollisions(candidate, mapPath, x, y, error))
+            {
+                error = "Kollisionspruefung fuer NPC '" + object.id + "' auf Karte '" + mapPath + "' bei (" +
+                    std::to_string(x) + ", " + std::to_string(y) + ") fehlgeschlagen: " + error;
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+inline bool TryRestorePlayerPosition(GameState& game, const std::string& mapPath, float x, float y, std::string& error)
+{
+    GameState restored{};
+    if (!TryLoadMapFromFile(mapPath, restored.activeMap))
+    {
+        error = "Die gespeicherte Karte konnte nicht geladen werden: " + mapPath;
+        return false;
+    }
+    if (!TryResolvePlayerPositionCollisions(restored, mapPath, x, y, error)) return false;
     restored.activeMapPath = mapPath;
     restored.weather = WeatherState{ restored.activeMap.defaultWeather };
-    for (TriggerZone& trigger : restored.activeMap.triggers)
-    {
-        trigger.isPlayerInside = IsInsideTrigger(trigger, x, y);
-    }
     game = std::move(restored);
     return true;
 }
@@ -521,10 +553,23 @@ inline void UpdateNpcWalking(GameState& game, MapObject& npc, float deltaTime)
             const WalkingCell neighbors[] = { { current.x - 1, current.y }, { current.x + 1, current.y },
                 { current.x, current.y - 1 }, { current.x, current.y + 1 } };
             std::vector<WalkingCell> candidates;
+            bool hasAdjacentCell = false;
             for (WalkingCell cell : neighbors)
-                if (contains(cell) && !IsNpcPositionBlocked(game, npc, cell.x * 64.0f + 32.0f, cell.y * 64.0f + 32.0f))
+            {
+                if (!contains(cell)) continue;
+                hasAdjacentCell = true;
+                if (!IsNpcPositionBlocked(game, npc, cell.x * 64.0f + 32.0f, cell.y * 64.0f + 32.0f))
                     candidates.push_back(cell);
-            if (candidates.empty()) return;
+            }
+            if (candidates.empty())
+            {
+#ifdef _DEBUG
+                if (hasAdjacentCell)
+                    std::cout << "[NPC] Movement blocked: no free adjacent Walking-Area cell for NPC '" << npc.id
+                        << "' on map '" << game.activeMap.id << "'.\n";
+#endif
+                return;
+            }
             const WalkingCell target = candidates[std::uniform_int_distribution<std::size_t>(0, candidates.size() - 1)(random)];
             npc.npcTargetX = target.x * 64.0f + 32.0f;
             npc.npcTargetY = target.y * 64.0f + 32.0f;
@@ -547,6 +592,10 @@ inline void UpdateNpcWalking(GameState& game, MapObject& npc, float deltaTime)
     {
         if (IsNpcPositionBlocked(game, npc, npc.x + stepX, npc.y + stepY))
         {
+#ifdef _DEBUG
+            std::cout << "[NPC] Movement blocked for NPC '" << npc.id << "' on map '" << game.activeMap.id
+                << "' at (" << npc.x + stepX << ", " << npc.y + stepY << ").\n";
+#endif
             npc.npcMoving = false;
             npc.npcAnimationTime = 0.0;
             return;

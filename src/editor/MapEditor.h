@@ -771,6 +771,8 @@ private:
 	bool Save()
 	{
 		std::string error;
+		const std::string mapPath = document.path.string();
+		if (!ValidateMapPlayerCollisionRecovery(document.map, mapPath, error)) { Error(error); return false; }
 		if (!document.Save(error)) { Error(error); return false; }
 		selectedObject = static_cast<std::size_t>(-1);
 		selectedTrigger = static_cast<std::size_t>(-1);
