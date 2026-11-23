@@ -4,7 +4,9 @@
 #include <cctype>
 #include <cmath>
 #include <iostream>
+#include <map>
 #include <random>
+#include <set>
 #include <utility>
 
 #include "GameTypes.h"
@@ -311,42 +313,26 @@ inline void SetMovementState(InputState& input, bool up, bool down, bool left, b
     input.right = right;
 }
 
+inline bool IsObjectBlockingPlayer(const MapObject& object, float playerX, float playerY)
+{
+    constexpr float objectHalfSize = 32.0f;
+    constexpr float playerHalfSize = Player::hitboxSize * 0.5f;
+    const float hitboxCenterY = Player::HitboxCenterY(playerY);
+    return object.solid && playerX + playerHalfSize > object.x - objectHalfSize &&
+        playerX - playerHalfSize < object.x + objectHalfSize &&
+        hitboxCenterY + playerHalfSize > object.y - objectHalfSize &&
+        hitboxCenterY - playerHalfSize < object.y + objectHalfSize;
+}
+
 // Prüft überlappende Kollisionsboxen. Ausschlaggebend ist nur solid, nicht der Objekttyp.
 inline bool IsSolidObjectBlockingPosition(const GameState& game, float playerX, float playerY)
 {
-    constexpr float mapObjectSize = 64.0f;
-    const float objectHalfSize = mapObjectSize * 0.5f;
-    constexpr float playerHalfSize = Player::hitboxSize * 0.5f;
-    const float hitboxCenterY = Player::HitboxCenterY(playerY);
-
     for (const MapObject& object : game.activeMap.objects)
-    {
-        if (!object.solid)
-        {
-            continue;
-        }
-
-        const float objectLeft = object.x - objectHalfSize;
-        const float objectRight = object.x + objectHalfSize;
-        const float objectTop = object.y - objectHalfSize;
-        const float objectBottom = object.y + objectHalfSize;
-
-        const float playerLeft = playerX - playerHalfSize;
-        const float playerRight = playerX + playerHalfSize;
-        const float playerTop = hitboxCenterY - playerHalfSize;
-        const float playerBottom = hitboxCenterY + playerHalfSize;
-
-        const bool overlapX = playerRight > objectLeft && playerLeft < objectRight;
-        const bool overlapY = playerBottom > objectTop && playerTop < objectBottom;
-
-        if (overlapX && overlapY)
-        {
-            return true;
-        }
-    }
-
+        if (IsObjectBlockingPlayer(object, playerX, playerY)) return true;
     return false;
 }
+
+inline bool IsNpcPositionBlocked(const GameState& game, const MapObject& npc, float x, float y);
 
 inline bool TryRestorePlayerPosition(GameState& game, const std::string& mapPath, float x, float y, std::string& error)
 {
@@ -356,15 +342,87 @@ inline bool TryRestorePlayerPosition(GameState& game, const std::string& mapPath
         error = "Die gespeicherte Karte konnte nicht geladen werden: " + mapPath;
         return false;
     }
-    if (IsSolidObjectBlockingPosition(restored, x, y))
+    restored.player.x = x;
+    restored.player.y = y;
+    std::vector<std::size_t> blockingNpcs;
+    for (std::size_t i = 0; i < restored.activeMap.objects.size(); ++i)
     {
-        error = "Die gespeicherte Spielerposition liegt in einem Hindernis.";
+        const MapObject& object = restored.activeMap.objects[i];
+        if (!IsObjectBlockingPlayer(object, x, y)) continue;
+        if (object.type != MapObjectType::Npc)
+        {
+            error = "Die gespeicherte Spielerposition liegt in einem Hindernis.";
+            return false;
+        }
+        blockingNpcs.push_back(i);
+    }
+
+    // Alle betroffenen NPCs werden gemeinsam zugewiesen, damit keiner einem anderen den einzigen Platz nimmt.
+    for (std::size_t index : blockingNpcs) restored.activeMap.objects[index].solid = false;
+    using CellKey = std::pair<int, int>;
+    std::vector<std::vector<CellKey>> candidates(blockingNpcs.size());
+    for (std::size_t i = 0; i < blockingNpcs.size(); ++i)
+    {
+        const MapObject& npc = restored.activeMap.objects[blockingNpcs[i]];
+        if (npc.walkingCells.empty())
+        {
+            error = "Der NPC '" + npc.id + "' blockiert die gespeicherte Spielerposition. In der geladenen Karte " +
+                mapPath + " sind fuer diesen NPC keine Walking-Area-Felder gespeichert.";
+            return false;
+        }
+        for (const WalkingCell& cell : npc.walkingCells)
+        {
+            if (std::floor(npc.x / 64.0f) == cell.x && std::floor(npc.y / 64.0f) == cell.y) continue;
+            const float targetX = cell.x * 64.0f + 32.0f, targetY = cell.y * 64.0f + 32.0f;
+            if (!IsNpcPositionBlocked(restored, npc, targetX, targetY)) candidates[i].emplace_back(cell.x, cell.y);
+        }
+        if (candidates[i].empty())
+        {
+            error = "Der NPC '" + npc.id + "' blockiert die gespeicherte Spielerposition. Seine " +
+                std::to_string(npc.walkingCells.size()) + " Walking-Area-Felder in " + mapPath +
+                " bieten kein freies anderes Feld; das aktuelle Feld und von Spieler oder soliden Objekten blockierte Felder scheiden aus.";
+            return false;
+        }
+        std::sort(candidates[i].begin(), candidates[i].end(), [&](CellKey a, CellKey b) {
+            const double ax = a.first * 64.0 + 32.0 - npc.x, ay = a.second * 64.0 + 32.0 - npc.y;
+            const double bx = b.first * 64.0 + 32.0 - npc.x, by = b.second * 64.0 + 32.0 - npc.y;
+            return ax * ax + ay * ay < bx * bx + by * by;
+        });
+    }
+    std::map<CellKey, std::size_t> assignments;
+    auto assign = [&](auto&& self, std::size_t npc, std::set<CellKey>& visited) -> bool {
+        for (const CellKey& cell : candidates[npc])
+        {
+            if (!visited.insert(cell).second) continue;
+            const auto occupied = assignments.find(cell);
+            if (occupied == assignments.end() || self(self, occupied->second, visited))
+            {
+                assignments[cell] = npc;
+                return true;
+            }
+        }
         return false;
+    };
+    for (std::size_t i = 0; i < blockingNpcs.size(); ++i)
+    {
+        std::set<CellKey> visited;
+        if (!assign(assign, i, visited))
+        {
+            error = "Die gespeicherte Spielerposition wird von mehreren NPCs blockiert. Fuer NPC '" +
+                restored.activeMap.objects[blockingNpcs[i]].id + "' und die anderen NPCs stehen in " + mapPath +
+                " nicht genug unterschiedliche freie Walking-Area-Felder zur Verfuegung.";
+            return false;
+        }
+    }
+    for (const auto& [cell, index] : assignments)
+    {
+        MapObject& npc = restored.activeMap.objects[blockingNpcs[index]];
+        npc.x = cell.first * 64.0f + 32.0f;
+        npc.y = cell.second * 64.0f + 32.0f;
+        npc.solid = true;
     }
 
     restored.activeMapPath = mapPath;
-    restored.player.x = x;
-    restored.player.y = y;
     restored.weather = WeatherState{ restored.activeMap.defaultWeather };
     for (TriggerZone& trigger : restored.activeMap.triggers)
     {
