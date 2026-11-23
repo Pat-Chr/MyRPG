@@ -132,10 +132,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include=".github\copilot-instructions.md" />
-    <None Include="Assets\Animations\Characters\NPC_Trader1_Idle_down.anim" />
-    <None Include="Assets\Animations\Characters\NPC_Trader1_Idle_left.anim" />
-    <None Include="Assets\Animations\Characters\NPC_Trader1_Idle_right.anim" />
-    <None Include="Assets\Animations\Characters\NPC_Trader1_Idle_up.anim" />
+    <None Include="Assets\Animations\Characters\NPC_Trader1_Idle.anim" />
     <None Include="Assets\Animations\Characters\player_idle_down.anim" />
     <None Include="Assets\Animations\Characters\player_idle_left.anim" />
     <None Include="Assets\Animations\Characters\player_idle_right.anim" />

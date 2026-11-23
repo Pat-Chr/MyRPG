@@ -81,46 +81,50 @@ inline sf::Texture* GetCachedTexture(const std::string& path)
     return &created->second;
 }
 
-// NPC-Sheets werden über vier gleichnamige Animationsdateien konfiguriert.
+// Die NPC-Datei enthält alle Richtungen und optional zukünftige Laufanimationen.
 inline const SpriteAnimation* GetNpcAnimation(const MapObject& object, const sf::Texture& texture)
 {
     if (object.type != MapObjectType::Npc || object.hasTile) return nullptr;
-    using Animations = std::array<SpriteAnimation, 4>;
-    static std::unordered_map<std::string, std::optional<Animations>> cache;
+    static std::unordered_map<std::string, std::optional<NpcAnimations>> cache;
     auto found = cache.find(object.spritePath);
     if (found == cache.end())
     {
-        const std::string base = "Assets/Animations/Characters/" + std::filesystem::path(object.spritePath).stem().string();
+        const std::string path = "Assets/Animations/Characters/" + std::filesystem::path(object.spritePath).stem().string() + ".anim";
         std::error_code ec;
-        const bool exists = std::filesystem::exists(base + "_down.anim", ec);
-        std::optional<Animations> loaded;
+        const bool exists = std::filesystem::exists(path, ec);
+        std::optional<NpcAnimations> loaded;
         if (ec)
-            std::fprintf(stderr, "Failed to inspect NPC animation: %s (%s)\n", base.c_str(), ec.message().c_str());
+            std::fprintf(stderr, "Failed to inspect NPC animation: %s (%s)\n", path.c_str(), ec.message().c_str());
         else if (exists)
         {
-            Animations animations;
-            const std::array<const char*, 4> suffixes{ "_down.anim", "_up.anim", "_left.anim", "_right.anim" };
-            bool valid = true;
-            const sf::Vector2u size = texture.getSize();
-            for (std::size_t i = 0; i < animations.size(); ++i)
+            NpcAnimations animations;
+            bool valid = LoadNpcAnimationsFromFile(path, animations);
+            for (std::size_t i = 0; valid && i < animations.size(); ++i)
             {
-                if (!LoadAnimationFromFile(base + suffixes[i], animations[i])) { valid = false; break; }
-                if (animations[i].texturePath != object.spritePath)
+                if (!animations[i]) continue;
+                const SpriteAnimation& animation = *animations[i];
+                if (i < 4 && animation.texturePath != object.spritePath)
                 {
-                    std::fprintf(stderr, "NPC animation texture does not match object: %s%s\n", base.c_str(), suffixes[i]);
+                    std::fprintf(stderr, "NPC idle animation texture does not match object: %s\n", path.c_str());
                     valid = false; break;
                 }
-                for (const sf::IntRect& frame : animations[i].frames)
+                const sf::Texture* clipTexture = animation.texturePath == object.spritePath ? &texture : GetCachedTexture(animation.texturePath);
+                if (!clipTexture)
+                {
+                    std::fprintf(stderr, "Failed to load NPC animation texture '%s': %s\n", animation.texturePath.c_str(), path.c_str());
+                    valid = false; break;
+                }
+                const sf::Vector2u size = clipTexture->getSize();
+                for (const sf::IntRect& frame : animation.frames)
                 {
                     if (static_cast<unsigned>(frame.position.x) > size.x || static_cast<unsigned>(frame.position.y) > size.y ||
                         static_cast<unsigned>(frame.size.x) > size.x - static_cast<unsigned>(frame.position.x) ||
                         static_cast<unsigned>(frame.size.y) > size.y - static_cast<unsigned>(frame.position.y))
                     {
-                        std::fprintf(stderr, "NPC animation frame is outside sprite sheet: %s%s\n", base.c_str(), suffixes[i]);
+                        std::fprintf(stderr, "NPC animation frame is outside sprite sheet '%s': %s\n", animation.texturePath.c_str(), path.c_str());
                         valid = false; break;
                     }
                 }
-                if (!valid) break;
             }
             if (valid) loaded = std::move(animations);
         }
@@ -128,7 +132,7 @@ inline const SpriteAnimation* GetNpcAnimation(const MapObject& object, const sf:
     }
     if (!found->second) return nullptr;
     const std::size_t direction = static_cast<std::size_t>(object.npcDirection);
-    return direction < found->second->size() ? &(*found->second)[direction] : &(*found->second)[0];
+    return &*(*found->second)[direction < 4 ? direction : 0];
 }
 
 inline std::size_t GetAnimationFrameIndex(const SpriteAnimation& animation, double elapsed)

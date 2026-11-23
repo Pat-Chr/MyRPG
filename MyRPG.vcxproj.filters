@@ -989,15 +989,6 @@
     <None Include="Assets\Sprites\Environment\Forest\forest_tree.png">
       <Filter>Ressourcendateien</Filter>
     </None>
-    <None Include="Assets\Animations\Characters\NPC_Trader1_Idle_left.anim">
-      <Filter>Ressourcendateien</Filter>
-    </None>
-    <None Include="Assets\Animations\Characters\NPC_Trader1_Idle_right.anim">
-      <Filter>Ressourcendateien</Filter>
-    </None>
-    <None Include="Assets\Animations\Characters\NPC_Trader1_Idle_up.anim">
-      <Filter>Ressourcendateien</Filter>
-    </None>
     <None Include="Assets\Animations\Characters\player_idle_down.anim">
       <Filter>Ressourcendateien</Filter>
     </None>
@@ -1203,10 +1194,7 @@
     <None Include="Assets\Shaders\Weather\rain.frag" />
     <None Include="Assets\Shaders\Weather\fog.frag" />
     <None Include="Assets\Shaders\Effects\magic_screen_test.frag" />
-    <None Include="Assets\Animations\Characters\NPC_Trader1_Idle_right.anim" />
-    <None Include="Assets\Animations\Characters\NPC_Trader1_Idle_left.anim" />
-    <None Include="Assets\Animations\Characters\NPC_Trader1_Idle_up.anim" />
-    <None Include="Assets\Animations\Characters\NPC_Trader1_Idle_down.anim" />
+    <None Include="Assets\Animations\Characters\NPC_Trader1_Idle.anim" />
     <None Include="Directory.Build.props" />
   </ItemGroup>
 </Project>
