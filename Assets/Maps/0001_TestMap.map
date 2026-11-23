@@ -166,4 +166,4 @@ OBJECT object_130 scenery 640 512 Assets/Sprites/Environment/Forest/Spritesheet_
 OBJECT object_131 scenery 576 512 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=80,32,16,16
 OBJECT object_132 scenery 512 512 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=80,32,16,16
 OBJECT object_133 npc 590.064575 -155.761185 Assets/Sprites/Characters/NPC_Trader1.png solid=1 name=Karl%20Nickel
-OBJECT object_134 npc 509.144165 -316.297638 Assets/Sprites/Characters/NPC_Baker1.png solid=1
+OBJECT object_134 npc 509.144165 -316.297638 Assets/Sprites/Characters/NPC_Baker1.png solid=1 name=Baked
