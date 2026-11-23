@@ -94,7 +94,7 @@ inline bool IsCompleteAnimation(const AnimationParseState& state)
 	return state.texturePathRead && state.frameDurationRead && !state.animation.frames.empty();
 }
 
-// ANIM 1 remains the format for individual player animations.
+// ANIM 1 describes a single animation.
 inline bool LoadAnimationFromFile(const std::string& path, SpriteAnimation& animation)
 {
 	std::ifstream file(path);
@@ -135,20 +135,22 @@ inline bool LoadAnimationFromFile(const std::string& path, SpriteAnimation& anim
 	return true;
 }
 
-// Indices 0-3 are idle directions, 4-7 are optional walk directions.
-using NpcAnimations = std::array<std::optional<SpriteAnimation>, 8>;
-
-inline bool LoadNpcAnimationsFromFile(const std::string& path, NpcAnimations& animations)
+template<std::size_t N>
+inline bool LoadAnimationSetFromFile(const std::string& path, const std::array<std::string, N>& names,
+	std::size_t requiredCount, std::array<std::optional<SpriteAnimation>, N>& animations)
 {
 	std::ifstream file(path);
 	if (!file)
 	{
-		std::fprintf(stderr, "Failed to open NPC animation file: %s\n", path.c_str());
+		std::fprintf(stderr, "Failed to open animation set: %s\n", path.c_str());
 		return false;
 	}
-	const std::array<std::string, 8> names{ "idle_down", "idle_up", "idle_left", "idle_right",
-		"walk_down", "walk_up", "walk_left", "walk_right" };
-	NpcAnimations loaded;
+	if (requiredCount > names.size())
+	{
+		std::fprintf(stderr, "Invalid animation set requirements: %s\n", path.c_str());
+		return false;
+	}
+	std::array<std::optional<SpriteAnimation>, N> loaded;
 	AnimationParseState state;
 	std::size_t current = names.size();
 	bool headerRead = false;
@@ -166,7 +168,7 @@ inline bool LoadNpcAnimationsFromFile(const std::string& path, NpcAnimations& an
 			std::string extra;
 			if (directive != "ANIM" || !(lineStream >> version) || version != 2 || (lineStream >> extra))
 			{
-				std::fprintf(stderr, "Invalid NPC animation header at %s:%zu (expected ANIM 2)\n", path.c_str(), lineNumber);
+				std::fprintf(stderr, "Invalid animation set header at %s:%zu (expected ANIM 2)\n", path.c_str(), lineNumber);
 				return false;
 			}
 			headerRead = true;
@@ -176,49 +178,69 @@ inline bool LoadNpcAnimationsFromFile(const std::string& path, NpcAnimations& an
 			std::string name, extra;
 			if (!(lineStream >> name) || (lineStream >> extra))
 			{
-				std::fprintf(stderr, "Invalid NPC animation name at %s:%zu\n", path.c_str(), lineNumber);
+				std::fprintf(stderr, "Invalid animation name at %s:%zu\n", path.c_str(), lineNumber);
 				return false;
 			}
 			if (current != names.size())
 			{
 				if (!IsCompleteAnimation(state))
 				{
-					std::fprintf(stderr, "Incomplete NPC animation '%s' at %s:%zu\n", names[current].c_str(), path.c_str(), lineNumber);
+					std::fprintf(stderr, "Incomplete animation '%s' at %s:%zu\n", names[current].c_str(), path.c_str(), lineNumber);
 					return false;
 				}
 				loaded[current] = std::move(state.animation);
 				state = AnimationParseState{};
 			}
+			for (char& character : name)
+				if (character == '-') character = '_';
 			current = names.size();
 			for (std::size_t i = 0; i < names.size(); ++i)
 				if (names[i] == name) { current = i; break; }
 			if (current == names.size() || loaded[current])
 			{
-				std::fprintf(stderr, "Unknown or duplicate NPC animation '%s' at %s:%zu\n", name.c_str(), path.c_str(), lineNumber);
+				std::fprintf(stderr, "Unknown or duplicate animation '%s' at %s:%zu\n", name.c_str(), path.c_str(), lineNumber);
 				return false;
 			}
 		}
 		else if (current == names.size())
 		{
-			std::fprintf(stderr, "NPC animation directive outside a section at %s:%zu\n", path.c_str(), lineNumber);
+			std::fprintf(stderr, "Animation directive outside a section at %s:%zu\n", path.c_str(), lineNumber);
 			return false;
 		}
 		else if (!ParseAnimationDirective(path, lineNumber, directive, lineStream, state)) return false;
 	}
 	if (file.bad() || !headerRead || current == names.size() || !IsCompleteAnimation(state))
 	{
-		std::fprintf(stderr, "NPC animation file is unreadable or missing required data: %s\n", path.c_str());
+		std::fprintf(stderr, "Animation set is unreadable or missing required data: %s\n", path.c_str());
 		return false;
 	}
 	loaded[current] = std::move(state.animation);
-	for (std::size_t i = 0; i < 4; ++i)
+	for (std::size_t i = 0; i < requiredCount; ++i)
 	{
 		if (!loaded[i])
 		{
-			std::fprintf(stderr, "Missing NPC animation '%s': %s\n", names[i].c_str(), path.c_str());
+			std::fprintf(stderr, "Missing animation '%s': %s\n", names[i].c_str(), path.c_str());
 			return false;
 		}
 	}
 	animations = std::move(loaded);
 	return true;
+}
+
+// The first four clips are idle directions; NPC walk clips are optional.
+using NpcAnimations = std::array<std::optional<SpriteAnimation>, 8>;
+inline bool LoadNpcAnimationsFromFile(const std::string& path, NpcAnimations& animations)
+{
+	const std::array<std::string, 8> names{ "idle_down", "idle_up", "idle_left", "idle_right",
+		"walk_down", "walk_up", "walk_left", "walk_right" };
+	return LoadAnimationSetFromFile(path, names, 4, animations);
+}
+
+using PlayerAnimations = std::array<std::optional<SpriteAnimation>, 12>;
+inline bool LoadPlayerAnimationsFromFile(const std::string& path, PlayerAnimations& animations)
+{
+	const std::array<std::string, 12> names{ "idle_down", "idle_up", "idle_left", "idle_right",
+		"walk_down", "walk_up", "walk_left", "walk_right", "walk_northwest", "walk_northeast",
+		"walk_southwest", "walk_southeast" };
+	return LoadAnimationSetFromFile(path, names, names.size(), animations);
 }

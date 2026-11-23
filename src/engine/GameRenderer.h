@@ -642,49 +642,32 @@ inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewpo
         sf::Texture* texture = nullptr;
         SpriteShadowData shadow;
     };
-    const auto loadPlayerAnimations = []<std::size_t N>(const std::array<const char*, N>& paths)
+    static const auto playerAnimations = []
     {
-        std::array<PlayerAnimation, N> animations;
-        for (std::size_t i = 0; i < paths.size(); ++i)
+        std::array<PlayerAnimation, 12> animations;
+        PlayerAnimations clips;
+        if (!LoadPlayerAnimationsFromFile("Assets/Animations/Characters/player.anim", clips)) return animations;
+        for (std::size_t i = 0; i < clips.size(); ++i)
         {
-            if (LoadAnimationFromFile(paths[i], animations[i].animation))
+            animations[i].animation = std::move(*clips[i]);
+            animations[i].texture = GetCachedTexture(animations[i].animation.texturePath);
+            if (animations[i].texture == nullptr)
             {
-                animations[i].texture = GetCachedTexture(animations[i].animation.texturePath);
-                if (animations[i].texture == nullptr)
-                {
-                    std::fprintf(stderr, "Failed to load player sprite sheet: %s\n", animations[i].animation.texturePath.c_str());
-                    continue;
-                }
-
-                animations[i].shadow = BuildSpriteShadowData(animations[i].animation, *animations[i].texture, "player");
+                std::fprintf(stderr, "Failed to load player sprite sheet: %s\n", animations[i].animation.texturePath.c_str());
+                continue;
             }
+            animations[i].shadow = BuildSpriteShadowData(animations[i].animation, *animations[i].texture, "player");
         }
         return animations;
-    };
-    static const auto walkAnimations = loadPlayerAnimations(std::array<const char*, 8>{
-        "Assets/Animations/Characters/player_walk_down.anim",
-        "Assets/Animations/Characters/player_walk_up.anim",
-        "Assets/Animations/Characters/player_walk_left.anim",
-        "Assets/Animations/Characters/player_walk_right.anim",
-        "Assets/Animations/Characters/player_walk_northwest.anim",
-        "Assets/Animations/Characters/player_walk_northeast.anim",
-        "Assets/Animations/Characters/player_walk_southwest.anim",
-        "Assets/Animations/Characters/player_walk_southeast.anim"
-    });
-    static const auto idleAnimations = loadPlayerAnimations(std::array<const char*, 4>{
-        "Assets/Animations/Characters/player_idle_down.anim",
-        "Assets/Animations/Characters/player_idle_up.anim",
-        "Assets/Animations/Characters/player_idle_left.anim",
-        "Assets/Animations/Characters/player_idle_right.anim"
-    });
+    }();
     static constexpr std::array<PlayerDirection, 8> idleDirections = {
         PlayerDirection::Down, PlayerDirection::Up, PlayerDirection::Left, PlayerDirection::Right,
         PlayerDirection::Left, PlayerDirection::Right, PlayerDirection::Left, PlayerDirection::Right
     };
     const std::size_t direction = static_cast<std::size_t>(game.player.direction);
     const PlayerAnimation& selected = game.player.moving
-        ? walkAnimations[direction]
-        : idleAnimations[static_cast<std::size_t>(idleDirections[direction])];
+        ? playerAnimations[4 + direction]
+        : playerAnimations[static_cast<std::size_t>(idleDirections[direction])];
     if (selected.texture != nullptr)
     {
         static sf::Clock playerAnimationClock;

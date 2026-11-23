@@ -1583,7 +1583,17 @@ private:
 				if (sf::Texture* texture = GetCachedTexture(entry.path))
 				{
 					sf::Sprite sprite(*texture);
-					const auto size = texture->getSize();
+					auto size = texture->getSize();
+					if (std::filesystem::path(entry.path).parent_path().generic_string() == "Assets/Sprites/Characters")
+					{
+						MapObject preview{ "", MapObjectType::Npc, 0.0f, 0.0f, entry.path };
+						if (const SpriteAnimation* animation = GetNpcAnimation(preview, *texture))
+						{
+							const sf::IntRect frame = GetNpcFrame(*animation, 0.0);
+							sprite.setTextureRect(frame);
+							size = { static_cast<unsigned>(frame.size.x), static_cast<unsigned>(frame.size.y) };
+						}
+					}
 					if (size.x && size.y) sprite.setScale({ 30.0f / size.x, 30.0f / size.y });
 					sprite.setPosition({ 3 + indent, y + 2 }); window.draw(sprite);
 				}

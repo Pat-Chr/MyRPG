@@ -132,20 +132,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include=".github\copilot-instructions.md" />
-    <None Include="Assets\Animations\Characters\NPC_Trader1_Idle.anim" />
-    <None Include="Assets\Animations\Characters\player_idle_down.anim" />
-    <None Include="Assets\Animations\Characters\player_idle_left.anim" />
-    <None Include="Assets\Animations\Characters\player_idle_right.anim" />
-    <None Include="Assets\Animations\Characters\player_idle_up.anim" />
-    <None Include="Assets\Animations\Characters\player_walk.anim" />
-    <None Include="Assets\Animations\Characters\player_walk_down.anim" />
-    <None Include="Assets\Animations\Characters\player_walk_left.anim" />
-    <None Include="Assets\Animations\Characters\player_walk_northeast.anim" />
-    <None Include="Assets\Animations\Characters\player_walk_northwest.anim" />
-    <None Include="Assets\Animations\Characters\player_walk_right.anim" />
-    <None Include="Assets\Animations\Characters\player_walk_southeast.anim" />
-    <None Include="Assets\Animations\Characters\player_walk_southwest.anim" />
-    <None Include="Assets\Animations\Characters\player_walk_up.anim" />
+    <None Include="Assets\Animations\Characters\NPC_Trader1.anim" />
+    <None Include="Assets\Animations\Characters\player.anim" />
     <None Include="Assets\Shaders\Effects\magic_effect.vert" />
     <None Include="Assets\Shaders\Effects\magic_effects.cfg" />
     <None Include="Assets\Shaders\Effects\magic_fire.frag" />
