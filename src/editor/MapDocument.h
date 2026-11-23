@@ -135,11 +135,15 @@ public:
 					return false;
 				}
 				std::string option, decodedName;
-				bool hasTile = false, hasName = false;
+				bool hasTile = false, hasName = false, hasArea = false, hasCells = false;
 				while (fields >> option)
 				{
+					int flag = 0;
+					std::vector<WalkingCell> cells;
 					if (option.starts_with("tile=") && !hasTile) hasTile = true;
 					else if (option.starts_with("name=") && !hasName && DecodeObjectName(option.substr(5), decodedName)) hasName = true;
+					else if (type == "npc" && !hasArea && TryParseFlag(option, "walking_area", flag)) hasArea = true;
+					else if (type == "npc" && !hasCells && option.starts_with("walk_cells=") && TryParseWalkingCells(option.substr(11), cells)) hasCells = true;
 					else { error = "Ungueltige oder nicht unterstuetzte OBJECT-Option; die Karte wird nicht bearbeitet."; return false; }
 				}
 				line.objectId = id;
@@ -393,7 +397,8 @@ private:
 	static bool Equal(const MapObject& a, const MapObject& b)
 	{
 		return a.id == b.id && a.type == b.type && a.x == b.x && a.y == b.y && a.spritePath == b.spritePath && a.solid == b.solid &&
-			   a.npcName == b.npcName && a.hasTile == b.hasTile && (!a.hasTile || (a.tileX == b.tileX && a.tileY == b.tileY && a.tileWidth == b.tileWidth && a.tileHeight == b.tileHeight));
+			   a.npcName == b.npcName && a.walkingAreaEnabled == b.walkingAreaEnabled && a.walkingCells == b.walkingCells &&
+			   a.hasTile == b.hasTile && (!a.hasTile || (a.tileX == b.tileX && a.tileY == b.tileY && a.tileWidth == b.tileWidth && a.tileHeight == b.tileHeight));
 	}
 	static std::string Format(const MapObject& object)
 	{
@@ -403,6 +408,19 @@ private:
 			   << object.x << ' ' << object.y << ' ' << object.spritePath << " solid=" << (object.solid ? 1 : 0);
 		if (object.hasTile) stream << " tile=" << object.tileX << ',' << object.tileY << ',' << object.tileWidth << ',' << object.tileHeight;
 		if (!object.npcName.empty()) stream << " name=" << EncodeObjectName(object.npcName);
+		if (object.type == MapObjectType::Npc)
+		{
+			if (object.walkingAreaEnabled) stream << " walking_area=1";
+			if (!object.walkingCells.empty())
+			{
+				stream << " walk_cells=";
+				for (std::size_t i = 0; i < object.walkingCells.size(); ++i)
+				{
+					if (i) stream << ';';
+					stream << object.walkingCells[i].x << ',' << object.walkingCells[i].y;
+				}
+			}
+		}
 		return stream.str();
 	}
 };

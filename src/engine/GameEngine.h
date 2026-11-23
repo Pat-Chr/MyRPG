@@ -4,6 +4,7 @@
 #include <cctype>
 #include <cmath>
 #include <iostream>
+#include <random>
 #include <utility>
 
 #include "GameTypes.h"
@@ -407,6 +408,8 @@ inline MapObject* InteractWithNpc(GameState& game)
     }
     if (!closest) return nullptr;
 
+    closest->npcMoving = false;
+    closest->npcWalkWait = 2.0f;
     const float dx = game.player.x - closest->x, dy = game.player.y - closest->y;
     const PlayerDirection direction = std::abs(dx) > std::abs(dy)
         ? (dx < 0.0f ? PlayerDirection::Left : PlayerDirection::Right)
@@ -417,6 +420,88 @@ inline MapObject* InteractWithNpc(GameState& game)
         closest->npcAnimationTime = 0.0;
     }
     return closest;
+}
+
+inline bool IsNpcPositionBlocked(const GameState& game, const MapObject& npc, float x, float y)
+{
+    for (const MapObject& other : game.activeMap.objects)
+    {
+        if (&other != &npc && other.solid && std::abs(x - other.x) < 64.0f && std::abs(y - other.y) < 64.0f)
+            return true;
+    }
+    return std::abs(x - game.player.x) < 32.0f + Player::hitboxSize * 0.5f &&
+        std::abs(y - Player::HitboxCenterY(game.player.y)) < 32.0f + Player::hitboxSize * 0.5f;
+}
+
+inline void UpdateNpcWalking(GameState& game, MapObject& npc, float deltaTime)
+{
+    if (!npc.walkingAreaEnabled || npc.walkingCells.empty())
+    {
+        if (npc.npcMoving) npc.npcAnimationTime = 0.0;
+        npc.npcMoving = false;
+        return;
+    }
+    if (deltaTime <= 0.0f) return;
+    static std::mt19937 random(std::random_device{}());
+    if (!npc.npcMoving)
+    {
+        npc.npcWalkWait -= deltaTime;
+        if (npc.npcWalkWait > 0.0f) return;
+        npc.npcWalkWait = std::uniform_real_distribution<float>(2.0f, 4.0f)(random);
+        if (!std::isfinite(npc.x) || !std::isfinite(npc.y) || std::abs(npc.x) > 64000000.0f || std::abs(npc.y) > 64000000.0f) return;
+        const WalkingCell current{ static_cast<int>(std::floor(npc.x / 64.0f)), static_cast<int>(std::floor(npc.y / 64.0f)) };
+        const auto contains = [&](WalkingCell cell) { return std::find(npc.walkingCells.begin(), npc.walkingCells.end(), cell) != npc.walkingCells.end(); };
+        if (!contains(current)) return;
+        const float centerX = current.x * 64.0f + 32.0f, centerY = current.y * 64.0f + 32.0f;
+        if (std::abs(npc.x - centerX) > 0.01f || std::abs(npc.y - centerY) > 0.01f)
+        {
+            npc.npcTargetX = centerX;
+            npc.npcTargetY = centerY;
+        }
+        else
+        {
+            const WalkingCell neighbors[] = { { current.x - 1, current.y }, { current.x + 1, current.y },
+                { current.x, current.y - 1 }, { current.x, current.y + 1 } };
+            std::vector<WalkingCell> candidates;
+            for (WalkingCell cell : neighbors)
+                if (contains(cell) && !IsNpcPositionBlocked(game, npc, cell.x * 64.0f + 32.0f, cell.y * 64.0f + 32.0f))
+                    candidates.push_back(cell);
+            if (candidates.empty()) return;
+            const WalkingCell target = candidates[std::uniform_int_distribution<std::size_t>(0, candidates.size() - 1)(random)];
+            npc.npcTargetX = target.x * 64.0f + 32.0f;
+            npc.npcTargetY = target.y * 64.0f + 32.0f;
+        }
+        npc.npcMoving = true;
+        npc.npcAnimationTime = 0.0;
+    }
+
+    const float dx = npc.npcTargetX - npc.x, dy = npc.npcTargetY - npc.y;
+    const float distance = std::sqrt(dx * dx + dy * dy);
+    if (distance <= 0.001f) { npc.npcMoving = false; npc.npcAnimationTime = 0.0; return; }
+    const PlayerDirection direction = std::abs(dx) > std::abs(dy)
+        ? (dx < 0.0f ? PlayerDirection::Left : PlayerDirection::Right)
+        : (dy < 0.0f ? PlayerDirection::Up : PlayerDirection::Down);
+    if (npc.npcDirection != direction) { npc.npcDirection = direction; npc.npcAnimationTime = 0.0; }
+    const float travel = (std::min)(distance, 90.0f * deltaTime);
+    const int steps = (std::max)(1, static_cast<int>(std::ceil(travel / 8.0f)));
+    const float stepX = dx / distance * travel / steps, stepY = dy / distance * travel / steps;
+    for (int i = 0; i < steps; ++i)
+    {
+        if (IsNpcPositionBlocked(game, npc, npc.x + stepX, npc.y + stepY))
+        {
+            npc.npcMoving = false;
+            npc.npcAnimationTime = 0.0;
+            return;
+        }
+        npc.x += stepX;
+        npc.y += stepY;
+    }
+    if (travel >= distance)
+    {
+        npc.x = npc.npcTargetX; npc.y = npc.npcTargetY;
+        npc.npcMoving = false;
+        npc.npcAnimationTime = 0.0;
+    }
 }
 
 // Effekte laufen während eines Kartenübergangs weiter; Bewegung und Triggerprüfung pausieren.
@@ -434,9 +519,19 @@ inline void UpdateGame(GameState& game, float deltaTime)
     if (IsMapTransitionActive(game))
     {
         game.player.moving = false;
+        for (MapObject& object : game.activeMap.objects)
+            if (object.type == MapObjectType::Npc && object.npcMoving)
+            {
+                object.npcMoving = false;
+                object.npcWalkWait = 2.0f;
+                object.npcAnimationTime = 0.0;
+            }
         UpdateMapTransition(game, deltaTime);
         return;
     }
+
+    for (MapObject& object : game.activeMap.objects)
+        if (object.type == MapObjectType::Npc) UpdateNpcWalking(game, object, deltaTime);
 
     float moveX = 0.0f;
     float moveY = 0.0f;

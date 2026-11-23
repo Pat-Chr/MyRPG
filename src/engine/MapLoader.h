@@ -2,6 +2,7 @@
 #pragma once
 
 #include <algorithm>
+#include <charconv>
 #include <cmath>
 #include <fstream>
 #include <iostream>
@@ -46,6 +47,33 @@ inline bool DecodeObjectName(const std::string& encoded, std::string& name)
 		result += static_cast<char>(c);
 	}
 	name = std::move(result);
+	return true;
+}
+
+inline bool TryParseWalkingCells(const std::string& value, std::vector<WalkingCell>& cells)
+{
+	if (value.empty()) return false;
+	std::vector<WalkingCell> parsed;
+	std::size_t start = 0;
+	while (start < value.size())
+	{
+		const std::size_t comma = value.find(',', start);
+		const std::size_t end = value.find(';', start);
+		const std::size_t limit = end == std::string::npos ? value.size() : end;
+		if (comma == std::string::npos || comma >= limit || comma == start || comma + 1 == limit) return false;
+		WalkingCell cell;
+		const char* base = value.data();
+		const auto x = std::from_chars(base + start, base + comma, cell.x);
+		const auto y = std::from_chars(base + comma + 1, base + limit, cell.y);
+		if (x.ec != std::errc{} || x.ptr != base + comma || y.ec != std::errc{} || y.ptr != base + limit ||
+			std::abs(static_cast<long long>(cell.x)) > 1000000 || std::abs(static_cast<long long>(cell.y)) > 1000000 ||
+			parsed.size() >= 4096 || std::find(parsed.begin(), parsed.end(), cell) != parsed.end()) return false;
+		parsed.push_back(cell);
+		if (end == std::string::npos) break;
+		start = end + 1;
+		if (start == value.size()) return false;
+	}
+	cells = std::move(parsed);
 	return true;
 }
 
@@ -228,7 +256,7 @@ inline bool TryLoadMapFromFile(const std::string& filePath, MapData& outMap)
 				object.solid = solidFlag != 0; // Festkörper-Objekte wenn Flag != 0
 
 				std::string token;
-				bool hasName = false;
+				bool hasName = false, hasWalkingArea = false, hasWalkingCells = false;
 				while (lineStream >> token)
 				{
 					if (token.starts_with("tile="))
@@ -247,6 +275,26 @@ inline bool TryLoadMapFromFile(const std::string& filePath, MapData& outMap)
 							return false;
 						}
 						hasName = true;
+					}
+					else if (token.starts_with("walking_area="))
+					{
+						int flag = 0;
+						if (object.type != MapObjectType::Npc || hasWalkingArea || !TryParseFlag(token, "walking_area", flag))
+						{
+							std::cerr << filePath << ':' << lineNumber << ": Invalid walking area: " << token << '\n';
+							return false;
+						}
+						hasWalkingArea = true;
+						object.walkingAreaEnabled = flag != 0;
+					}
+					else if (token.starts_with("walk_cells="))
+					{
+						if (object.type != MapObjectType::Npc || hasWalkingCells || !TryParseWalkingCells(token.substr(11), object.walkingCells))
+						{
+							std::cerr << filePath << ':' << lineNumber << ": Invalid walking cells: " << token << '\n';
+							return false;
+						}
+						hasWalkingCells = true;
 					}
 				}
 				loadedMap.objects.push_back(object);
