@@ -15,6 +15,7 @@
 #include <SFML/Window/Mouse.hpp>
 
 #include "src/engine/DialogBox.h"
+#include "src/engine/DialogLoader.h"
 #include "src/engine/GameEngine.h"
 #include "src/engine/GameRenderer.h"
 #include "src/engine/MainMenu.h"
@@ -131,7 +132,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         }
     }
 #endif
-#if defined(_DEBUG) || defined(MYRPG_MAP_EDITOR)
     wchar_t executablePath[32768];
     const DWORD executableLength = GetModuleFileNameW(nullptr, executablePath, static_cast<DWORD>(std::size(executablePath)));
     if (executableLength == 0 || executableLength >= std::size(executablePath) ||
@@ -140,7 +140,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         MessageBoxW(nullptr, L"Der Spielordner konnte nicht als Arbeitsverzeichnis eingerichtet werden.", L"MyRPG", MB_OK | MB_ICONERROR);
         return 1;
     }
-#endif
 
     constexpr sf::Vector2u baseResolution{ 1024u, 768u };
 
@@ -401,16 +400,30 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 else if (key->code == sf::Keyboard::Key::E)
                 {
                     MapObject* npc = InteractWithNpc(game);
-                    if (npc && dialog.Open("...", npc->npcName))
+                    if (npc)
                     {
-                        SetMovementState(game.input, false, false, false, false);
-                        game.player.moving = false;
-                    }
-                    else if (npc)
-                    {
-                        MessageBoxW(window.getNativeHandle(), L"Die Schrift fuer den Dialog konnte nicht geladen werden.",
-                                    L"MyRPG", MB_OK | MB_ICONERROR);
-                        frameClock.restart();
+                        std::vector<std::string> greeting;
+                        std::string error;
+                        if (!LoadNpcGreeting(npc->npcName, greeting, error))
+                        {
+                            std::fprintf(stderr, "NPC dialog: %s\n", error.c_str());
+                            const std::wstring message = L"Dialog fuer „" +
+                                sf::String::fromUtf8(npc->npcName.begin(), npc->npcName.end()).toWideString() +
+                                L"“: " + sf::String::fromUtf8(error.begin(), error.end()).toWideString();
+                            MessageBoxW(window.getNativeHandle(), message.c_str(), L"MyRPG - Dialog", MB_OK | MB_ICONERROR);
+                            frameClock.restart();
+                        }
+                        else if (dialog.Open(greeting, npc->npcName))
+                        {
+                            SetMovementState(game.input, false, false, false, false);
+                            game.player.moving = false;
+                        }
+                        else
+                        {
+                            MessageBoxW(window.getNativeHandle(), L"Die Schrift fuer den Dialog konnte nicht geladen werden.",
+                                        L"MyRPG", MB_OK | MB_ICONERROR);
+                            frameClock.restart();
+                        }
                     }
                 }
             }
@@ -422,6 +435,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                     if (inMainMenu)
                     {
                         handleMainMenuAction(mainMenu.HandleClick(position, baseResolution));
+                    }
+                    else if (dialog.IsOpen())
+                    {
+                        dialog.Advance();
                     }
                     else if (settingsMenu.IsOpen())
                     {

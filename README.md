@@ -22,6 +22,7 @@ Das [DesignDocument.md](./DesignDocument.md) beschreibt die technische Architekt
 - **Karten** aus Textdateien im `.map`-Format; enthalten sind eine Testkarte und eine Waldkarte
 - **Trigger** für den visuellen Magieeffekt und für dynamische Kartenwechsel
 - **Kartenwechsel** mit Fade-out/Fade-in und pro Trigger festlegbarer Spawn-Position
+- **NPC-Dialoge**: `E` spricht einen NPC an. Linksklick, `E`, Enter oder Leertaste zeigen den nächsten Absatz; `Esc` beendet den Dialog. Namensgleiche UTF-8-JSON-Dateien in `Assets/Dialogs/` enthalten ein `greeting`-Array mit den Textabsätzen, beispielsweise `Karl Nickel.json`. Ohne Datei erscheint `...`; fehlerhafte Dateien werden gemeldet. Details stehen im Design-Dokument.
 - **Spieleranimationen**: Laufanimationen in acht Richtungen und Stillstandsanimationen in vier Richtungen, beschrieben in `.anim`-Dateien. Diagonale Blickrichtungen verwenden im Stillstand die linke bzw. rechte Animation.
 - **Magieeffekte**: acht automatisch erkannte GPU-Shader-Effekte (Sparkle, Fire, Lightning, Frost, Vortex, Heal, Shockwave und ein bildschirmfüllender Testeffekt) in `Assets/Shaders/Effects/`. `M` startet Sparkle an der Spielerposition; auf der Testkarte gibt es rechts vom Startpunkt Trigger-Zonen für die Effekte.
 - **Screen Shake**: Ein eigenständiges Trigger-Ereignis erschüttert kurz die Spielwelt. Die Testzone liegt rechts hinter den Magie-Testzonen; Lightning und konfigurierbare Magieeffekte können den Shake zusätzlich auslösen.
