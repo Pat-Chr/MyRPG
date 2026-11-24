@@ -401,7 +401,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 else if (key->code == sf::Keyboard::Key::E)
                 {
                     MapObject* npc = InteractWithNpc(game);
-                    if (npc && dialog.Open("Ich habe nichts zu verkaufen,\nweil die faule Socke das Inventarsystem noch nicht fertig hat!", npc->npcName))
+                    if (npc && dialog.Open("...", npc->npcName))
                     {
                         SetMovementState(game.input, false, false, false, false);
                         game.player.moving = false;
