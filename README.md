@@ -1,6 +1,6 @@
 # MyRPG – eigene kleine RPG-Engine
 
-MyRPG ist ein Windows-Projekt, in dem ich meine eigene kleine RPG-Engine mit C++20 und SFML 3 entwickle. Der aktuelle Stand ist ein spielbarer Prototyp mit Bewegung, Karten, Animationen, Kollisionen und einfachen Effekten.
+MyRPG ist ein Windows-Projekt, in dem ich meine eigene kleine RPG-Engine mit C++20 und SFML 3 entwickle. Der aktuelle Stand ist ein spielbarer Prototyp mit Bewegung, Karten, Animationen, Kollisionen, NPCs, Dialogen und einfachen Effekten.
 
 > Ich schreibe meine eigene kleine RPG-Engine. Sie soll später auch ohne Programmierkenntnisse das Erstellen eines eigenen kleinen Adventures ermöglichen. Durch das Erstellen eigener Assets, Skripte und Maps soll man einfach seine eigene Welt erschaffen können.
 >
@@ -22,8 +22,9 @@ Das [DesignDocument.md](./DesignDocument.md) beschreibt die technische Architekt
 - **Karten** aus Textdateien im `.map`-Format; enthalten sind eine Testkarte und eine Waldkarte
 - **Trigger** für den visuellen Magieeffekt und für dynamische Kartenwechsel
 - **Kartenwechsel** mit Fade-out/Fade-in und pro Trigger festlegbarer Spawn-Position
-- **NPC-Dialoge**: `E` spricht einen NPC an. Linksklick, `E`, Enter oder Leertaste zeigen den nächsten Absatz; `Esc` beendet den Dialog. Namensgleiche UTF-8-JSON-Dateien in `Assets/Dialogs/` enthalten ein `greeting`-Array mit den Textabsätzen, beispielsweise `Karl Nickel.json`. Ohne Datei erscheint `...`; fehlerhafte Dateien werden gemeldet. Details stehen im Design-Dokument.
-- **Spieleranimationen**: Laufanimationen in acht Richtungen und Stillstandsanimationen in vier Richtungen, beschrieben in `.anim`-Dateien. Diagonale Blickrichtungen verwenden im Stillstand die linke bzw. rechte Animation.
+- **NPCs**: NPCs können als `npc`-Objekte in Karten platziert, benannt und mit eigenen Laufanimationen versehen werden. Optional bewegen sie sich innerhalb einer im Map-Editor markierten Walking Area; solide NPCs blockieren den Spieler und andere NPCs.
+- **NPC-Dialoge**: `E` spricht den nächsten NPC im Blickfeld an. Linksklick, `E`, Enter oder Leertaste zeigen den nächsten Absatz; `Esc` beendet den Dialog. Namensgleiche UTF-8-JSON-Dateien in `Assets/Dialogs/` enthalten ein `greeting`-Array mit den Textabsätzen, beispielsweise `Karl Nickel.json`. Ohne Datei erscheint `...`; fehlerhafte Dateien werden gemeldet. Details stehen im Design-Dokument.
+- **Spieler- und NPC-Animationen**: Laufanimationen in acht Richtungen und Stillstandsanimationen in vier Richtungen werden in `.anim`-Dateien beschrieben. Diagonale Blickrichtungen verwenden im Stillstand die linke bzw. rechte Animation.
 - **Magieeffekte**: acht automatisch erkannte GPU-Shader-Effekte (Sparkle, Fire, Lightning, Frost, Vortex, Heal, Shockwave und ein bildschirmfüllender Testeffekt) in `Assets/Shaders/Effects/`. `M` startet Sparkle an der Spielerposition; auf der Testkarte gibt es rechts vom Startpunkt Trigger-Zonen für die Effekte.
 - **Screen Shake**: Ein eigenständiges Trigger-Ereignis erschüttert kurz die Spielwelt. Die Testzone liegt rechts hinter den Magie-Testzonen; Lightning und konfigurierbare Magieeffekte können den Shake zusätzlich auslösen.
 - **Wetter**: Regen, Nebel und Hitze als Shader-Overlays in `Assets/Shaders/Weather/`; das Standardwetter ist pro Karte festlegbar und kann über Trigger geändert oder ausgeschaltet werden. Die Waldkarte startet mit Nebel; auf der Testkarte liegen vier Wetter-Testzonen südlich des Startpunkts.
@@ -105,9 +106,11 @@ MyRPG/
 │   │   ├── Weather.h              # Wetterzustand und Shader-Erkennung
 │   │   ├── WeatherRenderer.h      # Wetter-Shader-Overlay
 │   │   ├── MapLoader.h            # Parser für .map-Dateien
+│   │   ├── DialogBox.h             # Dialogfenster und Absatzsteuerung
+│   │   ├── DialogLoader.h          # JSON-Dialoge für NPCs
 │   │   ├── MainMenu.h             # Titelbildschirm und Hauptmenü
-│   │   ├── MenuFont.h             # Gemeinsame Systemschrift für Menüs
-│   │   ├── SaveGameStore.h        # Mehrere benannte Spielstände
+│   │   ├── MenuFont.h              # Gemeinsame Systemschrift für Menüs
+│   │   ├── SaveGameStore.h         # Mehrere benannte Spielstände
 │   │   ├── SettingsMenu.h         # Einstellungsmenü und VSync
 │   │   ├── SettingsStore.h        # JSON-Einstellungen laden und speichern
 │   │   ├── UserDataFiles.h        # Gemeinsame Speicher-/Benutzerdaten-Hilfen
@@ -117,7 +120,8 @@ MyRPG/
 │       ├── MapDocument.h          # Kartenmodell und sicheres Speichern
 │       └── MapEditor.h            # Editorfenster und Bedienlogik
 ├── Assets/
-│   ├── Animations/Characters/     # Spieleranimationen im .anim-Format
+│   ├── Animations/Characters/     # Spieler- und NPC-Animationen im .anim-Format
+│   ├── Dialogs/                   # UTF-8-JSON-Dialoge für benannte NPCs
 │   ├── Maps/                      # 0001_TestMap.map und 0001_Forest.map
 │   ├── Shaders/Effects/           # GLSL-Shader der Magieeffekte
 │   ├── Shaders/Weather/           # GLSL-Shader für Regen, Nebel und Hitze
@@ -142,10 +146,17 @@ OBJECT <id> <type> <x> <y> <spritePath> solid=<0|1>
 TRIGGER <id> <x> <y> <width> <height> <eventName> [glow=0|1] [spawn_x=<x> spawn_y=<y>]
 ```
 
+Für `npc`-Objekte sind zusätzlich optionale Angaben möglich:
+
+```text
+OBJECT <id> npc <x> <y> <spritePath> solid=<0|1> [name=<url-kodierter-Name>] [walking_area=1] [walk_cells=<x>,<y>;...]
+```
+
 - `MAP` setzt die erforderliche Karten-ID. `GROUND` legt das Standard-Bodensprite fest, das den sichtbaren Kartenbereich gekachelt ausfüllt.
 - `WEATHER` ist optional und setzt das Standardwetter auf `none` oder den Dateinamen eines Wetter-Shaders ohne `.frag`, zum Beispiel `rain` für `rain.frag`; ohne Angabe gilt `none`. Alle `.frag`-Dateien unter `Assets/Shaders/Weather/` werden beim Start automatisch erkannt und vorgeladen. Ein neuer Effekt benötigt keinen Codeeintrag; er ist nach dem nächsten Build und Spielstart verfügbar. Ungültige oder mehrfache Angaben verhindern das Laden der Karte. Das Wetter wird über der Spielwelt, aber unter UI und Kartenübergang gezeichnet und pausiert im Einstellungsmenü. Wenn ein Shader nicht verfügbar ist, wird der Fehler auf stderr gemeldet und der Effekt nicht gezeichnet.
 - `OBJECT` platziert ein Sprite in Weltkoordinaten. `untergrund` bezeichnet Bodenobjekte und `scenery` Dekoration; beide Typen rasten beim Platzieren und Verschieben auf das 64-Pixel-Raster ein. `wall` steht für Wände/Barrieren und `npc` für Charaktere; diese Typen sind frei positionierbar.
 - `solid` legt unabhängig vom Objekttyp fest, ob das Objekt den Spieler blockiert: `solid=1` aktiviert die Kollision, `solid=0` lässt den Spieler hindurch. Auch `scenery`, `wall` und `npc` blockieren also nur, wenn `solid=1` gesetzt ist. Für Boden- und Deko-Objekte, die begehbar sein sollen, wird üblicherweise `solid=0` verwendet.
+- Bei `npc` legt `name` den Anzeigenamen und damit den Namen der optionalen Dialogdatei unter `Assets/Dialogs/` fest. `walking_area=1` aktiviert die freie Bewegung innerhalb der mit `walk_cells` angegebenen 64-Pixel-Rasterfelder. Das Startfeld des NPCs sollte in dieser Liste enthalten sein.
 - `TRIGGER` definiert ein rechteckiges Ereignisgebiet in Weltkoordinaten. Das Ereignis wird beim Betreten ausgelöst; nach Verlassen kann es bei erneutem Betreten wieder ausgelöst werden. Der Ereignisname `none` bedeutet, dass beim Betreten nichts ausgelöst wird; er unterscheidet sich von `weather_none`, das das Wetter ausschaltet. `glow` ist optional und standardmäßig `0`. Mit `glow=1` erhält das Gebiet einen pulsierenden, additiven Shader-Glow. Das ist nur Darstellung und ändert weder Auslösung noch Kollision; der Glow ist auch im Release-Build sichtbar. Wenn Shader nicht unterstützt werden, wird stattdessen ein einfaches Rechteck gezeichnet. Debug-Markierungen der Trigger bleiben auf Debug-Builds beschränkt.
 
 Beispiel:
@@ -178,7 +189,7 @@ Trigger-Ereignisse der Form `weather_<shaderName>` schalten auf den gleichnamige
 
 ## 🔭 Ausblick
 
-MyRPG ist noch im Prototyp-Stadium. Zum langfristigen Ziel gehören eine einfachere Erstellung von Inhalten ohne Programmierkenntnisse sowie weitere Adventure-Systeme wie Dialoge, Kampf, Inventar und Story-Skripte. Benannte Spielstände, Karten, Animationen und Sprites sind bereits als datengetrennte Inhalte vorhanden; Skript-Laufzeit und komplexere Spielsysteme folgen schrittweise.
+MyRPG ist noch im Prototyp-Stadium. Zum langfristigen Ziel gehören eine einfachere Erstellung von Inhalten ohne Programmierkenntnisse sowie weitere Adventure-Systeme wie Kampf, Inventar und Story-Skripte. Benannte Spielstände, Karten, Animationen, NPCs, Dialoge und Sprites sind bereits als datengetrennte Inhalte vorhanden; Skript-Laufzeit und komplexere Spielsysteme folgen schrittweise.
 
 ## 🔧 Entwicklungshinweise
 
