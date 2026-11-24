@@ -25,6 +25,8 @@
 #include "src/editor/MapEditor.h"
 #endif
 
+// Berechnet den normierten Viewport so, dass das Basis-Seitenverhältnis erhalten bleibt.
+// Der ungenutzte Rand wird durch die schwarzen Balken außerhalb des Viewports gefüllt.
 sf::FloatRect ComputeLetterboxViewport(sf::Vector2u windowSize, sf::Vector2u baseResolution)
 {
     if (windowSize.x == 0u || windowSize.y == 0u || baseResolution.x == 0u || baseResolution.y == 0u)
@@ -52,6 +54,8 @@ sf::FloatRect ComputeLetterboxViewport(sf::Vector2u windowSize, sf::Vector2u bas
     return { { 0.0f, 0.0f }, { 1.0f, 1.0f } };
 }
 
+// Übergibt Unicode-Text über die Win32-Zwischenablage. Nach erfolgreichem SetClipboardData
+// gehört der Speicher dem Betriebssystem; bei Fehlern wird er hier wieder freigegeben.
 bool CopyTextToClipboard(HWND owner, const std::wstring& text)
 {
     const SIZE_T byteCount = static_cast<SIZE_T>((text.size() + 1) * sizeof(wchar_t));
@@ -114,6 +118,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(lpCmdLine);
     UNREFERENCED_PARAMETER(nCmdShow);
 
+    // Diagnoseausgaben gehen nur im Debug-Build an eine Konsole; Release bleibt ohne Konsolenfenster.
 #ifdef _DEBUG
     if (!AllocConsole())
     {
@@ -132,6 +137,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         }
     }
 #endif
+    // Viele Asset- und Speicherpfade sind relativ. Deshalb wird das Arbeitsverzeichnis unabhängig
+    // davon, von wo aus das Spiel gestartet wurde, auf den Ordner der EXE gesetzt.
     wchar_t executablePath[32768];
     const DWORD executableLength = GetModuleFileNameW(nullptr, executablePath, static_cast<DWORD>(std::size(executablePath)));
     if (executableLength == 0 || executableLength >= std::size(executablePath) ||
@@ -141,6 +148,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         return 1;
     }
 
+    // Spielwelt und UI arbeiten in einer festen logischen Auflösung; das Fenster darf später
+    // anders groß sein, ohne dass sich das Seitenverhältnis der Darstellung ändert.
     constexpr sf::Vector2u baseResolution{ 1024u, 768u };
 
     sf::RenderWindow window(sf::VideoMode(baseResolution), "MyRPG");
@@ -172,11 +181,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     std::optional<SaveGameSlot::Id> activeSave;
     std::string activeSaveName;
     bool inMainMenu = true;
+    // Shader nach dem Erzeugen des Fensters/Render-Kontexts laden, damit sie beim ersten Einsatz
+    // bereits verfügbar sind und nicht mitten in einem Spieleffekt geladen werden müssen.
     PreloadMagicShaders();
     PreloadWeatherShaders();
 
     sf::Clock frameClock;
     sf::FloatRect debugCoordinatesBounds{};
+    // Gemeinsamer Fehlerpfad für Spielstände: Ausgabe für Diagnose, Dialog für den Spieler und
+    // Neustart der Uhr, damit die Dialogzeit nicht als großer Update-Schritt ins Spiel gelangt.
     const auto showSaveGameError = [&](const std::string& error)
     {
         std::fprintf(stderr, "Savegame: %s\n", error.c_str());
@@ -188,6 +201,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         return SaveGamePosition{ std::filesystem::path(state.activeMapPath).filename().string(),
             state.player.x, state.player.y, name };
     };
+    // Aktiviert einen bereits angelegten oder geladenen Slot und lässt die Menüauswahl für
+    // einen späteren Rückweg in einen definierten Ausgangszustand zurückkehren.
     const auto beginGame = [&](SaveGameSlot::Id id, std::string name)
     {
         activeSave = id;
@@ -196,6 +211,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         inMainMenu = false;
         frameClock.restart();
     };
+    // Übersetzt Menü-Aktionen in Spielzustandswechsel und delegiert Dateioperationen an den Store.
     const auto handleMainMenuAction = [&](MainMenu::Action action)
     {
         std::string error;
@@ -257,6 +273,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             else showSaveGameError(error);
         }
     };
+    // Gemeinsamer Speicherweg für Menü-Rückkehr und Beenden. Ungültige Positionen oder ein
+    // fehlgeschlagener Schreibvorgang verhindern den jeweiligen Zustandswechsel.
     const auto saveCurrentGame = [&]() -> bool
     {
         if (IsSolidObjectBlockingPosition(game, game.player.x, game.player.y))
@@ -278,6 +296,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         }
         return true;
     };
+    // Liefert true nur, wenn das Schließen erlaubt ist: im Spiel kann der Spieler speichern,
+    // ohne Speichern beenden oder abbrechen; im Hauptmenü ist keine Rückfrage nötig.
     const auto confirmGameClose = [&]() -> bool
     {
         if (inMainMenu) return true;
@@ -303,6 +323,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         inMainMenu = true;
         frameClock.restart();
     };
+    // Änderungen werden sofort dauerhaft gespeichert; der Rückweg ins Hauptmenü erfolgt erst,
+    // wenn auch das Speichern des aktiven Spielstands erfolgreich war.
     const auto handleSettingsAction = [&](SettingsMenu::Action action)
     {
         if (action == SettingsMenu::Action::SaveAndMainMenu)
@@ -318,6 +340,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         }
     };
 
+    // SFML-Ereignisse (einmalige Tastendrücke, Text und Klicks) werden zuerst abgearbeitet;
+    // gehaltene Bewegungstasten werden weiter unten pro Frame separat abgefragt.
     while (window.isOpen())
     {
         while (const std::optional event = window.pollEvent())
@@ -344,6 +368,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             }
             else if (const auto* key = event->getIf<sf::Event::KeyPressed>())
             {
+                // Keine Spiel- oder Menüaktion ausführen, wenn das Fenster nicht aktiv ist.
                 if (!window.hasFocus())
                 {
                     continue;
@@ -380,6 +405,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                     handleSettingsAction(settingsMenu.HandleKey(key->code, window));
                 }
 #ifdef MYRPG_MAP_EDITOR
+                // Der Editor ist im Debug direkt verfügbar; im Release muss zusätzlich die
+                // gespeicherte Freigabe aktiv sein. Während eines Kartenwechsels bleibt er zu.
                 else if (key->code == sf::Keyboard::Key::F2 && !IsMapTransitionActive(game)
 #ifndef _DEBUG
                     && settingsMenu.GetSettings().mapEditorEnabled
@@ -399,6 +426,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 }
                 else if (key->code == sf::Keyboard::Key::E)
                 {
+                    // Erst die Spiellogik ermittelt, ob ein ansprechbarer NPC vor dem Spieler ist;
+                    // nur dann werden dessen Dialogdaten geladen und die Bewegung angehalten.
                     MapObject* npc = InteractWithNpc(game);
                     if (npc)
                     {
@@ -431,6 +460,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             {
                 if (mouseButton->button == sf::Mouse::Button::Left && window.hasFocus())
                 {
+                    // Wandelt Fensterpixel in die logischen Spielkoordinaten um, damit Klicks
+                    // auch bei Skalierung und Letterbox-Rändern korrekt ausgewertet werden.
                     const sf::Vector2f position = window.mapPixelToCoords(mouseButton->position);
                     if (inMainMenu)
                     {
@@ -462,6 +493,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             break;
         }
 
+        // Bewegung ist nur im aktiven Spiel und bei geschlossenem Menü/Dialog möglich.
+        // Bei Fokusverlust werden alle Richtungen false, wodurch die Figur sofort anhält.
         const bool hasFocus = window.hasFocus() && !inMainMenu && !settingsMenu.IsOpen() && !dialog.IsOpen();
         SetMovementState(
             game.input,
@@ -470,6 +503,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             hasFocus && (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left)),
             hasFocus && (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right)));
 
+        // Delta-Time macht die Spielsimulation unabhängig von der Bildrate. Da dieselbe Uhr
+        // auch durch Dialoge/Fehlermeldungen neu gestartet wird, entstehen danach keine Zeitsprünge.
         const float deltaTime = frameClock.restart().asSeconds();
         const float fps = deltaTime > 0.0f ? (1.0f / deltaTime) : 0.0f;
         if (!inMainMenu && !settingsMenu.IsOpen() && !dialog.IsOpen())
@@ -484,12 +519,16 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
         const sf::Vector2u windowSize = window.getSize();
 
+        // Die logische View bleibt konstant; nur ihr normierter Ausschnitt im Fenster ändert
+        // sich. Dadurch behalten Spielwelt, Mauskoordinaten und UI dieselbe Basisauflösung.
         sf::View letterboxView;
         letterboxView.setSize({ static_cast<float>(baseResolution.x), static_cast<float>(baseResolution.y) });
         letterboxView.setCenter({ static_cast<float>(baseResolution.x) * 0.5f, static_cast<float>(baseResolution.y) * 0.5f });
         letterboxView.setViewport(ComputeLetterboxViewport(windowSize, baseResolution));
         window.setView(letterboxView);
 
+        // Pro Frame wird entweder das Hauptmenü oder die Spielwelt gezeichnet. Menüs und Dialoge
+        // liegen über dem Spielbild; die Simulation selbst wurde oben währenddessen angehalten.
         if (inMainMenu)
         {
             window.clear(sf::Color::Black);
