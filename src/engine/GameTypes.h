@@ -74,6 +74,13 @@ enum class MapObjectType
 	Npc           // Nicht-spielerische Charaktere
 };
 
+struct WalkingCell
+{
+	int x = 0;
+	int y = 0;
+	bool operator==(const WalkingCell&) const = default;
+};
+
 // Einzelne Objekte in der Karte
 struct MapObject
 {
@@ -105,6 +112,11 @@ struct MapObject
 	std::string npcName;
 	PlayerDirection npcDirection = PlayerDirection::Down;
 	double npcAnimationTime = 0.0;
+	bool walkingAreaEnabled = false;
+	std::vector<WalkingCell> walkingCells;
+	bool npcMoving = false;
+	float npcWalkWait = 2.0f;
+	float npcTargetX = 0.0f, npcTargetY = 0.0f;
 };
 
 // Auslöse-Zone für Ereignisse (Trigger)

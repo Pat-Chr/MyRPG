@@ -81,7 +81,7 @@ inline sf::Texture* GetCachedTexture(const std::string& path)
     return &created->second;
 }
 
-// Die NPC-Datei enthält alle Richtungen und optional zukünftige Laufanimationen.
+// Die NPC-Datei enthält alle Richtungen und optionale Laufanimationen.
 inline const SpriteAnimation* GetNpcAnimation(const MapObject& object, const sf::Texture& texture)
 {
     if (object.type != MapObjectType::Npc || object.hasTile) return nullptr;
@@ -132,7 +132,9 @@ inline const SpriteAnimation* GetNpcAnimation(const MapObject& object, const sf:
     }
     if (!found->second) return nullptr;
     const std::size_t direction = static_cast<std::size_t>(object.npcDirection);
-    return &*(*found->second)[direction < 4 ? direction : 0];
+    const std::size_t idle = direction < 4 ? direction : 0;
+    const std::size_t clip = object.npcMoving && (*found->second)[idle + 4] ? idle + 4 : idle;
+    return &*(*found->second)[clip];
 }
 
 inline std::size_t GetAnimationFrameIndex(const SpriteAnimation& animation, double elapsed)
@@ -272,7 +274,8 @@ inline void DrawSpriteShadow(sf::RenderTarget& target, const SpriteShadowData& d
 inline const SpriteShadowData* GetNpcShadowData(const MapObject& object, const SpriteAnimation& animation, const sf::Texture& texture)
 {
     static std::unordered_map<std::string, std::optional<SpriteShadowData>> cache;
-    const std::string key = object.spritePath + "#" + std::to_string(static_cast<int>(object.npcDirection));
+    const std::string key = object.spritePath + "#" + std::to_string(static_cast<int>(object.npcDirection)) +
+        "#" + animation.texturePath + "#" + (object.npcMoving ? "walk" : "idle");
     auto found = cache.find(key);
     if (found == cache.end())
     {
@@ -391,6 +394,11 @@ inline void RenderMapObjects(sf::RenderTarget& target, const Viewport& viewport,
             {
                 frameIndex = GetAnimationFrameIndex(*animation, object.npcAnimationTime);
                 frame = animation->frames[frameIndex];
+                if (animation->texturePath != object.spritePath)
+                {
+                    texture = GetCachedTexture(animation->texturePath);
+                    sprite.setTexture(*texture);
+                }
                 sprite.setTextureRect(frame);
                 textureSize = { static_cast<unsigned>(frame.size.x), static_cast<unsigned>(frame.size.y) };
                 animationScale = animation->scale;

@@ -207,6 +207,7 @@ private:
 	bool mapPropertiesOpen = false;
 	int mapWeatherOffset = 0;
 	bool renameTriggerOpen = false, renameNpcOpen = false;
+	bool editingWalkingArea = false;
 	std::string triggerNameInput;
 	sf::String npcNameInput;
 	bool pickingTarget = false;
@@ -506,9 +507,14 @@ private:
 	{
 		return TriggerPanelVisible() && PropertiesBounds(590.0f).contains(position);
 	}
+	float ObjectPanelHeight() const
+	{
+		return mode == Mode::Select && selectedObject < document.map.objects.size() &&
+			document.map.objects[selectedObject].type == MapObjectType::Npc ? 310.0f : 200.0f;
+	}
 	bool IsOverObjectPanel(sf::Vector2f position) const
 	{
-		return ObjectPanelVisible() && PropertiesBounds(200.0f).contains(position);
+		return ObjectPanelVisible() && PropertiesBounds(ObjectPanelHeight()).contains(position);
 	}
 
 	int TriggerEdgesAt(const TriggerZone& trigger, sf::Vector2f pos) const
@@ -765,6 +771,8 @@ private:
 	bool Save()
 	{
 		std::string error;
+		const std::string mapPath = document.path.string();
+		if (!ValidateMapPlayerCollisionRecovery(document.map, mapPath, error)) { Error(error); return false; }
 		if (!document.Save(error)) { Error(error); return false; }
 		selectedObject = static_cast<std::size_t>(-1);
 		selectedTrigger = static_cast<std::size_t>(-1);
@@ -899,6 +907,7 @@ private:
 	}
 	void SetMode(Mode next)
 	{
+		editingWalkingArea = false;
 		if (mode == next) return;
 		if (next == Mode::Spawn) modeBeforeSpawn = mode;
 		else
@@ -936,13 +945,15 @@ private:
 		}
 		if (key == sf::Keyboard::Key::Escape)
 		{
-			if (mode == Mode::Spawn) mode = modeBeforeSpawn;
+			if (editingWalkingArea) editingWalkingArea = false;
+			else if (mode == Mode::Spawn) mode = modeBeforeSpawn;
 			else if (ConfirmEditorClose()) window.close();
 		}
 		else if (key == sf::Keyboard::Key::Tab) ToggleMode(Mode::Select);
 		else if (key == sf::Keyboard::Key::G) ToggleSheet();
 		else if (key == sf::Keyboard::Key::P) SetMode(Mode::Spawn);
 		else if (key == sf::Keyboard::Key::T) ToggleMode(Mode::Trigger);
+		else if (key == sf::Keyboard::Key::Delete && editingWalkingArea) return;
 		else if (key == sf::Keyboard::Key::Delete && mode == Mode::Trigger)
 		{
 			if (selectedTrigger < document.map.triggers.size())
@@ -994,6 +1005,12 @@ private:
 	{
 		MapObject* object = mode == Mode::Select && selectedObject < document.map.objects.size() ? &document.map.objects[selectedObject] : nullptr;
 		MapObjectType& type = object ? object->type : newType;
+		if (object && type == MapObjectType::Npc && (object->walkingAreaEnabled || !object->walkingCells.empty()))
+		{
+			if (MessageBoxW(owner, L"Beim Wechsel des Objekttyps wird die Walking Area entfernt. Fortfahren?", L"Map-Editor", MB_YESNO | MB_ICONWARNING) != IDYES) return;
+			object->walkingAreaEnabled = false;
+			object->walkingCells.clear();
+		}
 		type = type == MapObjectType::Scenery ? MapObjectType::Untergrund : type == MapObjectType::Untergrund ? MapObjectType::Wall : type == MapObjectType::Wall ? MapObjectType::Npc : MapObjectType::Scenery;
 		if (object)
 		{
@@ -1009,6 +1026,7 @@ private:
 	{
 		const RibbonButton* button = RibbonButtonAt(position);
 		if (!button || !RibbonButtonEnabled(*button)) return;
+		editingWalkingArea = false;
 		triggerDropdown = TriggerDropdown::None;
 		switch (button->action)
 		{
@@ -1075,6 +1093,19 @@ private:
 		if (IsOverObjectPanel(position))
 		{
 			if (event.button == sf::Mouse::Button::Left && mode == Mode::Select &&
+				document.map.objects[selectedObject].type == MapObjectType::Npc && x >= 970 && x < 1270 && y >= 270 + PanelOffset && y < 300 + PanelOffset)
+			{
+				auto& object = document.map.objects[selectedObject];
+				object.walkingAreaEnabled = !object.walkingAreaEnabled;
+				document.dirty = true;
+			}
+			else if (event.button == sf::Mouse::Button::Left && mode == Mode::Select &&
+				document.map.objects[selectedObject].type == MapObjectType::Npc && x >= 970 && x < 1270 && y >= 305 + PanelOffset && y < 337 + PanelOffset)
+			{
+				editingWalkingArea = !editingWalkingArea;
+				draggingObject = false;
+			}
+			else if (event.button == sf::Mouse::Button::Left && mode == Mode::Select &&
 				document.map.objects[selectedObject].type == MapObjectType::Npc && x >= 970 && x < 1270 && y >= 230 + PanelOffset && y < 262 + PanelOffset)
 			{
 				const auto& name = document.map.objects[selectedObject].npcName;
@@ -1129,6 +1160,20 @@ private:
 		}
 		if (!IsMapArea(position) || document.path.empty()) return;
 		const sf::Vector2f pos = WorldPosition(window, event.position);
+		if (editingWalkingArea && mode == Mode::Select && selectedObject < document.map.objects.size() &&
+			document.map.objects[selectedObject].type == MapObjectType::Npc)
+		{
+			if (!std::isfinite(pos.x) || !std::isfinite(pos.y) || std::abs(pos.x) >= 64000000.0f || std::abs(pos.y) >= 64000000.0f)
+			{ Error("Diese Rasterposition liegt ausserhalb des unterstuetzten Bereichs."); return; }
+			const WalkingCell cell{ static_cast<int>(std::floor(pos.x / 64.0f)), static_cast<int>(std::floor(pos.y / 64.0f)) };
+			auto& cells = document.map.objects[selectedObject].walkingCells;
+			const auto found = std::find(cells.begin(), cells.end(), cell);
+			if (found != cells.end()) cells.erase(found);
+			else if (cells.size() < 4096) cells.push_back(cell);
+			else { Error("Eine Walking Area darf hoechstens 4096 Felder enthalten."); return; }
+			document.dirty = true;
+			return;
+		}
 		if (mode == Mode::Spawn) { spawn = pos; mode = modeBeforeSpawn; return; }
 		if (mode == Mode::Trigger)
 		{
@@ -1340,7 +1385,7 @@ private:
 		if (!ObjectPanelVisible()) return;
 		const MapObject* object = mode == Mode::Select ? &document.map.objects[selectedObject] : nullptr;
 		const bool solid = object ? object->solid : newSolid;
-		FillRect(window, PropertiesBounds(200.0f), sf::Color(35, 38, 45, 245));
+		FillRect(window, PropertiesBounds(ObjectPanelHeight()), sf::Color(35, 38, 45, 245));
 		std::string title = object ? "OBJEKT: " + object->id : "NEUE OBJEKTE";
 		if (title.size() > 33) title = title.substr(0, 30) + "...";
 		Label(window, font, title, 970, 80 + PanelOffset, 14);
@@ -1360,6 +1405,14 @@ private:
 			while (name.getLocalBounds().size.x > 280.0f && name.getCharacterSize() > 8) name.setCharacterSize(name.getCharacterSize() - 1);
 			name.setPosition({ 978, 238 + PanelOffset });
 			window.draw(name);
+			FillRect(window, { { 970, 272 + PanelOffset }, { 20, 20 } }, sf::Color(185, 190, 195));
+			FillRect(window, { { 972, 274 + PanelOffset }, { 16, 16 } }, object->walkingAreaEnabled ? sf::Color(70, 145, 150) : sf::Color(35, 38, 45));
+			if (object->walkingAreaEnabled) Label(window, font, "X", 975, 272 + PanelOffset, 14);
+			Label(window, font, "Walking Area aktivieren", 998, 273 + PanelOffset, 14);
+			FillRect(window, { { 970, 305 + PanelOffset }, { 300, 32 } }, editingWalkingArea ? sf::Color(53, 79, 111) : sf::Color(65, 70, 80));
+			Label(window, font, editingWalkingArea ? "Fertig (Esc)" : "Flaeche bearbeiten", 978, 313 + PanelOffset, 13);
+			Label(window, font, "Rasterfelder anklicken: an / aus", 970, 344 + PanelOffset, 12);
+			Label(window, font, "Startfeld des NPCs muss markiert sein.", 970, 360 + PanelOffset, 12);
 		}
 	}
 	void DrawTriggerPanel(sf::RenderWindow& window, const sf::Font& font) const
@@ -1519,6 +1572,19 @@ private:
 		for (float y = std::ceil(top / 64) * 64; y < top + viewport.height; y += 64)
 		{ const float py = y - top; grid.append(sf::Vertex({ 0, py }, gridColor)); grid.append(sf::Vertex({ static_cast<float>(viewport.width), py }, gridColor)); }
 		window.draw(grid);
+		if (!pickingTarget && mode == Mode::Select && selectedObject < document.map.objects.size() &&
+			document.map.objects[selectedObject].type == MapObjectType::Npc)
+		{
+			sf::RectangleShape cell({ 64.0f, 64.0f });
+			cell.setFillColor(sf::Color(30, 180, 230, 80));
+			cell.setOutlineColor(sf::Color(70, 210, 250, 180));
+			cell.setOutlineThickness(-1.0f / zoom);
+			for (const WalkingCell& position : document.map.objects[selectedObject].walkingCells)
+			{
+				cell.setPosition({ position.x * 64.0f - left, position.y * 64.0f - top });
+				window.draw(cell);
+			}
+		}
 		sf::CircleShape marker(8.0f / zoom);
 		marker.setOrigin({ 8.0f / zoom, 8.0f / zoom });
 		const sf::Vector2f markerPosition = pickingTarget ? sf::Vector2f{ document.map.triggers[selectedTrigger].spawnX, document.map.triggers[selectedTrigger].spawnY } : spawn;

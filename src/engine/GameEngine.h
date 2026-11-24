@@ -4,6 +4,9 @@
 #include <cctype>
 #include <cmath>
 #include <iostream>
+#include <map>
+#include <random>
+#include <set>
 #include <utility>
 
 #include "GameTypes.h"
@@ -310,41 +313,140 @@ inline void SetMovementState(InputState& input, bool up, bool down, bool left, b
     input.right = right;
 }
 
+inline bool IsObjectBlockingPlayer(const MapObject& object, float playerX, float playerY)
+{
+    constexpr float objectHalfSize = 32.0f;
+    constexpr float playerHalfSize = Player::hitboxSize * 0.5f;
+    const float hitboxCenterY = Player::HitboxCenterY(playerY);
+    return object.solid && playerX + playerHalfSize > object.x - objectHalfSize &&
+        playerX - playerHalfSize < object.x + objectHalfSize &&
+        hitboxCenterY + playerHalfSize > object.y - objectHalfSize &&
+        hitboxCenterY - playerHalfSize < object.y + objectHalfSize;
+}
+
 // Prüft überlappende Kollisionsboxen. Ausschlaggebend ist nur solid, nicht der Objekttyp.
 inline bool IsSolidObjectBlockingPosition(const GameState& game, float playerX, float playerY)
 {
-    constexpr float mapObjectSize = 64.0f;
-    const float objectHalfSize = mapObjectSize * 0.5f;
-    constexpr float playerHalfSize = Player::hitboxSize * 0.5f;
-    const float hitboxCenterY = Player::HitboxCenterY(playerY);
-
     for (const MapObject& object : game.activeMap.objects)
+        if (IsObjectBlockingPlayer(object, playerX, playerY)) return true;
+    return false;
+}
+
+inline bool IsNpcPositionBlocked(const GameState& game, const MapObject& npc, float x, float y);
+
+inline bool TryResolvePlayerPositionCollisions(GameState& restored, const std::string& mapPath,
+    float x, float y, std::string& error)
+{
+    restored.player.x = x;
+    restored.player.y = y;
+    std::vector<std::size_t> blockingNpcs;
+    for (std::size_t i = 0; i < restored.activeMap.objects.size(); ++i)
     {
-        if (!object.solid)
+        const MapObject& object = restored.activeMap.objects[i];
+        if (!IsObjectBlockingPlayer(object, x, y)) continue;
+        if (object.type != MapObjectType::Npc)
         {
-            continue;
+            error = "Die gespeicherte Spielerposition liegt in einem Hindernis.";
+            return false;
         }
-
-        const float objectLeft = object.x - objectHalfSize;
-        const float objectRight = object.x + objectHalfSize;
-        const float objectTop = object.y - objectHalfSize;
-        const float objectBottom = object.y + objectHalfSize;
-
-        const float playerLeft = playerX - playerHalfSize;
-        const float playerRight = playerX + playerHalfSize;
-        const float playerTop = hitboxCenterY - playerHalfSize;
-        const float playerBottom = hitboxCenterY + playerHalfSize;
-
-        const bool overlapX = playerRight > objectLeft && playerLeft < objectRight;
-        const bool overlapY = playerBottom > objectTop && playerTop < objectBottom;
-
-        if (overlapX && overlapY)
-        {
-            return true;
-        }
+        blockingNpcs.push_back(i);
     }
 
-    return false;
+    // Alle betroffenen NPCs werden gemeinsam zugewiesen, damit keiner einem anderen den einzigen Platz nimmt.
+    for (std::size_t index : blockingNpcs) restored.activeMap.objects[index].solid = false;
+    using CellKey = std::pair<int, int>;
+    std::vector<std::vector<CellKey>> candidates(blockingNpcs.size());
+    for (std::size_t i = 0; i < blockingNpcs.size(); ++i)
+    {
+        const MapObject& npc = restored.activeMap.objects[blockingNpcs[i]];
+        if (npc.walkingCells.empty())
+        {
+            error = "Der NPC '" + npc.id + "' blockiert die gespeicherte Spielerposition. In der geladenen Karte " +
+                mapPath + " sind fuer diesen NPC keine Walking-Area-Felder gespeichert.";
+            return false;
+        }
+        for (const WalkingCell& cell : npc.walkingCells)
+        {
+            if (std::floor(npc.x / 64.0f) == cell.x && std::floor(npc.y / 64.0f) == cell.y) continue;
+            const float targetX = cell.x * 64.0f + 32.0f, targetY = cell.y * 64.0f + 32.0f;
+            if (!IsNpcPositionBlocked(restored, npc, targetX, targetY)) candidates[i].emplace_back(cell.x, cell.y);
+        }
+        if (candidates[i].empty())
+        {
+            error = "Der NPC '" + npc.id + "' blockiert die gespeicherte Spielerposition. Seine " +
+                std::to_string(npc.walkingCells.size()) + " Walking-Area-Felder in " + mapPath +
+                " bieten kein freies anderes Feld; das aktuelle Feld und von Spieler oder soliden Objekten blockierte Felder scheiden aus.";
+            return false;
+        }
+        std::sort(candidates[i].begin(), candidates[i].end(), [&](CellKey a, CellKey b) {
+            const double ax = a.first * 64.0 + 32.0 - npc.x, ay = a.second * 64.0 + 32.0 - npc.y;
+            const double bx = b.first * 64.0 + 32.0 - npc.x, by = b.second * 64.0 + 32.0 - npc.y;
+            return ax * ax + ay * ay < bx * bx + by * by;
+        });
+    }
+    std::map<CellKey, std::size_t> assignments;
+    auto assign = [&](auto&& self, std::size_t npc, std::set<CellKey>& visited) -> bool {
+        for (const CellKey& cell : candidates[npc])
+        {
+            if (!visited.insert(cell).second) continue;
+            const auto occupied = assignments.find(cell);
+            if (occupied == assignments.end() || self(self, occupied->second, visited))
+            {
+                assignments[cell] = npc;
+                return true;
+            }
+        }
+        return false;
+    };
+    for (std::size_t i = 0; i < blockingNpcs.size(); ++i)
+    {
+        std::set<CellKey> visited;
+        if (!assign(assign, i, visited))
+        {
+            error = "Die gespeicherte Spielerposition wird von mehreren NPCs blockiert. Fuer NPC '" +
+                restored.activeMap.objects[blockingNpcs[i]].id + "' und die anderen NPCs stehen in " + mapPath +
+                " nicht genug unterschiedliche freie Walking-Area-Felder zur Verfuegung.";
+            return false;
+        }
+    }
+    for (const auto& [cell, index] : assignments)
+    {
+        MapObject& npc = restored.activeMap.objects[blockingNpcs[index]];
+        npc.x = cell.first * 64.0f + 32.0f;
+        npc.y = cell.second * 64.0f + 32.0f;
+        npc.solid = true;
+    }
+
+    for (TriggerZone& trigger : restored.activeMap.triggers)
+        trigger.isPlayerInside = IsInsideTrigger(trigger, x, y);
+    return true;
+}
+
+inline bool ValidateMapPlayerCollisionRecovery(const MapData& map, const std::string& mapPath, std::string& error)
+{
+    for (std::size_t i = 0; i < map.objects.size(); ++i)
+    {
+        const MapObject& object = map.objects[i];
+        if (object.type != MapObjectType::Npc || !object.solid) continue;
+        std::vector<std::pair<float, float>> positions{ { object.x, object.y } };
+        if (object.walkingAreaEnabled)
+            for (const WalkingCell& cell : object.walkingCells)
+                positions.emplace_back(cell.x * 64.0f + 32.0f, cell.y * 64.0f + 32.0f);
+        for (const auto& [x, y] : positions)
+        {
+            GameState candidate{};
+            candidate.activeMap = map;
+            candidate.activeMap.objects[i].x = x;
+            candidate.activeMap.objects[i].y = y;
+            if (!TryResolvePlayerPositionCollisions(candidate, mapPath, x, y, error))
+            {
+                error = "Kollisionspruefung fuer NPC '" + object.id + "' auf Karte '" + mapPath + "' bei (" +
+                    std::to_string(x) + ", " + std::to_string(y) + ") fehlgeschlagen: " + error;
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 inline bool TryRestorePlayerPosition(GameState& game, const std::string& mapPath, float x, float y, std::string& error)
@@ -355,20 +457,9 @@ inline bool TryRestorePlayerPosition(GameState& game, const std::string& mapPath
         error = "Die gespeicherte Karte konnte nicht geladen werden: " + mapPath;
         return false;
     }
-    if (IsSolidObjectBlockingPosition(restored, x, y))
-    {
-        error = "Die gespeicherte Spielerposition liegt in einem Hindernis.";
-        return false;
-    }
-
+    if (!TryResolvePlayerPositionCollisions(restored, mapPath, x, y, error)) return false;
     restored.activeMapPath = mapPath;
-    restored.player.x = x;
-    restored.player.y = y;
     restored.weather = WeatherState{ restored.activeMap.defaultWeather };
-    for (TriggerZone& trigger : restored.activeMap.triggers)
-    {
-        trigger.isPlayerInside = IsInsideTrigger(trigger, x, y);
-    }
     game = std::move(restored);
     return true;
 }
@@ -407,6 +498,8 @@ inline MapObject* InteractWithNpc(GameState& game)
     }
     if (!closest) return nullptr;
 
+    closest->npcMoving = false;
+    closest->npcWalkWait = 2.0f;
     const float dx = game.player.x - closest->x, dy = game.player.y - closest->y;
     const PlayerDirection direction = std::abs(dx) > std::abs(dy)
         ? (dx < 0.0f ? PlayerDirection::Left : PlayerDirection::Right)
@@ -417,6 +510,105 @@ inline MapObject* InteractWithNpc(GameState& game)
         closest->npcAnimationTime = 0.0;
     }
     return closest;
+}
+
+inline bool IsNpcPositionBlocked(const GameState& game, const MapObject& npc, float x, float y)
+{
+    for (const MapObject& other : game.activeMap.objects)
+    {
+        if (&other != &npc && other.solid && std::abs(x - other.x) < 64.0f && std::abs(y - other.y) < 64.0f)
+            return true;
+    }
+    return std::abs(x - game.player.x) < 32.0f + Player::hitboxSize * 0.5f &&
+        std::abs(y - Player::HitboxCenterY(game.player.y)) < 32.0f + Player::hitboxSize * 0.5f;
+}
+
+inline void UpdateNpcWalking(GameState& game, MapObject& npc, float deltaTime)
+{
+    if (!npc.walkingAreaEnabled || npc.walkingCells.empty())
+    {
+        if (npc.npcMoving) npc.npcAnimationTime = 0.0;
+        npc.npcMoving = false;
+        return;
+    }
+    if (deltaTime <= 0.0f) return;
+    static std::mt19937 random(std::random_device{}());
+    if (!npc.npcMoving)
+    {
+        npc.npcWalkWait -= deltaTime;
+        if (npc.npcWalkWait > 0.0f) return;
+        npc.npcWalkWait = std::uniform_real_distribution<float>(2.0f, 4.0f)(random);
+        if (!std::isfinite(npc.x) || !std::isfinite(npc.y) || std::abs(npc.x) > 64000000.0f || std::abs(npc.y) > 64000000.0f) return;
+        const WalkingCell current{ static_cast<int>(std::floor(npc.x / 64.0f)), static_cast<int>(std::floor(npc.y / 64.0f)) };
+        const auto contains = [&](WalkingCell cell) { return std::find(npc.walkingCells.begin(), npc.walkingCells.end(), cell) != npc.walkingCells.end(); };
+        if (!contains(current)) return;
+        const float centerX = current.x * 64.0f + 32.0f, centerY = current.y * 64.0f + 32.0f;
+        if (std::abs(npc.x - centerX) > 0.01f || std::abs(npc.y - centerY) > 0.01f)
+        {
+            npc.npcTargetX = centerX;
+            npc.npcTargetY = centerY;
+        }
+        else
+        {
+            const WalkingCell neighbors[] = { { current.x - 1, current.y }, { current.x + 1, current.y },
+                { current.x, current.y - 1 }, { current.x, current.y + 1 } };
+            std::vector<WalkingCell> candidates;
+            bool hasAdjacentCell = false;
+            for (WalkingCell cell : neighbors)
+            {
+                if (!contains(cell)) continue;
+                hasAdjacentCell = true;
+                if (!IsNpcPositionBlocked(game, npc, cell.x * 64.0f + 32.0f, cell.y * 64.0f + 32.0f))
+                    candidates.push_back(cell);
+            }
+            if (candidates.empty())
+            {
+#ifdef _DEBUG
+                if (hasAdjacentCell)
+                    std::cout << "[NPC] Movement blocked: no free adjacent Walking-Area cell for NPC '" << npc.id
+                        << "' on map '" << game.activeMap.id << "'.\n";
+#endif
+                return;
+            }
+            const WalkingCell target = candidates[std::uniform_int_distribution<std::size_t>(0, candidates.size() - 1)(random)];
+            npc.npcTargetX = target.x * 64.0f + 32.0f;
+            npc.npcTargetY = target.y * 64.0f + 32.0f;
+        }
+        npc.npcMoving = true;
+        npc.npcAnimationTime = 0.0;
+    }
+
+    const float dx = npc.npcTargetX - npc.x, dy = npc.npcTargetY - npc.y;
+    const float distance = std::sqrt(dx * dx + dy * dy);
+    if (distance <= 0.001f) { npc.npcMoving = false; npc.npcAnimationTime = 0.0; return; }
+    const PlayerDirection direction = std::abs(dx) > std::abs(dy)
+        ? (dx < 0.0f ? PlayerDirection::Left : PlayerDirection::Right)
+        : (dy < 0.0f ? PlayerDirection::Up : PlayerDirection::Down);
+    if (npc.npcDirection != direction) { npc.npcDirection = direction; npc.npcAnimationTime = 0.0; }
+    const float travel = (std::min)(distance, 90.0f * deltaTime);
+    const int steps = (std::max)(1, static_cast<int>(std::ceil(travel / 8.0f)));
+    const float stepX = dx / distance * travel / steps, stepY = dy / distance * travel / steps;
+    for (int i = 0; i < steps; ++i)
+    {
+        if (IsNpcPositionBlocked(game, npc, npc.x + stepX, npc.y + stepY))
+        {
+#ifdef _DEBUG
+            std::cout << "[NPC] Movement blocked for NPC '" << npc.id << "' on map '" << game.activeMap.id
+                << "' at (" << npc.x + stepX << ", " << npc.y + stepY << ").\n";
+#endif
+            npc.npcMoving = false;
+            npc.npcAnimationTime = 0.0;
+            return;
+        }
+        npc.x += stepX;
+        npc.y += stepY;
+    }
+    if (travel >= distance)
+    {
+        npc.x = npc.npcTargetX; npc.y = npc.npcTargetY;
+        npc.npcMoving = false;
+        npc.npcAnimationTime = 0.0;
+    }
 }
 
 // Effekte laufen während eines Kartenübergangs weiter; Bewegung und Triggerprüfung pausieren.
@@ -434,9 +626,19 @@ inline void UpdateGame(GameState& game, float deltaTime)
     if (IsMapTransitionActive(game))
     {
         game.player.moving = false;
+        for (MapObject& object : game.activeMap.objects)
+            if (object.type == MapObjectType::Npc && object.npcMoving)
+            {
+                object.npcMoving = false;
+                object.npcWalkWait = 2.0f;
+                object.npcAnimationTime = 0.0;
+            }
         UpdateMapTransition(game, deltaTime);
         return;
     }
+
+    for (MapObject& object : game.activeMap.objects)
+        if (object.type == MapObjectType::Npc) UpdateNpcWalking(game, object, deltaTime);
 
     float moveX = 0.0f;
     float moveY = 0.0f;
