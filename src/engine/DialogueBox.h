@@ -8,7 +8,7 @@
 
 #include "MenuFont.h"
 
-class DialogBox
+class DialogueBox
 {
 public:
 	bool Open(const std::vector<std::string>& paragraphs, const std::string& speaker)

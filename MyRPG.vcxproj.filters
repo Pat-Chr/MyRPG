@@ -87,10 +87,10 @@
     <ClInclude Include="src\engine\SaveGameStore.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="src\engine\DialogBox.h">
+    <ClInclude Include="src\engine\DialogueBox.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="src\engine\DialogLoader.h">
+    <ClInclude Include="src\engine\DialogueLoader.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>
@@ -593,6 +593,51 @@
     <None Include="Assets\Animations\Characters\player.anim">
       <Filter>Ressourcendateien</Filter>
     </None>
+    <None Include="Assets\Shaders\Effects\magic_effect.vert">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_effects.cfg">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_fire.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_frost.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_heal.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_lightning.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_screen_test.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_shockwave.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_sparkle.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_vortex.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Weather\fog.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Weather\rain.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Weather\weather.vert">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Animations\Characters\NPC_Trader1.anim">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Animations\Characters\player.anim">
+      <Filter>Ressourcendateien</Filter>
+    </None>
     <None Include="Assets\Maps\0001_TestMap.map">
       <Filter>Ressourcendateien</Filter>
     </None>
@@ -660,6 +705,12 @@
       <Filter>Ressourcendateien</Filter>
     </None>
     <None Include="Assets\Animations\Characters\player.anim">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Dialogues\Baked.json">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Dialogues\Karl Nickel.json">
       <Filter>Ressourcendateien</Filter>
     </None>
     <None Include="Assets\Maps\0001_Forest.map">
@@ -782,9 +833,6 @@
     <None Include="Assets\**\*">
       <Filter>Ressourcendateien</Filter>
     </None>
-    <None Include="Assets\**\*">
-      <Filter>Ressourcendateien</Filter>
-    </None>
     <None Include="Assets\Maps\0001_TestMap.map" />
     <None Include="Assets\Sprites\Environment\Forest\forest_bush.png" />
     <None Include="Assets\Sprites\Environment\Forest\forest_flower.png" />
@@ -818,6 +866,6 @@
     <None Include="Assets\Animations\Characters\NPC_Trader1.anim" />
     <None Include="Assets\Animations\Characters\player.anim" />
     <None Include="Directory.Build.props" />
-    <None Include="Assets\Dialogs\Karl Nickel.json" />
+    <None Include="Assets\Dialogues\Karl Nickel.json" />
   </ItemGroup>
 </Project>

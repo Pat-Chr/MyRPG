@@ -5,6 +5,7 @@
 #ifdef MYRPG_MAP_EDITOR
 #include <Windows.h>
 #include <commdlg.h>
+#include <shellapi.h>
 #include <SFML/Graphics.hpp>
 #include <SFML/Window/Keyboard.hpp>
 #include <algorithm>
@@ -19,11 +20,13 @@
 
 #include "AssetBrowser.h"
 #include "MapDocument.h"
+#include "../engine/DialogueLoader.h"
 #include "../engine/GameEngine.h"
 #include "../engine/GameRenderer.h"
 #include "../engine/MenuFont.h"
 
 #pragma comment(lib, "Comdlg32.lib")
+#pragma comment(lib, "Shell32.lib")
 
 class MapEditor
 {
@@ -151,7 +154,7 @@ public:
 					}
 					else if (mapPropertiesOpen)
 					{
-						// The map properties dialog handles scrolling only over its weather list.
+						// The map properties dialogue handles scrolling only over its weather list.
 					}
 					else if (IsOverTriggerPanel(position))
 					{
@@ -667,6 +670,58 @@ private:
 		std::string error;
 		if (!document.RenameTrigger(selectedTrigger, triggerNameInput, error)) { Error(error); return; }
 		renameTriggerOpen = false;
+		if (document.map.triggers[selectedTrigger].eventName == DialogueTriggerEvent) EditTriggerDialogue(true);
+	}
+	void EditTriggerDialogue(bool askBeforeEditing)
+	{
+		const auto& trigger = document.map.triggers[selectedTrigger];
+		std::filesystem::path relativePath;
+		std::string error;
+		if (!ResolveDialoguePath(trigger.id, relativePath, error)) { Error(error); return; }
+		const auto path = root / relativePath;
+		std::error_code ec;
+		const bool exists = std::filesystem::exists(path, ec);
+		if (ec) { Error("Dialoguedatei konnte nicht geprueft werden: " + ec.message()); return; }
+		if (exists)
+		{
+			const bool regular = std::filesystem::is_regular_file(path, ec);
+			if (ec) { Error("Dialoguedatei konnte nicht geprueft werden: " + ec.message()); return; }
+			if (!regular) { Error("Der Dialoguepfad bezeichnet keine regulaere Datei."); return; }
+		}
+		if (!exists || askBeforeEditing)
+		{
+			const std::wstring question = path.filename().wstring() + (exists ?
+				L" bereits vorhanden. Dialoguedatei bearbeiten?" : L" erstellen und bearbeiten?");
+			const int choice = MessageBoxW(owner, question.c_str(), L"Map-Editor - Dialogue", MB_YESNO | MB_ICONQUESTION);
+			if (choice == 0) { Error("Die Dialogueabfrage konnte nicht angezeigt werden."); return; }
+			if (choice != IDYES) return;
+		}
+		if (!exists)
+		{
+			std::filesystem::create_directories(path.parent_path(), ec);
+			if (ec) { Error("Dialogueverzeichnis konnte nicht erstellt werden: " + ec.message()); return; }
+			const HANDLE file = CreateFileW(path.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr);
+			if (file == INVALID_HANDLE_VALUE)
+			{
+				Error("Dialoguedatei konnte nicht erstellt werden (Windows-Fehler " + std::to_string(GetLastError()) + ").");
+				return;
+			}
+			const std::string contents = nlohmann::json{ { "monologue", { "Hier beginnt mein Abenteuer.", "Was mich wohl erwartet?" } } }.dump(2) + "\n";
+			DWORD written = 0;
+			const bool writeSucceeded = WriteFile(file, contents.data(), static_cast<DWORD>(contents.size()), &written, nullptr) != 0;
+			const DWORD writeError = writeSucceeded ? ERROR_WRITE_FAULT : GetLastError();
+			const bool saved = writeSucceeded && written == contents.size();
+			const bool closed = CloseHandle(file) != 0;
+			const DWORD closeError = closed ? ERROR_SUCCESS : GetLastError();
+			if (!saved || !closed)
+			{
+				Error("Dialoguedatei konnte nicht gespeichert werden (Windows-Fehler " + std::to_string(saved ? closeError : writeError) + ").");
+				if (!DeleteFileW(path.c_str())) Error("Die unvollstaendige Dialoguedatei konnte nicht entfernt werden (Windows-Fehler " + std::to_string(GetLastError()) + ").");
+				return;
+			}
+		}
+		const auto result = reinterpret_cast<INT_PTR>(ShellExecuteW(owner, L"open", path.c_str(), nullptr, root.c_str(), SW_SHOWNORMAL));
+		if (result <= 32) Error("Windows konnte die Dialoguedatei nicht oeffnen. Bitte eine Standard-App fuer .json festlegen (Shell-Fehler " + std::to_string(result) + ").");
 	}
 	void ConfirmNpcName()
 	{
@@ -698,6 +753,13 @@ private:
 		else if (y >= 205 && y < 235) OpenTriggerDropdown(TriggerDropdown::Effects);
 		else if (y >= 260 && y < 290) OpenTriggerDropdown(TriggerDropdown::Weather);
 		else if (triggerDropdown == TriggerDropdown::None && y >= 340 && y < 374 && document.map.triggers[selectedTrigger].eventName.starts_with("Load_")) BeginTargetPick();
+		else if (triggerDropdown == TriggerDropdown::None && y >= 400 && y < 434)
+		{
+			auto& eventName = document.map.triggers[selectedTrigger].eventName;
+			if (eventName != DialogueTriggerEvent) { eventName = DialogueTriggerEvent; document.dirty = true; }
+			EditTriggerDialogue(true);
+		}
+		else if (triggerDropdown == TriggerDropdown::None && y >= 450 && y < 484 && document.map.triggers[selectedTrigger].eventName == DialogueTriggerEvent) EditTriggerDialogue(false);
 		else if (y >= 530 && y < 555) ToggleTriggerGlow();
 		else if (triggerDropdown != TriggerDropdown::None && y >= 300 && y < 492)
 		{
@@ -715,19 +777,19 @@ private:
 		const std::filesystem::path maps = root / L"Assets" / L"Maps";
 		wchar_t file[32768]{};
 		const std::wstring initial = maps.wstring();
-		OPENFILENAMEW dialog{};
-		dialog.lStructSize = sizeof(dialog);
-		dialog.hwndOwner = owner;
-		dialog.lpstrFilter = L"Map-Dateien (*.map)\0*.map\0\0";
-		dialog.lpstrFile = file;
-		dialog.nMaxFile = static_cast<DWORD>(std::size(file));
-		dialog.lpstrInitialDir = initial.c_str();
-		dialog.lpstrDefExt = L"map";
-		dialog.Flags = OFN_NOCHANGEDIR | OFN_PATHMUSTEXIST | (create ? 0 : OFN_FILEMUSTEXIST);
-		if (!(create ? GetSaveFileNameW(&dialog) : GetOpenFileNameW(&dialog)))
+		OPENFILENAMEW dialogue{};
+		dialogue.lStructSize = sizeof(dialogue);
+		dialogue.hwndOwner = owner;
+		dialogue.lpstrFilter = L"Map-Dateien (*.map)\0*.map\0\0";
+		dialogue.lpstrFile = file;
+		dialogue.nMaxFile = static_cast<DWORD>(std::size(file));
+		dialogue.lpstrInitialDir = initial.c_str();
+		dialogue.lpstrDefExt = L"map";
+		dialogue.Flags = OFN_NOCHANGEDIR | OFN_PATHMUSTEXIST | (create ? 0 : OFN_FILEMUSTEXIST);
+		if (!(create ? GetSaveFileNameW(&dialogue) : GetOpenFileNameW(&dialogue)))
 		{
 			const DWORD code = CommDlgExtendedError();
-			if (code != 0) Error("Dateidialog fehlgeschlagen: " + std::to_string(code));
+			if (code != 0) Error("Dateidialogue fehlgeschlagen: " + std::to_string(code));
 			return false;
 		}
 		result = file;
@@ -1435,6 +1497,7 @@ private:
 		const bool noEvent = trigger.eventName == NoTriggerEvent;
 		const bool mapEvent = trigger.eventName.starts_with("Load_");
 		const bool weatherEvent = trigger.eventName.starts_with("weather_");
+		const bool dialogueEvent = trigger.eventName == DialogueTriggerEvent;
 		const std::string title = trigger.id.size() > 15 ? trigger.id.substr(0, 12) + "..." : trigger.id;
 		panelLabel("TRIGGER: " + title, 970, 80, 14);
 		rectangle(1165, 75, 105, 25, sf::Color(65, 70, 80));
@@ -1445,7 +1508,7 @@ private:
 		panelLabel(noEvent ? "Kein Ereignis  v" : mapEvent ? shortText(trigger.eventName.substr(5)) + "  v" : "Karte auswaehlen  v", 978, 156, 13);
 		panelLabel("Effekte", 970, 185, 13);
 		rectangle(970, 205, 300, 30, sf::Color(65, 70, 80));
-		panelLabel(noEvent ? "Kein Ereignis  v" : !mapEvent && !weatherEvent ? shortText(trigger.eventName) + "  v" : "Effekt auswaehlen  v", 978, 211, 13);
+		panelLabel(noEvent ? "Kein Ereignis  v" : !mapEvent && !weatherEvent && !dialogueEvent ? shortText(trigger.eventName) + "  v" : "Effekt auswaehlen  v", 978, 211, 13);
 		panelLabel("Wetter", 970, 240, 13);
 		rectangle(970, 260, 300, 30, sf::Color(65, 70, 80));
 		panelLabel(noEvent ? "Kein Ereignis  v" : weatherEvent ? shortText(trigger.eventName.substr(8)) + "  v" : "Wetter auswaehlen  v", 978, 266, 13);
@@ -1472,6 +1535,14 @@ private:
 				rectangle(970, 340, 300, 34, sf::Color(65, 70, 80));
 				panelLabel("Zielposition auf Karte waehlen", 978, 349, 13);
 			}
+			rectangle(970, 400, 300, 34, dialogueEvent ? sf::Color(70, 105, 110) : sf::Color(65, 70, 80));
+			panelLabel("Dialogue (Monologue)", 978, 409, 13);
+			if (dialogueEvent)
+			{
+				rectangle(970, 450, 300, 34, sf::Color(65, 70, 80));
+				panelLabel("Dialoguedatei erstellen / bearbeiten", 978, 459, 13);
+				panelLabel(shortText(trigger.id + ".json") + " | monologue", 970, 493, 12);
+			}
 		}
 		rectangle(970, 530, 20, 20, sf::Color(185, 190, 195));
 		rectangle(972, 532, 16, 16, trigger.glow ? sf::Color(70, 145, 150) : sf::Color(35, 38, 45));
@@ -1482,7 +1553,7 @@ private:
 		panelLabel("aendert weder Ereignis noch Kollision.", 970, 599, 13);
 		panelLabel("Umschalt + Ziehen: auch am Rand bewegen.", 970, 632, 12);
 	}
-	void DrawRenameTriggerDialog(sf::RenderWindow& window, const sf::Font& font) const
+	void DrawRenameTriggerDialogue(sf::RenderWindow& window, const sf::Font& font) const
 	{
 		if (!renameTriggerOpen && !renameNpcOpen) return;
 		auto rectangle = [&](float x, float y, float width, float height, sf::Color color)
@@ -1673,7 +1744,7 @@ private:
 		DrawTriggerPanel(window, font);
 		DrawObjectPanel(window, font);
 		DrawMapPropertiesPanel(window, font);
-		DrawRenameTriggerDialog(window, font);
+		DrawRenameTriggerDialogue(window, font);
 		const sf::Color statusText(211, 222, 236);
 		Label(window, font, "Wetter: " + document.map.defaultWeather, 10, StatusTop + 6, 12, statusText);
 		if (TriggerPanelVisible())

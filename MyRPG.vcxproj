@@ -101,8 +101,8 @@
     <ClInclude Include="src\editor\MapDocument.h" />
     <ClInclude Include="src\editor\MapEditor.h" />
     <ClInclude Include="src\engine\AnimationLoader.h" />
-    <ClInclude Include="src\engine\DialogBox.h" />
-    <ClInclude Include="src\engine\DialogLoader.h" />
+    <ClInclude Include="src\engine\DialogueBox.h" />
+    <ClInclude Include="src\engine\DialogueLoader.h" />
     <ClInclude Include="src\engine\GameEngine.h" />
     <ClInclude Include="src\engine\GameRenderer.h" />
     <ClInclude Include="src\engine\GameTypes.h" />
@@ -135,7 +135,7 @@
     <None Include=".github\copilot-instructions.md" />
     <None Include="Assets\Animations\Characters\NPC_Trader1.anim" />
     <None Include="Assets\Animations\Characters\player.anim" />
-    <None Include="Assets\Dialogs\Karl Nickel.json" />
+    <None Include="Assets\Dialogues\Karl Nickel.json" />
     <None Include="Assets\Shaders\Effects\magic_effect.vert" />
     <None Include="Assets\Shaders\Effects\magic_effects.cfg" />
     <None Include="Assets\Shaders\Effects\magic_fire.frag" />

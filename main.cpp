@@ -8,14 +8,15 @@
 #include <filesystem>
 #include <optional>
 #include <string>
+#include <utility>
 
 #include <SFML/Graphics.hpp>
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/Keyboard.hpp>
 #include <SFML/Window/Mouse.hpp>
 
-#include "src/engine/DialogBox.h"
-#include "src/engine/DialogLoader.h"
+#include "src/engine/DialogueBox.h"
+#include "src/engine/DialogueLoader.h"
 #include "src/engine/GameEngine.h"
 #include "src/engine/GameRenderer.h"
 #include "src/engine/MainMenu.h"
@@ -176,7 +177,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     }
 
     GameState game{};
-    DialogBox dialog;
+    DialogueBox dialogue;
     SaveGameStore saveGameStore;
     std::optional<SaveGameSlot::Id> activeSave;
     std::string activeSaveName;
@@ -188,8 +189,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     sf::Clock frameClock;
     sf::FloatRect debugCoordinatesBounds{};
-    // Gemeinsamer Fehlerpfad für Spielstände: Ausgabe für Diagnose, Dialog für den Spieler und
-    // Neustart der Uhr, damit die Dialogzeit nicht als großer Update-Schritt ins Spiel gelangt.
+    // Gemeinsamer Fehlerpfad für Spielstände: Ausgabe für Diagnose, Dialogue für den Spieler und
+    // Neustart der Uhr, damit die Dialoguezeit nicht als großer Update-Schritt ins Spiel gelangt.
     const auto showSaveGameError = [&](const std::string& error)
     {
         std::fprintf(stderr, "Savegame: %s\n", error.c_str());
@@ -344,6 +345,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     // gehaltene Bewegungstasten werden weiter unten pro Frame separat abgefragt.
     while (window.isOpen())
     {
+        bool dialogueClosedThisFrame = false;
+        const auto finishDialogue = [&]()
+        {
+            if (dialogue.IsOpen()) return;
+            EndPlayerMonologue(game);
+            dialogueClosedThisFrame = true;
+            frameClock.restart();
+        };
         while (const std::optional event = window.pollEvent())
         {
             if (event->is<sf::Event::Closed>())
@@ -378,9 +387,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 {
                     handleMainMenuAction(mainMenu.HandleKey(key->code));
                 }
-                else if (dialog.IsOpen())
+                else if (dialogue.IsOpen())
                 {
-                    dialog.HandleKey(key->code);
+                    dialogue.HandleKey(key->code);
+                    finishDialogue();
                 }
                 else if (key->code == sf::Keyboard::Key::Escape)
                 {
@@ -427,7 +437,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 else if (key->code == sf::Keyboard::Key::E)
                 {
                     // Erst die Spiellogik ermittelt, ob ein ansprechbarer NPC vor dem Spieler ist;
-                    // nur dann werden dessen Dialogdaten geladen und die Bewegung angehalten.
+                    // nur dann werden dessen Dialoguedaten geladen und die Bewegung angehalten.
                     MapObject* npc = InteractWithNpc(game);
                     if (npc)
                     {
@@ -435,21 +445,21 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                         std::string error;
                         if (!LoadNpcGreeting(npc->npcName, greeting, error))
                         {
-                            std::fprintf(stderr, "NPC dialog: %s\n", error.c_str());
-                            const std::wstring message = L"Dialog fuer „" +
+                            std::fprintf(stderr, "NPC dialogue: %s\n", error.c_str());
+                            const std::wstring message = L"Dialogue fuer „" +
                                 sf::String::fromUtf8(npc->npcName.begin(), npc->npcName.end()).toWideString() +
                                 L"“: " + sf::String::fromUtf8(error.begin(), error.end()).toWideString();
-                            MessageBoxW(window.getNativeHandle(), message.c_str(), L"MyRPG - Dialog", MB_OK | MB_ICONERROR);
+                            MessageBoxW(window.getNativeHandle(), message.c_str(), L"MyRPG - Dialogue", MB_OK | MB_ICONERROR);
                             frameClock.restart();
                         }
-                        else if (dialog.Open(greeting, npc->npcName))
+                        else if (dialogue.Open(greeting, npc->npcName))
                         {
                             SetMovementState(game.input, false, false, false, false);
                             game.player.moving = false;
                         }
                         else
                         {
-                            MessageBoxW(window.getNativeHandle(), L"Die Schrift fuer den Dialog konnte nicht geladen werden.",
+                            MessageBoxW(window.getNativeHandle(), L"Die Schrift fuer den Dialogue konnte nicht geladen werden.",
                                         L"MyRPG", MB_OK | MB_ICONERROR);
                             frameClock.restart();
                         }
@@ -467,16 +477,17 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                     {
                         handleMainMenuAction(mainMenu.HandleClick(position, baseResolution));
                     }
-                    else if (dialog.IsOpen())
+                    else if (dialogue.IsOpen())
                     {
-                        dialog.Advance();
+                        dialogue.Advance();
+                        finishDialogue();
                     }
                     else if (settingsMenu.IsOpen())
                     {
                         handleSettingsAction(settingsMenu.HandleClick(position, baseResolution, window));
                     }
 #ifdef _DEBUG
-                    else if (!dialog.IsOpen() && debugCoordinatesBounds.contains(position))
+                    else if (!dialogue.IsOpen() && debugCoordinatesBounds.contains(position))
                     {
                         char coordinates[64];
                         std::snprintf(coordinates, sizeof(coordinates), "X: %.1f  Y: %.1f", game.player.x, game.player.y);
@@ -493,9 +504,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             break;
         }
 
-        // Bewegung ist nur im aktiven Spiel und bei geschlossenem Menü/Dialog möglich.
+        // Bewegung ist nur im aktiven Spiel und bei geschlossenem Menü/Dialogue möglich.
         // Bei Fokusverlust werden alle Richtungen false, wodurch die Figur sofort anhält.
-        const bool hasFocus = window.hasFocus() && !inMainMenu && !settingsMenu.IsOpen() && !dialog.IsOpen();
+        const bool hasFocus = window.hasFocus() && !inMainMenu && !settingsMenu.IsOpen() &&
+            !dialogue.IsOpen() && !dialogueClosedThisFrame;
         SetMovementState(
             game.input,
             hasFocus && (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up)),
@@ -504,12 +516,37 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             hasFocus && (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right)));
 
         // Delta-Time macht die Spielsimulation unabhängig von der Bildrate. Da dieselbe Uhr
-        // auch durch Dialoge/Fehlermeldungen neu gestartet wird, entstehen danach keine Zeitsprünge.
+        // auch durch Dialogues/Fehlermeldungen neu gestartet wird, entstehen danach keine Zeitsprünge.
         const float deltaTime = frameClock.restart().asSeconds();
         const float fps = deltaTime > 0.0f ? (1.0f / deltaTime) : 0.0f;
-        if (!inMainMenu && !settingsMenu.IsOpen() && !dialog.IsOpen())
+        if (!inMainMenu && !settingsMenu.IsOpen() && !dialogue.IsOpen() && !dialogueClosedThisFrame)
         {
             UpdateGame(game, deltaTime);
+            if (!game.pendingMonologue.empty())
+            {
+                const std::string name = std::exchange(game.pendingMonologue, {});
+                std::vector<std::string> paragraphs;
+                std::string error;
+                if (!LoadTriggerMonologue(name, paragraphs, error))
+                {
+                    std::fprintf(stderr, "Trigger dialogue '%s': %s\n", name.c_str(), error.c_str());
+                    const std::wstring message = L"Dialogue fuer Trigger " +
+                        sf::String::fromUtf8(name.begin(), name.end()).toWideString() + L": " +
+                        sf::String::fromUtf8(error.begin(), error.end()).toWideString();
+                    MessageBoxW(window.getNativeHandle(), message.c_str(), L"MyRPG - Dialogue", MB_OK | MB_ICONERROR);
+                    frameClock.restart();
+                }
+                else if (dialogue.Open(paragraphs, ""))
+                {
+                    BeginPlayerMonologue(game);
+                }
+                else
+                {
+                    MessageBoxW(window.getNativeHandle(), L"Die Schrift fuer den Dialogue konnte nicht geladen werden.",
+                                L"MyRPG", MB_OK | MB_ICONERROR);
+                    frameClock.restart();
+                }
+            }
         }
 
         const Viewport viewport{
@@ -527,7 +564,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         letterboxView.setViewport(ComputeLetterboxViewport(windowSize, baseResolution));
         window.setView(letterboxView);
 
-        // Pro Frame wird entweder das Hauptmenü oder die Spielwelt gezeichnet. Menüs und Dialoge
+        // Pro Frame wird entweder das Hauptmenü oder die Spielwelt gezeichnet. Menüs und Dialogues
         // liegen über dem Spielbild; die Simulation selbst wurde oben währenddessen angehalten.
         if (inMainMenu)
         {
@@ -541,9 +578,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             {
                 settingsMenu.Draw(window, baseResolution);
             }
-            else if (dialog.IsOpen())
+            else if (dialogue.IsOpen())
             {
-                dialog.Draw(window, baseResolution);
+                dialogue.Draw(window, baseResolution);
             }
         }
         window.display();

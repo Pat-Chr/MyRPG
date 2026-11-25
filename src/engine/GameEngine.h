@@ -178,11 +178,29 @@ inline void UpdateMapTransition(GameState& game, float deltaTime)
     game.mapTransition.targetMapPath.clear();
 }
 
+inline void BeginPlayerMonologue(GameState& game)
+{
+    if (game.monologueOriginalDirection) return;
+    game.monologueOriginalDirection = game.player.direction;
+    game.player.direction = PlayerDirection::Down;
+    game.player.moving = false;
+    game.input = InputState{};
+}
+
+inline void EndPlayerMonologue(GameState& game)
+{
+    if (!game.monologueOriginalDirection) return;
+    game.player.direction = *game.monologueOriginalDirection;
+    game.monologueOriginalDirection.reset();
+    game.player.moving = false;
+    game.input = InputState{};
+}
+
 // Löst Ereignisse beim Betreten aus, nicht solange der Spieler in der Zone bleibt.
 // Bei bereits laufendem Kartenübergang wird die Triggerprüfung übersprungen.
 inline void UpdateTriggers(GameState& game)
 {
-    if (IsMapTransitionActive(game))
+    if (IsMapTransitionActive(game) || !game.pendingMonologue.empty() || game.monologueOriginalDirection)
     {
         return;
     }
@@ -202,6 +220,13 @@ inline void UpdateTriggers(GameState& game)
                 << game.player.x << ", " << game.player.y << ").\n";
 #endif
             game.lastTriggeredEvent = trigger.eventName;
+
+            if (trigger.eventName == DialogueTriggerEvent)
+            {
+                game.pendingMonologue = trigger.id;
+                trigger.isPlayerInside = true;
+                return;
+            }
 
             if (trigger.eventName.starts_with("weather_"))
             {
@@ -240,6 +265,8 @@ inline void UpdateTriggers(GameState& game)
             if (TryResolveMapTransitionTarget(trigger.eventName, targetMapPath))
             {
                 BeginMapTransition(game, std::move(targetMapPath), trigger.spawnX, trigger.spawnY);
+                trigger.isPlayerInside = true;
+                return;
             }
         }
 
@@ -287,6 +314,8 @@ inline void InitializeGameState(GameState& game)
     game.player.direction = PlayerDirection::Down;
     game.player.moving = false;
     game.lastTriggeredEvent.clear();
+    game.pendingMonologue.clear();
+    game.monologueOriginalDirection.reset();
     ClearMagicEffects(game.magicEffects);
     game.cameraShake = CameraShakeState{};
 
@@ -614,6 +643,7 @@ inline void UpdateNpcWalking(GameState& game, MapObject& npc, float deltaTime)
 // Effekte laufen während eines Kartenübergangs weiter; Bewegung und Triggerprüfung pausieren.
 inline void UpdateGame(GameState& game, float deltaTime)
 {
+    if (!game.pendingMonologue.empty() || game.monologueOriginalDirection) return;
     UpdateMagicEffects(game.magicEffects, deltaTime);
     UpdateCameraShake(game.cameraShake, deltaTime);
     UpdateWeather(game.weather, deltaTime);

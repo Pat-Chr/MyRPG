@@ -1,6 +1,6 @@
 # MyRPG – eigene kleine RPG-Engine
 
-MyRPG ist ein Windows-Projekt, in dem ich meine eigene kleine RPG-Engine mit C++20 und SFML 3 entwickle. Der aktuelle Stand ist ein spielbarer Prototyp mit Bewegung, Karten, Animationen, Kollisionen, NPCs, Dialogen und einfachen Effekten.
+MyRPG ist ein Windows-Projekt, in dem ich meine eigene kleine RPG-Engine mit C++20 und SFML 3 entwickle. Der aktuelle Stand ist ein spielbarer Prototyp mit Bewegung, Karten, Animationen, Kollisionen, NPCs, Dialogues und einfachen Effekten.
 
 > Ich schreibe meine eigene kleine RPG-Engine. Sie soll später auch ohne Programmierkenntnisse das Erstellen eines eigenen kleinen Adventures ermöglichen. Durch das Erstellen eigener Assets, Skripte und Maps soll man einfach seine eigene Welt erschaffen können.
 >
@@ -23,7 +23,7 @@ Das [DesignDocument.md](./DesignDocument.md) beschreibt die technische Architekt
 - **Trigger** für den visuellen Magieeffekt und für dynamische Kartenwechsel
 - **Kartenwechsel** mit Fade-out/Fade-in und pro Trigger festlegbarer Spawn-Position
 - **NPCs**: NPCs können als `npc`-Objekte in Karten platziert, benannt und mit eigenen Laufanimationen versehen werden. Optional bewegen sie sich innerhalb einer im Map-Editor markierten Walking Area; solide NPCs blockieren den Spieler und andere NPCs.
-- **NPC-Dialoge**: `E` spricht den nächsten NPC im Blickfeld an. Linksklick, `E`, Enter oder Leertaste zeigen den nächsten Absatz; `Esc` beendet den Dialog. Namensgleiche UTF-8-JSON-Dateien in `Assets/Dialogs/` enthalten ein `greeting`-Array mit den Textabsätzen, beispielsweise `Karl Nickel.json`. Ohne Datei erscheint `...`; fehlerhafte Dateien werden gemeldet. Details stehen im Design-Dokument.
+- **NPC-Dialogues**: `E` spricht den nächsten NPC im Blickfeld an. Linksklick, `E`, Enter oder Leertaste zeigen den nächsten Absatz; `Esc` beendet den Dialogue. Namensgleiche UTF-8-JSON-Dateien in `Assets/Dialogues/` enthalten ein `greeting`-Array mit den Textabsätzen, beispielsweise `Karl Nickel.json`. Ohne Datei erscheint `...`; fehlerhafte Dateien werden gemeldet. Details stehen im Design-Dokument.
 - **Spieler- und NPC-Animationen**: Laufanimationen in acht Richtungen und Stillstandsanimationen in vier Richtungen werden in `.anim`-Dateien beschrieben. Diagonale Blickrichtungen verwenden im Stillstand die linke bzw. rechte Animation.
 - **Magieeffekte**: acht automatisch erkannte GPU-Shader-Effekte (Sparkle, Fire, Lightning, Frost, Vortex, Heal, Shockwave und ein bildschirmfüllender Testeffekt) in `Assets/Shaders/Effects/`. `M` startet Sparkle an der Spielerposition; auf der Testkarte gibt es rechts vom Startpunkt Trigger-Zonen für die Effekte.
 - **Screen Shake**: Ein eigenständiges Trigger-Ereignis erschüttert kurz die Spielwelt. Die Testzone liegt rechts hinter den Magie-Testzonen; Lightning und konfigurierbare Magieeffekte können den Shake zusätzlich auslösen.
@@ -48,7 +48,9 @@ Unter **Datei** erstellen oder öffnen `Neu` und `Oeffnen` Karten in `Assets/Map
 - **Trigger (`T`):** Auf einer freien Stelle ziehen legt eine rechteckige Zone an; ein einfacher Klick erzeugt eine 64 × 64 große Zone. Ziehen im Inneren verschiebt die Zone. Ziehen an den Seiten oder Ecken der ausgewählten Zone ändert ihre Größe; die gegenüberliegende Seite bleibt fest und die Mindestgröße beträgt eine Welteinheit pro Richtung. Mit `Umschalt` lässt sich die Zone auch am Rand verschieben. `Entf` löscht sie, erneutes `T` wechselt zurück zu **Platzieren**.
 - **Startpunkt (`P`):** Ein Klick auf die Karte setzt die Spielerposition für `Im Spiel uebernehmen` und kehrt zum vorherigen Modus zurück. `Esc` bricht die Auswahl ab, ohne den Startpunkt zu ändern.
 
-Für die ausgewählte Triggerzone stehen rechts **Kartenwechsel**, **Effekte** und **Wetter** sowie `Glow aktivieren` bereit. Ein Trigger hat höchstens ein Ereignis; `Kein Ereignis` in einer der Listen entfernt die bisherige Zuordnung. Glow verändert nur die Darstellung und ist auch im Release sichtbar. Neue Zonen beginnen mit `screen_shake` und ohne Glow. Bei einem Kartenwechsel öffnet `Zielposition auf Karte waehlen` eine nicht bearbeitbare Vorschau: Ein Klick setzt die Zielposition, `Esc` bricht ab. Ohne Angaben gilt `(0, 0)`.
+Für die ausgewählte Triggerzone stehen rechts **Kartenwechsel**, **Effekte**, **Wetter** und **Dialogue (Monologue)** sowie `Glow aktivieren` bereit. Ein Trigger hat höchstens ein Ereignis; `Kein Ereignis` in einer der Listen entfernt die bisherige Zuordnung. Glow verändert nur die Darstellung und ist auch im Release sichtbar. Neue Zonen beginnen mit `screen_shake` und ohne Glow. Bei einem Kartenwechsel öffnet `Zielposition auf Karte waehlen` eine nicht bearbeitbare Vorschau: Ein Klick setzt die Zielposition, `Esc` bricht ab. Ohne Angaben gilt `(0, 0)`.
+
+**Dialogue (Monologue)** weist das Ereignis `dialogue` zu und fragt, ob `Assets\Dialogues\<Triggername>.json` erstellt bzw. bearbeitet werden soll. Eine neue Datei enthält bereits zwei Standardabsätze im `monologue`-Array; vorhandene Dateien werden nicht überschrieben. Windows öffnet sie in der Standard-App für `.json`. Über `Dialoguedatei erstellen / bearbeiten` kann die Datei später erneut geöffnet werden. Nach Umbenennen gilt der neue Triggername; die alte Datei bleibt erhalten. Die Dateien liegen neben der EXE und müssen wie fertige Karten manuell ins Projekt übernommen werden.
 
 `WASD`, Pfeiltasten oder die mittlere Maustaste verschieben die Kartenansicht. Das Mausrad über der Karte zoomt.
 
@@ -106,8 +108,8 @@ MyRPG/
 │   │   ├── Weather.h              # Wetterzustand und Shader-Erkennung
 │   │   ├── WeatherRenderer.h      # Wetter-Shader-Overlay
 │   │   ├── MapLoader.h            # Parser für .map-Dateien
-│   │   ├── DialogBox.h             # Dialogfenster und Absatzsteuerung
-│   │   ├── DialogLoader.h          # JSON-Dialoge für NPCs
+│   │   ├── DialogueBox.h             # Dialoguefenster und Absatzsteuerung
+│   │   ├── DialogueLoader.h          # JSON-Dialogues für NPCs
 │   │   ├── MainMenu.h             # Titelbildschirm und Hauptmenü
 │   │   ├── MenuFont.h              # Gemeinsame Systemschrift für Menüs
 │   │   ├── SaveGameStore.h         # Mehrere benannte Spielstände
@@ -121,7 +123,7 @@ MyRPG/
 │       └── MapEditor.h            # Editorfenster und Bedienlogik
 ├── Assets/
 │   ├── Animations/Characters/     # Spieler- und NPC-Animationen im .anim-Format
-│   ├── Dialogs/                   # UTF-8-JSON-Dialoge für benannte NPCs
+│   ├── Dialogues/                   # UTF-8-JSON-Dialogues für benannte NPCs
 │   ├── Maps/                      # 0001_TestMap.map und 0001_Forest.map
 │   ├── Shaders/Effects/           # GLSL-Shader der Magieeffekte
 │   ├── Shaders/Weather/           # GLSL-Shader für Regen, Nebel und Hitze
@@ -156,7 +158,7 @@ OBJECT <id> npc <x> <y> <spritePath> solid=<0|1> [name=<url-kodierter-Name>] [wa
 - `WEATHER` ist optional und setzt das Standardwetter auf `none` oder den Dateinamen eines Wetter-Shaders ohne `.frag`, zum Beispiel `rain` für `rain.frag`; ohne Angabe gilt `none`. Alle `.frag`-Dateien unter `Assets/Shaders/Weather/` werden beim Start automatisch erkannt und vorgeladen. Ein neuer Effekt benötigt keinen Codeeintrag; er ist nach dem nächsten Build und Spielstart verfügbar. Ungültige oder mehrfache Angaben verhindern das Laden der Karte. Das Wetter wird über der Spielwelt, aber unter UI und Kartenübergang gezeichnet und pausiert im Einstellungsmenü. Wenn ein Shader nicht verfügbar ist, wird der Fehler auf stderr gemeldet und der Effekt nicht gezeichnet.
 - `OBJECT` platziert ein Sprite in Weltkoordinaten. `untergrund` bezeichnet Bodenobjekte und `scenery` Dekoration; beide Typen rasten beim Platzieren und Verschieben auf das 64-Pixel-Raster ein. `wall` steht für Wände/Barrieren und `npc` für Charaktere; diese Typen sind frei positionierbar.
 - `solid` legt unabhängig vom Objekttyp fest, ob das Objekt den Spieler blockiert: `solid=1` aktiviert die Kollision, `solid=0` lässt den Spieler hindurch. Auch `scenery`, `wall` und `npc` blockieren also nur, wenn `solid=1` gesetzt ist. Für Boden- und Deko-Objekte, die begehbar sein sollen, wird üblicherweise `solid=0` verwendet.
-- Bei `npc` legt `name` den Anzeigenamen und damit den Namen der optionalen Dialogdatei unter `Assets/Dialogs/` fest. `walking_area=1` aktiviert die freie Bewegung innerhalb der mit `walk_cells` angegebenen 64-Pixel-Rasterfelder. Das Startfeld des NPCs sollte in dieser Liste enthalten sein.
+- Bei `npc` legt `name` den Anzeigenamen und damit den Namen der optionalen Dialoguedatei unter `Assets/Dialogues/` fest. `walking_area=1` aktiviert die freie Bewegung innerhalb der mit `walk_cells` angegebenen 64-Pixel-Rasterfelder. Das Startfeld des NPCs sollte in dieser Liste enthalten sein.
 - `TRIGGER` definiert ein rechteckiges Ereignisgebiet in Weltkoordinaten. Das Ereignis wird beim Betreten ausgelöst; nach Verlassen kann es bei erneutem Betreten wieder ausgelöst werden. Der Ereignisname `none` bedeutet, dass beim Betreten nichts ausgelöst wird; er unterscheidet sich von `weather_none`, das das Wetter ausschaltet. `glow` ist optional und standardmäßig `0`. Mit `glow=1` erhält das Gebiet einen pulsierenden, additiven Shader-Glow. Das ist nur Darstellung und ändert weder Auslösung noch Kollision; der Glow ist auch im Release-Build sichtbar. Wenn Shader nicht unterstützt werden, wird stattdessen ein einfaches Rechteck gezeichnet. Debug-Markierungen der Trigger bleiben auf Debug-Builds beschränkt.
 
 Beispiel:
@@ -172,6 +174,19 @@ TRIGGER screen_shake_test 1408 -32 64 64 screen_shake glow=1
 TRIGGER clear_weather -32 544 64 64 weather_none glow=1
 TRIGGER north_path_to_forest -64 -260 220 120 Load_0001_Forest glow=1 spawn_x=-128 spawn_y=1024
 ```
+
+`dialogue` lädt `Assets\Dialogues\<Trigger-ID>.json`, beispielsweise für `TRIGGER erster_blick 0 128 64 64 dialogue` die Datei `erster_blick.json`:
+
+```json
+{
+  "monologue": [
+    "Hier beginnt mein Abenteuer.",
+    "Was mich wohl erwartet?"
+  ]
+}
+```
+
+Die Hauptfigur blickt während des Monologues zum Bildschirm; das Spiel pausiert. Linksklick, `E`, Enter oder Leertaste zeigen den nächsten Absatz. Nach dem letzten Absatz oder bei `Esc` wird die vorherige Blickrichtung wiederhergestellt. Nach Verlassen und erneutem Betreten startet der Monologue erneut. Die Datei wird jedes Mal neu geladen; fehlende oder ungültige Dateien werden als Fehler gemeldet. NPC-Dateien verwenden weiterhin `greeting` und behalten ihren bisherigen Standarddialogue.
 
 `magic_<name>` startet beim Betreten den vorhandenen Effekt gleichen Namens an der Spielerposition, zum Beispiel `magic_fire` für `Assets/Shaders/Effects/magic_fire.frag`. Der Lightning-Trigger startet zusätzlich einen Screen Shake.
 
@@ -189,7 +204,7 @@ Trigger-Ereignisse der Form `weather_<shaderName>` schalten auf den gleichnamige
 
 ## 🔭 Ausblick
 
-MyRPG ist noch im Prototyp-Stadium. Zum langfristigen Ziel gehören eine einfachere Erstellung von Inhalten ohne Programmierkenntnisse sowie weitere Adventure-Systeme wie Kampf, Inventar und Story-Skripte. Benannte Spielstände, Karten, Animationen, NPCs, Dialoge und Sprites sind bereits als datengetrennte Inhalte vorhanden; Skript-Laufzeit und komplexere Spielsysteme folgen schrittweise.
+MyRPG ist noch im Prototyp-Stadium. Zum langfristigen Ziel gehören eine einfachere Erstellung von Inhalten ohne Programmierkenntnisse sowie weitere Adventure-Systeme wie Kampf, Inventar und Story-Skripte. Benannte Spielstände, Karten, Animationen, NPCs, Dialogues und Sprites sind bereits als datengetrennte Inhalte vorhanden; Skript-Laufzeit und komplexere Spielsysteme folgen schrittweise.
 
 ## 🔧 Entwicklungshinweise
 

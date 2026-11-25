@@ -2,6 +2,7 @@
 
 #include "../BuildConfig.h"
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -9,6 +10,7 @@
 #include "Weather.h"
 
 inline constexpr char NoTriggerEvent[] = "none";
+inline constexpr char DialogueTriggerEvent[] = "dialogue";
 
 enum class PlayerDirection
 {
@@ -222,7 +224,9 @@ struct GameState
 
 	// Zuletzt ausgelöstes Ereignis (für Debugging/Logging)
 	std::string lastTriggeredEvent;
-	
+	std::string pendingMonologue;
+	std::optional<PlayerDirection> monologueOriginalDirection;
+
 	// Aktueller Karten-Übergangszustand
 	MapTransitionState mapTransition;
 	CameraShakeState cameraShake;
