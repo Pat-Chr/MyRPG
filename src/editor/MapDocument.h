@@ -128,7 +128,7 @@ public:
 				float x, y;
 				if (!(fields >> id >> type >> x >> y >> sprite >> solid) ||
 					!std::isfinite(x) || !std::isfinite(y) ||
-					(type != "scenery" && type != "untergrund" && type != "wall" && type != "npc") ||
+					(type != "scenery" && type != "ground" && type != "untergrund" && type != "wall" && type != "npc") ||
 					(solid != "solid=0" && solid != "solid=1") || !ids.insert(id).second)
 				{
 					error = "Ungueltige oder nicht unterstuetzte OBJECT-Zeile; die Karte wird nicht bearbeitet.";
@@ -199,8 +199,8 @@ public:
 		dirty = true;
 	}
 
-	// Speichert nur geaenderte Kartenzeilen und legt beim ersten Ueberschreiben eine unveraenderliche Sicherung an.
-	// Vorher wird geprüft, ob die Datei seit dem Öffnen durch einen externen Prozess geaendert wurde.
+	// Saves only changed map lines and creates an immutable backup on the first overwrite.
+	// Before saving, checks whether the file changed externally since it was opened.	// Before saving, checks whether the file changed externally since it was opened.
 	bool Save(std::string& error)
 	{
 		if (path.empty() || map.id.empty() || map.defaultGroundPath.empty())
@@ -402,7 +402,7 @@ private:
 	}
 	static std::string Format(const MapObject& object)
 	{
-		const char* type = object.type == MapObjectType::Untergrund ? "untergrund" : object.type == MapObjectType::Wall ? "wall" : object.type == MapObjectType::Npc ? "npc" : "scenery";
+		const char* type = object.type == MapObjectType::Ground ? "ground" : object.type == MapObjectType::Wall ? "wall" : object.type == MapObjectType::Npc ? "npc" : "scenery";
 		std::ostringstream stream;
 		stream << "OBJECT " << object.id << ' ' << type << ' ' << std::setprecision(std::numeric_limits<float>::max_digits10)
 			   << object.x << ' ' << object.y << ' ' << object.spritePath << " solid=" << (object.solid ? 1 : 0);

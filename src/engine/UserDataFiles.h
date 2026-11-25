@@ -30,8 +30,8 @@ namespace UserDataFiles
 		return true;
 	}
 
-	// Schreibt zuerst in eine temporaere Datei und ersetzt das Ziel erst nach erfolgreichem Flush.
-	// Damit bleibt ein bestehender Spielstand oder eine bestehende Einstellung bei Schreibfehlern erhalten.
+	// Writes to a temporary file first and replaces the target only after a successful flush.
+	// This preserves existing saves or settings if writing fails.
 	inline bool WriteAtomically(const std::filesystem::path& path, std::string_view contents,
 		bool replaceExisting, std::string& error)
 	{

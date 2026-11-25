@@ -13,21 +13,21 @@
 #include "MagicEffectRegistry.h"
 #include "MapLoader.h"
 
-// Prüft, ob ein gegebener Punkt innerhalb eines Trigger-Bereichs liegt.
-// Ein Trigger ist ein rechteckiger Bereich mit definierten Abmessungen.
+// Checks whether a given point lies inside a trigger area.
+// A trigger is a rectangular area with defined dimensions.
 inline bool IsInsideTrigger(const TriggerZone& trigger, float x, float y)
 {
     return x >= trigger.x && x <= (trigger.x + trigger.width) && y >= trigger.y && y <= (trigger.y + trigger.height);
 }
 
-// Prüft, ob gerade eine Map-Übergangsanimation läuft.
-// Wenn eine Map-Transition aktiv ist, sind keine Spieleraktionen oder Trigger-Auslöser erlaubt.
+// Checks whether a map-transition animation is running.
+// While a map transition is active, player actions and trigger evaluation are disabled.
 inline bool IsMapTransitionActive(const GameState& game)
 {
     return game.mapTransition.phase != MapTransitionPhase::None;
 }
 
-// Leitet den Dateinamen einer Zielkarte aus einem Load-Event ab.
+// Derives a target map filename from a Load event.
 inline bool TryResolveMapTransitionTarget(const std::string& eventName, std::string& outMapPath)
 {
     constexpr const char* prefix = "Load_";
@@ -47,7 +47,7 @@ inline bool TryResolveMapTransitionTarget(const std::string& eventName, std::str
     return true;
 }
 
-// Löst einen Effekt über seinen Shader-Namen auf (z. B. "magic_fire").
+// Resolves an effect from its shader name, for example "magic_fire".
 inline bool TryResolveMagicEffect(const std::string& eventName, MagicEffectType& outType)
 {
     constexpr const char* prefix = "magic_";
@@ -84,8 +84,8 @@ inline bool TryResolveMagicEffect(const std::string& eventName, MagicEffectType&
     return false;
 }
 
-// Startet das Ausblenden der Szene. Karte und Spielerposition wechseln erst bei Schwarzbild.
-// Ein laufender Übergang wird nicht ersetzt.
+// Starts fading out the scene. The map and player position change only at the black frame.
+// An active transition is not replaced.
 inline void BeginMapTransition(GameState& game, 
                                std::string targetMapPath, 
                                float targetPlayerX, 
@@ -134,7 +134,7 @@ inline void UpdateCameraShake(CameraShakeState& shake, float deltaTime)
     shake.offsetY = std::sin(shake.elapsed * 91.0f) * shake.intensity * 0.75f * envelope;
 }
 
-// Lädt die Zielkarte zwischen den Fade-Phasen. Schlägt das Laden fehl, wird die alte Karte wieder eingeblendet.
+// Loads the target map between fade phases. If loading fails, the old map fades back in.
 inline void UpdateMapTransition(GameState& game, float deltaTime)
 {
     if (!IsMapTransitionActive(game))
@@ -196,8 +196,8 @@ inline void EndPlayerMonologue(GameState& game)
     game.input = InputState{};
 }
 
-// Löst Ereignisse beim Betreten aus, nicht solange der Spieler in der Zone bleibt.
-// Bei bereits laufendem Kartenübergang wird die Triggerprüfung übersprungen.
+// Fires events on entry, not while the player remains inside the zone.
+// Trigger checks are skipped during an active map transition.
 inline void UpdateTriggers(GameState& game)
 {
     if (IsMapTransitionActive(game) || !game.pendingMonologue.empty() || game.monologueOriginalDirection)
@@ -274,9 +274,9 @@ inline void UpdateTriggers(GameState& game)
     }
 }
 
-// Initialisiert die Spiel-Engine mit einer einfachen Fallback-Map.
-// Wird verwendet, wenn keine Map geladen werden kann oder als Startzustand.
-// Erstellt ein einfaches Grundfeld und einen Test-Stein sowie einen Trigger-Bereich.
+// Initializes the game engine with a simple fallback map.
+// Used when no map can be loaded or as the initial state.
+// Creates a basic ground field, a test rock, and a trigger area.
 inline void InitializeFallbackMap(GameState& game)
 {
     game.activeMap.id = "fallback_map";
@@ -305,8 +305,8 @@ inline void InitializeFallbackMap(GameState& game)
     });
 }
 
-// Initialisiert den Spielzustand mit der ersten verfügbaren Map.
-// Versucht, die Test-Map zu laden. Wenn das fehlschlägt, wird eine Fallback-Map verwendet.
+// Initializes the game state with the first available map.
+// Tries to load the test map; if that fails, uses the fallback map.
 inline void InitializeGameState(GameState& game)
 {
     game.player.x = 0.0f;
@@ -332,8 +332,8 @@ inline void InitializeGameState(GameState& game)
     game.weather = WeatherState{ game.activeMap.defaultWeather };
 }
 
-// Stellt den Bewegungszustand des Spielers basierend auf Tastatureingaben ein.
-// Setzt die Richtungsfahnen (up, down, left, right) für die Bewegungsberechnung.
+// Sets the player's movement state from keyboard input.
+// Sets the direction flags (up, down, left, right) used by movement calculation.
 inline void SetMovementState(InputState& input, bool up, bool down, bool left, bool right)
 {
     input.up = up;
@@ -353,7 +353,7 @@ inline bool IsObjectBlockingPlayer(const MapObject& object, float playerX, float
         hitboxCenterY - playerHalfSize < object.y + objectHalfSize;
 }
 
-// Prüft überlappende Kollisionsboxen. Ausschlaggebend ist nur solid, nicht der Objekttyp.
+// Checks overlapping collision boxes. Only the solid flag matters, not the object type.
 inline bool IsSolidObjectBlockingPosition(const GameState& game, float playerX, float playerY)
 {
     for (const MapObject& object : game.activeMap.objects)
@@ -381,7 +381,7 @@ inline bool TryResolvePlayerPositionCollisions(GameState& restored, const std::s
         blockingNpcs.push_back(i);
     }
 
-    // Alle betroffenen NPCs werden gemeinsam zugewiesen, damit keiner einem anderen den einzigen Platz nimmt.
+    // Assign all affected NPCs together so none steals another NPC's only available position.
     for (std::size_t index : blockingNpcs) restored.activeMap.objects[index].solid = false;
     using CellKey = std::pair<int, int>;
     std::vector<std::vector<CellKey>> candidates(blockingNpcs.size());
@@ -493,7 +493,7 @@ inline bool TryRestorePlayerPosition(GameState& game, const std::string& mapPath
     return true;
 }
 
-// Spricht den nächsten NPC im Blickfeld an und gibt ihn zurück.
+// Interacts with the nearest NPC in view and returns it.
 inline MapObject* InteractWithNpc(GameState& game)
 {
     if (IsMapTransitionActive(game)) return nullptr;
@@ -640,7 +640,7 @@ inline void UpdateNpcWalking(GameState& game, MapObject& npc, float deltaTime)
     }
 }
 
-// Effekte laufen während eines Kartenübergangs weiter; Bewegung und Triggerprüfung pausieren.
+// Effects continue during map transitions; movement and trigger checks are paused.
 inline void UpdateGame(GameState& game, float deltaTime)
 {
     if (!game.pendingMonologue.empty() || game.monologueOriginalDirection) return;
@@ -685,7 +685,7 @@ inline void UpdateGame(GameState& game, float deltaTime)
         moveY /= length;
     }
 
-    // Achsen getrennt prüfen, damit diagonale Bewegung an Hindernissen entlanggleiten kann.
+    // Check axes separately so diagonal movement can slide along obstacles.
     const float previousX = game.player.x;
     const float previousY = game.player.y;
     const float nextX = game.player.x + (moveX * game.player.speed * deltaTime);

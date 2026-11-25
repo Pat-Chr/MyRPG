@@ -1,5 +1,5 @@
 // Arkane Druckwelle: heller Startblitz, zwei Ringe und Strahlen in Gold/Orange.
-uniform float progress; // 0..1 über die Effektdauer
+uniform float progress; // 0..1 across the effect duration
 
 void main()
 {

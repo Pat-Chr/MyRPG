@@ -1,5 +1,5 @@
-// Heilung: pulsierender grüner Bodenring und aufsteigende, funkelnde Lichtpunkte.
-uniform float progress; // 0..1 über die Effektdauer
+// Healing: a pulsing green ground ring and rising, sparkling light points.
+uniform float progress; // 0..1 across the effect duration
 
 float hash(float n)
 {

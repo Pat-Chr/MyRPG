@@ -30,7 +30,7 @@ struct MagicEffectDefinition
 	MagicEffectMode mode = MagicEffectMode::World;
 };
 
-// Entdeckt magic_<id>.frag einmalig; magic_effects.cfg überschreibt nur vorhandene Definitionen.
+// Discovers magic_<id>.frag files once; magic_effects.cfg overrides existing definitions only.
 inline const std::vector<MagicEffectDefinition>& GetMagicEffectDefinitions()
 {
 	static const std::vector<MagicEffectDefinition> definitions = []
@@ -160,7 +160,7 @@ inline const MagicEffectDefinition* FindMagicEffectDefinition(const std::string&
 	return definition == definitions.end() ? nullptr : &*definition;
 }
 
-// Erst mit aktivem Renderkontext aufrufen. Auch fehlgeschlagene Ladeversuche werden nicht wiederholt.
+// Call only with an active render context. Failed shader-load attempts are not repeated.
 inline sf::Shader* GetMagicShader(const std::string& id)
 {
 	static std::unordered_map<std::string, std::unique_ptr<sf::Shader>> shaders;

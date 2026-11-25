@@ -9,7 +9,7 @@
 #include "MenuFont.h"
 #include "SettingsStore.h"
 
-// Wendet Fensteroptionen direkt an; das Speichern übernimmt der Aufrufer.
+// Applies window options directly; the caller is responsible for saving them.
 class SettingsMenu
 {
 public:
@@ -25,7 +25,7 @@ public:
 		const auto found = std::find(GameSettings::fpsLimits.begin(), GameSettings::fpsLimits.end(), settings.fpsLimit);
 		fpsLimitIndex = static_cast<std::size_t>(std::distance(GameSettings::fpsLimits.begin(), found));
 		window.setVerticalSyncEnabled(verticalSync);
-		// VSync setzt nur das aktive Limit aus; die gewählte Stufe bleibt gespeichert.
+		// VSync disables only the active frame limit; the selected level remains saved.
 		window.setFramerateLimit(verticalSync ? 0u : settings.fpsLimit);
 	}
 
@@ -64,27 +64,13 @@ public:
 			{
 				selected = selected == Selection::VSync ? (verticalSync ? Selection::ShowFps : Selection::FpsLimit) :
 					(selected == Selection::FpsLimit ? Selection::ShowFps :
-#if defined(MYRPG_MAP_EDITOR) && !defined(_DEBUG)
-					(selected == Selection::ShowFps ? Selection::MapEditor :
-					(selected == Selection::MapEditor ? Selection::MainMenu : Selection::VSync)));
-#else
 					(selected == Selection::ShowFps ? Selection::MainMenu : Selection::VSync));
-#endif
 			}
 			else
 			{
 				selected = selected == Selection::VSync ? Selection::MainMenu :
-#if defined(MYRPG_MAP_EDITOR) && !defined(_DEBUG)
-					(selected == Selection::MainMenu ? Selection::MapEditor :
-					(selected == Selection::MapEditor ? Selection::ShowFps :
-#else
 					(selected == Selection::MainMenu ? Selection::ShowFps :
-#endif
-					(selected == Selection::ShowFps ? (verticalSync ? Selection::VSync : Selection::FpsLimit) : Selection::VSync)
-#if defined(MYRPG_MAP_EDITOR) && !defined(_DEBUG)
-					)
-#endif
-					);
+					(selected == Selection::ShowFps ? (verticalSync ? Selection::VSync : Selection::FpsLimit) : Selection::VSync));
 			}
 		}
 		else if (key == sf::Keyboard::Key::Left || key == sf::Keyboard::Key::Right ||
@@ -106,12 +92,6 @@ public:
 				window.setVerticalSyncEnabled(verticalSync);
 				window.setFramerateLimit(verticalSync ? 0u : GameSettings::fpsLimits[fpsLimitIndex]);
 			}
-			#if defined(MYRPG_MAP_EDITOR) && !defined(_DEBUG)
-			else if (selected == Selection::MapEditor)
-			{
-				mapEditorEnabled = !mapEditorEnabled;
-			}
-#endif
 			else
 			{
 				showFps = !showFps;
@@ -137,9 +117,6 @@ public:
 					return Action::None;
 				}
 				selected = index == 0 ? Selection::VSync : (index == 1 ? Selection::FpsLimit : Selection::ShowFps);
-#if defined(MYRPG_MAP_EDITOR) && !defined(_DEBUG)
-				if (index == 3) selected = Selection::MapEditor;
-#endif
 				return HandleKey(sf::Keyboard::Key::Enter, window);
 			}
 		}
@@ -155,7 +132,7 @@ public:
 		overlay.setFillColor(sf::Color(0, 0, 0, 170));
 		target.draw(overlay);
 
-		const float panelHeight = 390.0f + ExtraHeight;
+		const float panelHeight = 390.0f;
 		sf::RectangleShape panel({ 540.0f, panelHeight });
 		panel.setOrigin({ 270.0f, panelHeight * 0.5f });
 		panel.setPosition({ width * 0.5f, height * 0.5f });
@@ -195,12 +172,6 @@ public:
 		showFpsSetting.setPosition(SettingBounds(2, resolution).position);
 		target.draw(showFpsSetting);
 
-#if defined(MYRPG_MAP_EDITOR) && !defined(_DEBUG)
-		sf::Text editorSetting(font, mapEditorEnabled ? "Map-Editor: An (F2)" : "Map-Editor: Aus", 24);
-		editorSetting.setFillColor(selected == Selection::MapEditor ? sf::Color(255, 220, 140) : sf::Color::White);
-		editorSetting.setPosition(SettingBounds(3, resolution).position);
-		target.draw(editorSetting);
-#endif
 		const sf::FloatRect buttonBounds = MainMenuButtonBounds(resolution);
 		sf::RectangleShape button(buttonBounds.size);
 		button.setPosition(buttonBounds.position);
@@ -215,18 +186,12 @@ public:
 		target.draw(buttonText);
 
 		sf::Text instructions(font, "FPS-Limit gilt bei VSync aus.\nHoch / Runter: Auswahl\nLinks / Rechts / Enter / Leertaste / Klick: Aendern\nEsc: Zurueck zum Spiel", 18);
-		instructions.setPosition({ width * 0.5f - 230.0f, height * 0.5f + 75.0f + ExtraHeight });
+		instructions.setPosition({ width * 0.5f - 230.0f, height * 0.5f + 75.0f });
 		target.draw(instructions);
 	}
 
 private:
-#if defined(MYRPG_MAP_EDITOR) && !defined(_DEBUG)
-	static constexpr int SettingCount = 4;
-	static constexpr float ExtraHeight = 40.0f;
-#else
 	static constexpr int SettingCount = 3;
-	static constexpr float ExtraHeight = 0.0f;
-#endif
 	static sf::FloatRect SettingBounds(int index, sf::Vector2u resolution)
 	{
 		return { { static_cast<float>(resolution.x) * 0.5f - 230.0f,
@@ -236,10 +201,10 @@ private:
 	static sf::FloatRect MainMenuButtonBounds(sf::Vector2u resolution)
 	{
 		return { { static_cast<float>(resolution.x) * 0.5f - 230.0f,
-			static_cast<float>(resolution.y) * 0.5f + 20.0f + ExtraHeight }, { 460.0f, 42.0f } };
+			static_cast<float>(resolution.y) * 0.5f + 20.0f }, { 460.0f, 42.0f } };
 	}
 
-	enum class Selection { VSync, FpsLimit, ShowFps, MapEditor, MainMenu };
+	enum class Selection { VSync, FpsLimit, ShowFps, MainMenu };
 	sf::Font font;
 	std::size_t fpsLimitIndex = GameSettings::fpsLimits.size() - 1;
 	Selection selected = Selection::VSync;

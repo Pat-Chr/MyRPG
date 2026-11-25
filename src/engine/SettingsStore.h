@@ -22,7 +22,7 @@ struct GameSettings
 class SettingsStore
 {
 public:
-	// Eine fehlende Datei lässt die Vorgaben unverändert; eine fehlerhafte Datei gibt Save nicht frei.
+	// A missing file leaves defaults unchanged; an invalid file does not enable saving.
 	bool Load(GameSettings& settings, std::string& error)
 	{
 		if (!UserDataFiles::Resolve(L"settings.json", path, error))
@@ -103,7 +103,7 @@ public:
 			return false;
 		}
 
-		// Nur bekannte Felder aktualisieren, damit andere JSON-Einträge erhalten bleiben.
+		// Update only known fields so other JSON entries remain intact.
 		document["version"] = 1;
 		document["vsync"] = settings.verticalSync;
 		document["fps_limit"] = settings.fpsLimit;

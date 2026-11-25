@@ -1,5 +1,5 @@
-// Frostnova: sich ausbreitender Eisring mit sechs Kristallspitzen, Strahlen und Glitzern.
-uniform float progress; // 0..1 über die Effektdauer
+// Frost nova: an expanding ice ring with six crystal tips, rays, and sparkling points.
+uniform float progress; // 0..1 across the effect duration
 
 void main()
 {

@@ -31,11 +31,11 @@ Das [DesignDocument.md](./DesignDocument.md) beschreibt die technische Architekt
 - **Textur-Cache** zur Wiederverwendung geladener Texturen
 - **Kamera und Letterbox-Viewport** mit einer Basisauflösung von 1024 × 768; das Seitenverhältnis bleibt beim Ändern der Fenstergröße erhalten
 - **Debug-Anzeigen** für Karten-ID, Position, letztes Ereignis, Raster und Triggerbereiche nur im Debug-Build. Ein Linksklick auf die Koordinaten kopiert X und Y in die Zwischenablage. Im Release-Build bleiben diese Anzeigen verborgen; die Trigger-Funktion selbst bleibt aktiv.
-- **Map-Editor**: Im Debug-Build öffnet `F2` während des Spiels ein separates Fenster und pausiert das Spiel. Im vorläufigen Release-Build muss zuerst `Map-Editor` in den Einstellungen aktiviert werden. Nicht während eines Kartenübergangs verfügbar.
+- **Map-Editor**: Im Debug-Build öffnet `F2` während des Spiels ein separates Fenster und pausiert das Spiel. Im Release-Build bleibt die gespeicherte Freigabe erforderlich; der Aktivierungsbutton ist ausgeblendet. Nicht während eines Kartenübergangs verfügbar.
 
 ### Map-Editor
 
-Im Release-Build ist der Editor standardmäßig ausgeschaltet. Über `Esc` und `Map-Editor: An` kann er aktiviert werden; die Einstellung wird gespeichert. Nach dem Schließen des Einstellungsmenüs öffnet `F2` den Editor. Im Debug-Build ist `F2` ohne Aktivierung verfügbar. Für einen finalen Build lässt sich der Editor samt Release-Einstellung ausschließen, indem `MYRPG_MAP_EDITOR_ENABLED` in `src/BuildConfig.h` auf `0` gesetzt wird (alternativ als Compilerdefinition). Die Debug-Anzeigen im Spielfenster bleiben unabhängig davon auf Debug beschränkt.
+Im Release-Build ist der Editor standardmäßig ausgeschaltet und kann nicht mehr im Einstellungsmenü aktiviert werden. Eine bereits gespeicherte Freigabe bleibt erhalten: Ist `map_editor_enabled` in der Einstellungsdatei `true`, öffnet `F2` den Editor. Im Debug-Build ist `F2` ohne Aktivierung verfügbar. Für einen finalen Build lässt sich der Editor samt Release-Einstellung ausschließen, indem `MYRPG_MAP_EDITOR_ENABLED` in `src/BuildConfig.h` auf `0` gesetzt wird (alternativ als Compilerdefinition). Die Debug-Anzeigen im Spielfenster bleiben unabhängig davon auf Debug beschränkt.
 
 Das Editorfenster lässt sich in der Größe ändern. Die feste Arbeitsfläche von 1280×800 (16:10) behält wie das Spielfenster ihr Seitenverhältnis durch zentriertes Letterboxing; Layout, Karte und Mausbedienung passen sich gemeinsam an.
 
@@ -156,7 +156,7 @@ OBJECT <id> npc <x> <y> <spritePath> solid=<0|1> [name=<url-kodierter-Name>] [wa
 
 - `MAP` setzt die erforderliche Karten-ID. `GROUND` legt das Standard-Bodensprite fest, das den sichtbaren Kartenbereich gekachelt ausfüllt.
 - `WEATHER` ist optional und setzt das Standardwetter auf `none` oder den Dateinamen eines Wetter-Shaders ohne `.frag`, zum Beispiel `rain` für `rain.frag`; ohne Angabe gilt `none`. Alle `.frag`-Dateien unter `Assets/Shaders/Weather/` werden beim Start automatisch erkannt und vorgeladen. Ein neuer Effekt benötigt keinen Codeeintrag; er ist nach dem nächsten Build und Spielstart verfügbar. Ungültige oder mehrfache Angaben verhindern das Laden der Karte. Das Wetter wird über der Spielwelt, aber unter UI und Kartenübergang gezeichnet und pausiert im Einstellungsmenü. Wenn ein Shader nicht verfügbar ist, wird der Fehler auf stderr gemeldet und der Effekt nicht gezeichnet.
-- `OBJECT` platziert ein Sprite in Weltkoordinaten. `untergrund` bezeichnet Bodenobjekte und `scenery` Dekoration; beide Typen rasten beim Platzieren und Verschieben auf das 64-Pixel-Raster ein. `wall` steht für Wände/Barrieren und `npc` für Charaktere; diese Typen sind frei positionierbar.
+- `OBJECT` platziert ein Sprite in Weltkoordinaten. `ground` bezeichnet Bodenobjekte und `scenery` Dekoration; beide Typen rasten beim Platzieren und Verschieben auf das 64-Pixel-Raster ein. `wall` steht für Wände/Barrieren und `npc` für Charaktere; diese Typen sind frei positionierbar. Der frühere Typ `untergrund` bleibt lesbar; neue oder geänderte Bodenobjekte speichert der Editor als `ground`, unveränderte Zeilen bleiben erhalten.
 - `solid` legt unabhängig vom Objekttyp fest, ob das Objekt den Spieler blockiert: `solid=1` aktiviert die Kollision, `solid=0` lässt den Spieler hindurch. Auch `scenery`, `wall` und `npc` blockieren also nur, wenn `solid=1` gesetzt ist. Für Boden- und Deko-Objekte, die begehbar sein sollen, wird üblicherweise `solid=0` verwendet.
 - Bei `npc` legt `name` den Anzeigenamen und damit den Namen der optionalen Dialoguedatei unter `Assets/Dialogues/` fest. `walking_area=1` aktiviert die freie Bewegung innerhalb der mit `walk_cells` angegebenen 64-Pixel-Rasterfelder. Das Startfeld des NPCs sollte in dieser Liste enthalten sein.
 - `TRIGGER` definiert ein rechteckiges Ereignisgebiet in Weltkoordinaten. Das Ereignis wird beim Betreten ausgelöst; nach Verlassen kann es bei erneutem Betreten wieder ausgelöst werden. Der Ereignisname `none` bedeutet, dass beim Betreten nichts ausgelöst wird; er unterscheidet sich von `weather_none`, das das Wetter ausschaltet. `glow` ist optional und standardmäßig `0`. Mit `glow=1` erhält das Gebiet einen pulsierenden, additiven Shader-Glow. Das ist nur Darstellung und ändert weder Auslösung noch Kollision; der Glow ist auch im Release-Build sichtbar. Wenn Shader nicht unterstützt werden, wird stattdessen ein einfaches Rechteck gezeichnet. Debug-Markierungen der Trigger bleiben auf Debug-Builds beschränkt.
@@ -168,7 +168,7 @@ MAP 0001_TestMap
 GROUND Assets/Sprites/Environment/Forest/forest_ground.png
 WEATHER rain
 OBJECT rock_01 scenery -192 -64 Assets/Sprites/Environment/Forest/forest_rock.png solid=1
-OBJECT path_01 untergrund -64 0 Assets/Sprites/Environment/Forest/forest_path.png solid=0
+OBJECT path_01 ground -64 0 Assets/Sprites/Environment/Forest/forest_path.png solid=0
 TRIGGER magic_fire 448 -32 64 64 magic_fire glow=1
 TRIGGER screen_shake_test 1408 -32 64 64 screen_shake glow=1
 TRIGGER clear_weather -32 544 64 64 weather_none glow=1

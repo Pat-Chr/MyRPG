@@ -1,5 +1,5 @@
-// Magiewirbel: rotierende Spiralarme in Violett/Pink mit leuchtendem Kern.
-uniform float progress; // 0..1 über die Effektdauer
+// Magic vortex: rotating purple/pink spiral arms with a glowing core.
+uniform float progress; // 0..1 across the effect duration
 
 void main()
 {

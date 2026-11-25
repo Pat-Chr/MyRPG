@@ -50,7 +50,7 @@ public:
 		{
 			SaveGamePosition position;
 			std::string loadError;
-			// Unlesbare Dateien bleiben sichtbar und können gezielt gelöscht werden.
+			// Unreadable files remain visible and can be deleted explicitly.
 			if (!Load(id, position, loadError)) position = {};
 			result.push_back({ id, std::move(position.mapFile), std::move(position.name) });
 		}

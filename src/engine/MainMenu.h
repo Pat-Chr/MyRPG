@@ -8,7 +8,7 @@
 #include "MenuFont.h"
 #include "SaveGameStore.h"
 
-// Verwaltet den Titelbildschirm; die Hauptschleife führt die gewählte Aktion aus.
+// Manages the title screen; the main loop executes the selected action.
 class MainMenu
 {
 public:

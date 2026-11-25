@@ -17,23 +17,23 @@ enum class PlayerDirection
 	Down, Up, Left, Right, Northwest, Northeast, Southwest, Southeast
 };
 
-// Spieler-Informationen mit Position und Geschwindigkeit
+// Player information with position and movement speed.
 struct Player
 {
-	// X-Koordinate des Spielers im Weltkoordinatensystem
+	// Player X-coordinate in world coordinates.
 	float x = 0.0f;
-	
-	// Y-Koordinate des Spielers im Weltkoordinatensystem
+
+	// Player Y-coordinate in world coordinates.
 	float y = 0.0f;
-	
-	// Bewegungsgeschwindigkeit (Pixel pro Sekunde)
+
+	// Movement speed in pixels per second.
 	float speed = 220.0f;
 
 	int size = 64;
 
-	// Seitenlänge der quadratischen Kollisionsfläche, unabhängig von der Sprite-Größe.
+	// Side length of the square collision area, independent of the sprite size.
 	static constexpr float hitboxSize = 24.0f;
-	static constexpr float hitboxOffsetY = 20.0f; // Positiv = nach unten schieben
+	static constexpr float hitboxOffsetY = 20.0f; // Positive values shift it downward.
 
 	static constexpr float HitboxCenterY(float playerY) { return playerY + hitboxOffsetY; }
 
@@ -41,39 +41,39 @@ struct Player
 	bool moving = false;
 };
 
-// Tastatur/Zustand der Eingabe für die Steuerung
+// Keyboard state used for movement controls.
 struct InputState
 {
-	// Oben-Taste (W/↑) ist gedrückt
+	// Up key (W/Up) is pressed.
 	bool up = false;
-	
-	// Unten-Taste (S/↓) ist gedrückt
+
+	// Down key (S/Down) is pressed.
 	bool down = false;
-	
-	// Links-Taste (A/←) ist gedrückt
+
+	// Left key (A/Left) is pressed.
 	bool left = false;
-	
-	// Rechts-Taste (D/→) ist gedrückt
+
+	// Right key (D/Right) is pressed.
 	bool right = false;
 };
 
-// Anzeigebereich der Kamera/Sichtfeld
+// Camera viewport and visible area.
 struct Viewport
 {
-	// Breite des sichtbaren Bereichs in Pixeln
+	// Width of the visible area in pixels.
 	int width = 0;
-	
-	// Höhe des sichtbaren Bereichs in Pixeln
+
+	// Height of the visible area in pixels.
 	int height = 0;
 };
 
-// Typen von Objekten in der Karte
+// Types of objects on the map.
 enum class MapObjectType
 {
-	Untergrund,   // Hintergrundboden (nicht-solid)
-	Scenery,      // Dekorative Elemente (Bäume, Felsen, etc.)
-	Wall,         // Kollidierende Wände/Barrieren
-	Npc           // Nicht-spielerische Charaktere
+	Ground,       // Background ground (non-solid).
+	Scenery,      // Decorative elements such as trees and rocks.
+	Wall,         // Colliding walls and barriers.
+	Npc           // Non-player characters.
 };
 
 struct WalkingCell
@@ -83,28 +83,28 @@ struct WalkingCell
 	bool operator==(const WalkingCell&) const = default;
 };
 
-// Einzelne Objekte in der Karte
+// An individual object on the map.
 struct MapObject
 {
-	// Eindeutiger Identifier für das Objekt
+	// Unique identifier for the object.
 	std::string id;
-	
-	// Typ des Objekts (sieht aus wie Dekoration, ist aber vielleicht solid)
+
+	// Object type; decoration may still be solid.
 	MapObjectType type = MapObjectType::Scenery;
-	
-	// X-Koordinate im Weltkoordinatensystem
+
+	// X-coordinate in world coordinates.
 	float x = 0.0f;
-	
-	// Y-Koordinate im Weltkoordinatensystem
+
+	// Y-coordinate in world coordinates.
 	float y = 0.0f;
-	
-	// Pfad zum Sprite-Datei (z.B. "assets/sprites/tree.png")
+
+	// Path to the sprite file, for example "assets/sprites/tree.png".
 	std::string spritePath;
-	
-	// Bestimmt die Kollision unabhängig vom Objekttyp.
+
+	// Controls collision independently of the object type.
 	bool solid = false;
 
-	// Optionaler Ausschnitt (Tile) aus einem Spritesheet in Texturpixeln
+	// Optional tile rectangle from a spritesheet in texture pixels.
 	bool hasTile = false;
 	int tileX = 0;
 	int tileY = 0;
@@ -121,82 +121,82 @@ struct MapObject
 	float npcTargetX = 0.0f, npcTargetY = 0.0f;
 };
 
-// Auslöse-Zone für Ereignisse (Trigger)
+// Event trigger zone.
 struct TriggerZone
 {
-	// Eindeutiger Identifier für die Zone
+	// Unique identifier for the zone.
 	std::string id;
-	
-	// X-Koordinate der oberen linken Ecke
+
+	// X-coordinate of the top-left corner.
 	float x = 0.0f;
-	
-	// Y-Koordinate der oberen linken Ecke
+
+	// Y-coordinate of the top-left corner.
 	float y = 0.0f;
-	
-	// Breite der Zone in Pixeln
+
+	// Zone width in pixels.
 	float width = 0.0f;
-	
-	// Höhe der Zone in Pixeln
+
+	// Zone height in pixels.
 	float height = 0.0f;
-	
-	// Name des Ereignisses, das ausgelöst wird (z.B. "collect_coin", "open_door")
+
+	// Name of the event to trigger, for example "collect_coin" or "open_door".
 	std::string eventName;
-	
-	// Ob die Zone sichtbar leuchtet (Glow-Shader, auch im Release-Build)
+
+	// Whether the zone glows through a shader, including in Release builds.
 	bool glow = false;
 
-	// Ob sich der Spieler aktuell innerhalb dieser Zone befindet
+	// Whether the player is currently inside this zone.
 	bool isPlayerInside = false;
 
 	float spawnX = 0.0f;
 	float spawnY = 0.0f;
 };
 
-// Daten für eine einzelne Karte/Level
+// Data for one map or level.
 struct MapData
 {
-	// Eindeutiger Identifier für die Karte (z.B. "level_1", "world_map")
+	// Unique identifier for the map, for example "level_1" or "world_map".
 	std::string id;
-	
-	// Standard-Pfad zum Hintergrund-Boden-Sprite
+
+	// Default path to the background ground sprite.
 	std::string defaultGroundPath;
 
 	std::string defaultWeather = "none";
 
-	// Liste aller Objekte in der Karte (Wände, Dekoration, NPCs)
+	// List of map objects such as walls, scenery, and NPCs.
 	std::vector<MapObject> objects;
-	
-	// Liste aller Trigger-Zonen mit definierten Ereignissen
+
+	// List of trigger zones with defined events.
 	std::vector<TriggerZone> triggers;
 };
 
-// Phasen eines Karten-Übergangs
+// Phases of a map transition.
 enum class MapTransitionPhase
 {
-	None,          // Kein Übergang läuft
-	FadeOut,       // Fading aus der aktuellen Karte
-	FadeIn         // Fade in die neue Karte
+	None,          // No transition is running.
+	FadeOut,       // Fade out from the current map.
+	FadeIn         // Fade in to the new map.
 };
 
-// Zustand für einen Karten-Wechsel
+// State for a map change.
 struct MapTransitionState
 {
-	// Aktueller Übergangs-Phasenstatus
+	// Current transition phase.
 	MapTransitionPhase phase = MapTransitionPhase::None;
 
-	// Verstrichene Zeit in der aktuellen Phase, in Sekunden.
+	// Elapsed time in the current phase, in seconds.
 	float timer = 0.0f;
 
-	// Dauer je Fade-Phase, nicht die Gesamtdauer des Kartenwechsels.
+	// Duration of each fade phase, not the total transition duration.
 	float duration = 0.28f;
 
-	// Pfad zur Ziel-Karte (z.B. "maps/level_2.map")
+	// Path to the target map, for example "maps/level_2.map".
 	std::string targetMapPath;
-	
-	// Zielposition des Spielers auf der neuen Karte
+
+	// Target player X-coordinate on the new map.
 	float targetPlayerX = 0.0f;
-	
-	// Zielposition des Spielers auf der neuen Karte
+
+	// Target player Y-coordinate on the new map.
 	float targetPlayerY = 0.0f;
 };
 
@@ -209,25 +209,25 @@ struct CameraShakeState
 	float offsetY = 0.0f;
 };
 
-// Gesamtzustand des Spiels (Single-Page/Level-basiert)
+// Complete game state for the current level.
 struct GameState
 {
-	// Aktueller Spieler-Zustand
+	// Current player state.
 	Player player;
-	
-	// Aktueller Eingabe-Zustand (Tasten/Haltungen)
+
+	// Current input state.
 	InputState input;
 
-	// Aktive Karte, die gerade angezeigt wird
+	// Active map that is currently displayed.
 	MapData activeMap;
 	std::string activeMapPath;
 
-	// Zuletzt ausgelöstes Ereignis (für Debugging/Logging)
+	// Last triggered event, used for debugging and logging.
 	std::string lastTriggeredEvent;
 	std::string pendingMonologue;
 	std::optional<PlayerDirection> monologueOriginalDirection;
 
-	// Aktueller Karten-Übergangszustand
+	// Current map-transition state.
 	MapTransitionState mapTransition;
 	CameraShakeState cameraShake;
 

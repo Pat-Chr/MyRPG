@@ -111,8 +111,8 @@ public:
 					{
 						const sf::Vector2f pos = WorldPosition(window, move->position);
 						MapObject& object = document.map.objects[selectedObject];
-						object.x = object.type == MapObjectType::Scenery || object.type == MapObjectType::Untergrund ? SnapToGrid(pos.x, 64.0f) : pos.x;
-						object.y = object.type == MapObjectType::Scenery || object.type == MapObjectType::Untergrund ? SnapToGrid(pos.y, 64.0f) : pos.y;
+						object.x = object.type == MapObjectType::Scenery || object.type == MapObjectType::Ground ? SnapToGrid(pos.x, 64.0f) : pos.x;
+						object.y = object.type == MapObjectType::Scenery || object.type == MapObjectType::Ground ? SnapToGrid(pos.y, 64.0f) : pos.y;
 						document.dirty = true;
 					}
 					else if (resizeEdges && TriggerPanelVisible())
@@ -263,7 +263,7 @@ private:
 		{ 1168, 102, "Assets neu", "Liest die Sprite-Dateien und Ordner fuer den Asset-Browser erneut ein.", RibbonAction::ReloadAssets },
 	};
 
-	// Spritesheet-Ansicht: eigenes Fenster, Inhaltsbereich ab y=70 (Fensterpixel)
+	// Spritesheet view: separate window with content starting at y=70 (window pixels).
 	static constexpr float SheetContentY = 70.0f;
 	std::optional<sf::RenderWindow> sheetWindow;
 	bool sheetDragging = false, brushTile = false, sheetPanning = false;
@@ -304,7 +304,7 @@ private:
 		sheetWindow->setKeyRepeatEnabled(false);
 		ResetSheetView();
 	}
-	// Liefert den Tile-Ausschnitt unter dem Mauszeiger (Fensterpixel), falls vorhanden
+	// Returns the tile rectangle under the mouse pointer (window pixels), if available.
 	std::optional<sf::IntRect> SheetTileAt(sf::Vector2f p)
 	{
 		if (p.x < 0.0f || p.y < SheetContentY) return std::nullopt;
@@ -340,7 +340,7 @@ private:
 			sheetDragging = true;
 		}
 	}
-	// releasePixel liegt in Sheet-Fensterkoordinaten; ausserhalb des Sheet-Fensters wird auf die Karte gesetzt
+	// releasePixel is in sheet-window coordinates; outside the sheet window, it is placed on the map.
 	void HandleSheetRelease(const sf::RenderWindow& window, sf::Vector2i releasePixel)
 	{
 		if (!sheetDragging) return;
@@ -396,7 +396,7 @@ private:
 			{
 				const sf::Vector2f position = sheetWindow->mapPixelToCoords(wheel->position);
 				if (position.y < SheetContentY) continue;
-				// Zoom um den Mauszeiger, sodass der Punkt unter der Maus stehen bleibt
+				// Zoom around the mouse pointer so the point under the pointer stays fixed.
 				const float oldScale = sheetScale;
 				sheetScale = std::clamp(sheetScale * (wheel->delta > 0 ? 1.2f : 1.0f / 1.2f), 0.25f, 32.0f);
 				const float ratio = sheetScale / oldScale;
@@ -920,7 +920,7 @@ private:
 	bool PlaceSelectedSprite(sf::Vector2f position)
 	{
 		if (document.path.empty() || browser.selected.empty()) return false;
-		if (newType == MapObjectType::Scenery || newType == MapObjectType::Untergrund)
+		if (newType == MapObjectType::Scenery || newType == MapObjectType::Ground)
 		{
 			position.x = SnapToGrid(position.x, 64.0f);
 			position.y = SnapToGrid(position.y, 64.0f);
@@ -1073,10 +1073,10 @@ private:
 			object->walkingAreaEnabled = false;
 			object->walkingCells.clear();
 		}
-		type = type == MapObjectType::Scenery ? MapObjectType::Untergrund : type == MapObjectType::Untergrund ? MapObjectType::Wall : type == MapObjectType::Wall ? MapObjectType::Npc : MapObjectType::Scenery;
+		type = type == MapObjectType::Scenery ? MapObjectType::Ground : type == MapObjectType::Ground ? MapObjectType::Wall : type == MapObjectType::Wall ? MapObjectType::Npc : MapObjectType::Scenery;
 		if (object)
 		{
-			if (type == MapObjectType::Scenery || type == MapObjectType::Untergrund)
+			if (type == MapObjectType::Scenery || type == MapObjectType::Ground)
 			{
 				object->x = SnapToGrid(object->x, 64);
 				object->y = SnapToGrid(object->y, 64);
@@ -1289,7 +1289,7 @@ private:
 	}
 	static const char* TypeName(MapObjectType type)
 	{
-		return type == MapObjectType::Untergrund ? "untergrund" : type == MapObjectType::Wall ? "wall" : type == MapObjectType::Npc ? "npc" : "scenery";
+		return type == MapObjectType::Ground ? "ground" : type == MapObjectType::Wall ? "wall" : type == MapObjectType::Npc ? "npc" : "scenery";
 	}
 	std::string ObjectTypeHelp() const
 	{
@@ -1299,7 +1299,7 @@ private:
 		switch (type)
 		{
 		case MapObjectType::Scenery: return prefix + "Deko; Positionen beim Platzieren/Verschieben im 64-Pixel-Raster. Kollision nur ueber Solid.";
-		case MapObjectType::Untergrund: return prefix + "Bodenobjekt; Positionen im 64-Pixel-Raster. Kollision nur ueber Solid.";
+		case MapObjectType::Ground: return prefix + "Bodenobjekt; Positionen im 64-Pixel-Raster. Kollision nur ueber Solid.";
 		case MapObjectType::Wall: return prefix + "Barriere ohne Rasterbindung; blockiert nur, wenn Solid aktiv ist.";
 		case MapObjectType::Npc: return prefix + "Charakterkategorie ohne Rasterbindung; Kollision nur ueber Solid.";
 		}
@@ -1590,7 +1590,7 @@ private:
 		const sf::Vector2f mouse = EditorPosition(window, pixel);
 		if (!IsMapArea(mouse) || IsOverObjectPanel(mouse)) return;
 		sf::Vector2f position = WorldPosition(window, pixel);
-		if (newType == MapObjectType::Scenery || newType == MapObjectType::Untergrund)
+		if (newType == MapObjectType::Scenery || newType == MapObjectType::Ground)
 		{
 			position.x = SnapToGrid(position.x, 64.0f);
 			position.y = SnapToGrid(position.y, 64.0f);

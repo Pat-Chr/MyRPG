@@ -1,5 +1,5 @@
-// Sparkle-Effekt: abgeflachter Ring plus 12 aufsteigende Funken, vollständig auf der GPU berechnet.
-uniform float progress; // 0..1 über die Effektdauer
+// Sparkle effect: a flattened ring plus 12 rising sparks, fully computed on the GPU.
+uniform float progress; // 0..1 across the effect duration
 
 const float PI = 3.14159265;
 

@@ -1,5 +1,5 @@
-// Blitzeinschlag: drei flackernde Blitze von oben, Einschlagblitz und Druckring am Boden.
-uniform float progress; // 0..1 über die Effektdauer
+// Lightning strike: three flickering bolts from above, an impact bolt, and a ground pressure ring.
+uniform float progress; // 0..1 across the effect duration
 
 void main()
 {
@@ -13,7 +13,7 @@ void main()
 	float glow = 0.0;
 	for (int i = 0; i < 3; ++i)
 	{
-		// Form wird mehrmals pro Effekt neu gewürfelt, damit der Blitz zuckt
+		// Reroll the shape several times per effect so the lightning jumps.
 		float s = float(i) * 3.7 + floor(progress * 14.0) * 1.3;
 		float off = (float(i) - 1.0) * 0.22;
 		float toImpact = clamp((impactY - p.y) / (impactY + 1.0), 0.0, 1.0);

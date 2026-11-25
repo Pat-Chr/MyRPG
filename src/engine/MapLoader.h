@@ -116,22 +116,22 @@ inline bool TryParseCoordinate(const std::string& token, const std::string& key,
 }
 
 /**
- * @brief Wandelt einen String-Wert in ein MapObjectType-Enum um.
+ * @brief Converts a string value to a MapObjectType enum.
  * 
- * Unterstützt die folgenden Typen:
- * - "untergrund" -> MapObjectType::Untergrund (Bodenobjekte)
- * - "wall"       -> MapObjectType::Wall (Wände/Barrieren)
- * - "npc"        -> MapObjectType::Npc (NPC-Charaktere)
- * - "scenery"    -> MapObjectType::Scenery (Dekoration)
+ * Supports the following types:
+ * - "ground" (also the legacy "untergrund") -> MapObjectType::Ground (ground objects)
+ * - "wall"       -> MapObjectType::Wall (walls/barriers)
+ * - "npc"        -> MapObjectType::Npc (NPC characters)
+ * - "scenery"    -> MapObjectType::Scenery (decorations)
  * 
- * @param value Der String-Wert, der interpretiert werden soll.
- * @return MapObjectType Das zugehörige Enum-Wert; unbekannte Typen werden als Dekoration behandelt.
+ * @param value The string value to interpret.
+ * @return MapObjectType The matching enum value; unknown types are treated as scenery.
  */
 inline MapObjectType ParseMapObjectType(const std::string& value)
 {
-	if (value == "untergrund")
+	if (value == "ground" || value == "untergrund")
 	{
-		return MapObjectType::Untergrund;
+		return MapObjectType::Ground;
 	}
 
 	if (value == "wall")
@@ -144,17 +144,17 @@ inline MapObjectType ParseMapObjectType(const std::string& value)
 		return MapObjectType::Npc;
 	}
 
-	return MapObjectType::Scenery; // Default für unbekannte Typen
+	return MapObjectType::Scenery; // Default for unknown types.
 }
 
 /**
- * @brief Rundet eine Koordinate auf das vorgegebene Raster.
+ * @brief Snaps a coordinate to the configured grid.
  *
- * Der Kartenlader nutzt das 64-Pixel-Raster nur für Untergrund und Scenery.
+ * The map loader uses the 64-pixel grid for ground and scenery objects.
  *
- * @param value Koordinate vor dem Runden.
- * @param gridSize Rasterabstand in Pixeln.
- * @return Gerundete Koordinate.
+ * @param value Coordinate before snapping.
+ * @param gridSize Grid spacing in pixels.
+ * @return Snapped coordinate.
  */
 inline float SnapToGrid(float value, float gridSize)
 {
@@ -162,15 +162,15 @@ inline float SnapToGrid(float value, float gridSize)
 }
 
 /**
- * @brief Lädt eine Karte im Textformat (siehe DesignDocument.md).
+ * @brief Loads a map from text format (see DesignDocument.md).
  *
- * Eine MAP-ID ist Pflicht. Unlesbare OBJECT- und TRIGGER-Grunddaten werden
- * übersprungen; ungültige WEATHER-, Glow- oder Spawn-Angaben brechen das Laden ab.
- * Spawn-Koordinaten müssen paarweise angegeben werden.
+ * A MAP ID is required. Unreadable OBJECT and TRIGGER entries are skipped;
+ * invalid WEATHER, glow, or spawn values abort loading.
+ * Spawn coordinates must be specified as a pair.
  *
- * @param filePath Pfad zur Kartendatei.
- * @param outMap Wird nur nach erfolgreichem Laden ersetzt.
- * @return true, wenn die Karte geladen wurde.
+ * @param filePath Path to the map file.
+ * @param outMap Replaced only after successful loading.
+ * @return true if the map was loaded.
  */
 inline bool TryLoadMapFromFile(const std::string& filePath, MapData& outMap)
 {
@@ -183,7 +183,7 @@ inline bool TryLoadMapFromFile(const std::string& filePath, MapData& outMap)
 #ifdef _DEBUG
 		std::cout << "[Map] Failed to open '" << filePath << "'.\n";
 #endif
-		return false; // Datei konnte nicht geöffnet werden
+		return false; // The file could not be opened.
 	}
 
 	MapData loadedMap;
@@ -194,7 +194,7 @@ inline bool TryLoadMapFromFile(const std::string& filePath, MapData& outMap)
 	while (std::getline(input, line))
 	{
 		++lineNumber;
-		// Leerzeilen und Kommentare ignorieren
+		// Ignore empty lines and comments.
 		if (line.empty() || line[0] == '#')
 		{
 			continue;
@@ -206,13 +206,13 @@ inline bool TryLoadMapFromFile(const std::string& filePath, MapData& outMap)
 
 		if (keyword == "MAP")
 		{
-			lineStream >> loadedMap.id; // Map-ID ist erforderlich für eine gültige Map
+			lineStream >> loadedMap.id; // A map ID is required for a valid map.
 			continue;
 		}
 
 		if (keyword == "GROUND")
 		{
-			lineStream >> loadedMap.defaultGroundPath; // Pfad zum Boden-Sprite
+			lineStream >> loadedMap.defaultGroundPath; // Path to the ground sprite.
 			continue;
 		}
 
@@ -241,19 +241,19 @@ inline bool TryLoadMapFromFile(const std::string& filePath, MapData& outMap)
 			{
 				lineStream.setstate(std::ios::failbit);
 			}
-			if (!lineStream.fail()) // Nur parsen, wenn alle Werte erfolgreich gelesen wurden
+			if (!lineStream.fail()) // Parse only when every value was read successfully.
 			{
 				object.type = ParseMapObjectType(type);
 				
-				// Bodenobjekte und Scenery auf 64px-Grid snapen
-				if (object.type == MapObjectType::Scenery || object.type == MapObjectType::Untergrund)
+				// Snap ground objects and scenery to the 64-pixel grid.
+				if (object.type == MapObjectType::Scenery || object.type == MapObjectType::Ground)
 				{
 					constexpr float gridSize = 64.0f;
 					object.x = SnapToGrid(object.x, gridSize);
 					object.y = SnapToGrid(object.y, gridSize);
 				}
-				
-				object.solid = solidFlag != 0; // Festkörper-Objekte wenn Flag != 0
+
+				object.solid = solidFlag != 0; // The object is solid when the flag is not 0.
 
 				std::string token;
 				bool hasName = false, hasWalkingArea = false, hasWalkingCells = false;
@@ -308,7 +308,7 @@ inline bool TryLoadMapFromFile(const std::string& filePath, MapData& outMap)
 			TriggerZone trigger;
 			lineStream >> trigger.id >> trigger.x >> trigger.y >> trigger.width >> trigger.height >> trigger.eventName;
 
-			if (!lineStream.fail()) // Nur hinzufügen, wenn alle Werte erfolgreich gelesen wurden
+			if (!lineStream.fail()) // Add only when every value was read successfully.
 			{
 				std::string token;
 				bool hasSpawnX = false;
@@ -355,7 +355,7 @@ inline bool TryLoadMapFromFile(const std::string& filePath, MapData& outMap)
 		}
 	}
 
-	// Map ohne ID ist ungültig - keine leeren Maps zurückgeben
+	// A map without an ID is invalid; do not return an empty map.
 	if (loadedMap.id.empty())
 	{
 #ifdef _DEBUG

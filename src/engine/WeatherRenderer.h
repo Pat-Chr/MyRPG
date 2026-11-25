@@ -10,7 +10,7 @@
 
 #include "Weather.h"
 
-// Erst mit aktivem Renderkontext aufrufen. Jeder Shader wird höchstens einmal zu laden versucht.
+// Call only with an active render context. Each shader is attempted at most once.
 inline sf::Shader* GetWeatherShader(const std::string& effectId)
 {
 	if (effectId == "none")
@@ -58,7 +58,7 @@ inline void PreloadWeatherShaders()
 	}
 }
 
-// Hitze verzerrt die fertige Welttextur, statt wie die übrigen Effekte ein Overlay zu zeichnen.
+// Heat distorts the completed world texture instead of drawing an overlay like the other effects.
 inline void RenderHeat(sf::RenderTarget& target, const sf::RenderTexture& scene, const WeatherState& weather,
 	float width, float height, sf::Vector2f worldOrigin)
 {
@@ -90,7 +90,7 @@ inline void RenderWeather(sf::RenderTarget& target, const WeatherState& weather,
 	};
 	shader->setUniform("time", weather.elapsed);
 	shader->setUniform("resolution", sf::Glsl::Vec2(width, height));
-	// Die Wolkenschatten sind weltfest; die Regentropfen bleiben bildschirmfest.
+	// Cloud shadows stay attached to the world; raindrops remain fixed to the screen.
 	if (weather.effectId == "rain")
 	{
 		shader->setUniform("worldOrigin", sf::Glsl::Vec2(worldOrigin));

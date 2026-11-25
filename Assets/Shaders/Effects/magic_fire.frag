@@ -1,5 +1,5 @@
-// Feuerstoß: aufsteigende Flammenpartikel mit Farbverlauf Gelb -> Orange -> Rot.
-uniform float progress; // 0..1 über die Effektdauer
+// Fire burst: rising flame particles transitioning from yellow to orange to red.
+uniform float progress; // 0..1 across the effect duration
 
 float hash(float n)
 {

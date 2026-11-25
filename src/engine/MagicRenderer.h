@@ -7,7 +7,7 @@
 #include "MagicEffectRegistry.h"
 #include "MagicEffects.h"
 
-// Welt-Effekte folgen der Kamera; Bildschirm-Effekte füllen den logischen Viewport unabhängig vom Auslöseort.
+// World effects follow the camera; screen effects fill the logical viewport independently of the trigger position.
 inline void RenderMagicEffects(sf::RenderTarget& target, const MagicEffects& effects,
 							   float cameraX, float cameraY, float viewportWidth, float viewportHeight)
 {

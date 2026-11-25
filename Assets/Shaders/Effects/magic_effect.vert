@@ -1,4 +1,4 @@
-// Gemeinsamer Vertex-Shader aller Magieeffekte: reicht Position und Quad-Koordinaten (0..1) durch.
+// Shared vertex shader for all magic effects; passes through position and quad coordinates (0..1).
 void main()
 {
 	gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
