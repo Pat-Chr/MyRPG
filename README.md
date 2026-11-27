@@ -18,6 +18,8 @@ Das [DesignDocument.md](./DesignDocument.md) beschreibt die technische Architekt
 
 ![MyRPG Screenshot vom 27.11.2026, 18:57](Assets/screenshots/Screenshot%202026-11-27%20185744.png)
 
+![MyRPG Screenshot vom 27.11.2026, 18:57](Assets/screenshots/Screenshot%202026-11-27%20200303.png)
+
 ## ✨ Aktueller Funktionsumfang
 
 - **Hauptmenü** mit Titelbild, `Spiel laden`, `Neues Spiel` und `Spiel beenden`; Bedienung mit Hoch/Runter und Enter/Leertaste oder per Maus.
