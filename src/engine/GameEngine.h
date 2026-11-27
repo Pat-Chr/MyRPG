@@ -664,6 +664,7 @@ inline void StartPlayerAttack(GameState& game)
     if (!animation) return;
     game.player.direction = direction;
     game.player.moving = false;
+    game.player.currentAttackDamage = CalculatePlayerAttackDamage(game.player);
     game.player.stamina = 0.0f;
     game.player.sprintExhausted = true;
     game.player.attacking = true;
