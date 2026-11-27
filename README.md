@@ -10,6 +10,14 @@ MyRPG ist ein Windows-Projekt, in dem ich meine eigene kleine RPG-Engine mit C++
 
 Das [DesignDocument.md](./DesignDocument.md) beschreibt die technische Architektur, Spielsysteme, Daten- und Asset-Formate sowie die offenen Entwicklungsfragen.
 
+## 📸 Screenshots
+
+![MyRPG Screenshot vom 27.11.2026, 18:54](Assets/screenshots/Screenshot%202026-11-27%20185436.png)
+
+![MyRPG Screenshot vom 27.11.2026, 18:57](Assets/screenshots/Screenshot%202026-11-27%20185709.png)
+
+![MyRPG Screenshot vom 27.11.2026, 18:57](Assets/screenshots/Screenshot%202026-11-27%20185744.png)
+
 ## ✨ Aktueller Funktionsumfang
 
 - **Hauptmenü** mit Titelbild, `Spiel laden`, `Neues Spiel` und `Spiel beenden`; Bedienung mit Hoch/Runter und Enter/Leertaste oder per Maus.
@@ -87,7 +95,7 @@ Die Abhängigkeiten sind im Manifest `vcpkg.json` deklariert; SFML muss nicht se
 
 - Header werden aus `include/` eingebunden, zum Beispiel mit `#include <SFML/Graphics.hpp>`.
 - Im **Debug**-Build werden die Debug-Bibliotheken aus `debug/lib/` gelinkt (`sfml-graphics-d.lib`, `sfml-window-d.lib` und `sfml-system-d.lib`). Im **Release**-Build werden die entsprechenden Release-Bibliotheken aus `lib/` verwendet.
-- Nach dem Build kopiert ein MSBuild-Schritt automatisch die passenden SFML-Laufzeit-DLLs aus `debug/bin/` (Debug) beziehungsweise `bin/` (Release) neben die ausführbare Datei. Auch die Inhalte von `Assets/` werden in das Ausgabeverzeichnis kopiert.
+- Nach dem Build kopiert ein MSBuild-Schritt automatisch die passenden SFML-Laufzeit-DLLs aus `debug/bin/` (Debug) beziehungsweise `bin/` (Release) neben die ausführbare Datei. Die Game-Assets aus `Assets/` werden ins Ausgabeverzeichnis kopiert; `Assets/screenshots/` für dieses README ist davon ausgenommen.
 
 Damit lässt sich das Programm direkt aus dem jeweiligen Build-Ausgabeverzeichnis starten. Für eine andere vcpkg-Architektur oder ein anderes Triplet müsste neben der Installation auch die derzeit auf `x64-windows` festgelegte Projektkonfiguration angepasst werden.
 
@@ -128,9 +136,10 @@ MyRPG/
 │   ├── Shaders/Effects/           # GLSL-Shader der Magieeffekte
 │   ├── Shaders/Weather/           # GLSL-Shader für Regen, Nebel und Hitze
 │   ├── UI/                        # Titelbildschirm
-│   └── Sprites/
-│       ├── Characters/            # Spieler-Spritesheets
-│       └── Environment/           # Umgebungs- und Wald-Sprites
+│   ├── Sprites/
+│   │   ├── Characters/            # Spieler-Spritesheets
+│   │   └── Environment/           # Umgebungs- und Wald-Sprites
+│   └── screenshots/               # README-Bilder, nicht Teil des Game-Builds
 ├── MyRPG.vcxproj                  # Visual-Studio-Projekt und Asset-Kopierschritt
 ├── MyRPG.slnx                     # Visual-Studio-Lösung
 └── vcpkg.json                     # Abhängigkeiten: SFML und nlohmann-json
@@ -211,7 +220,7 @@ MyRPG ist noch im Prototyp-Stadium. Zum langfristigen Ziel gehören eine einfach
 - Änderungen und neue Asset-Standards mit dem [Design-Dokument](./DesignDocument.md) abstimmen und dort dokumentieren.
 - Bewegung weiterhin Delta-Time-basiert halten und diagonale Eingaben normalisieren.
 - Debug-Informationen und Trigger-Markierungen ausschließlich im Debug-Build anzeigen.
-- Neue Assets unter `Assets/` ablegen; sie werden beim Build automatisch mitkopiert.
+- Game-Assets unter `Assets/` ablegen; sie werden beim Build automatisch mitkopiert. `Assets/screenshots/` ist ausschließlich für README-Bilder bestimmt und wird nicht in den Build kopiert.
 
 ---
 

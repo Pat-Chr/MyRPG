@@ -150,7 +150,7 @@
     <None Include="Assets\Shaders\Weather\rain.frag" />
     <None Include="Assets\Shaders\Weather\weather.vert" />
     <None Include="DesignDocument.md" />
-    <Content Include="Assets\**\*" />
+    <Content Include="Assets\**\*" Exclude="Assets\screenshots\**\*" />
     <None Include="Directory.Build.props" />
   </ItemGroup>
   <Target Name="InstallManifestDependencies" BeforeTargets="PrepareForBuild;ClCompile" Condition="'$(DesignTimeBuild)' != 'true'">
@@ -159,7 +159,7 @@
   </Target>
   <Target Name="CopyAssetsToOutput" AfterTargets="Build">
     <ItemGroup>
-      <AssetFiles Include="Assets\**\*" />
+      <AssetFiles Include="Assets\**\*" Exclude="Assets\screenshots\**\*" />
     </ItemGroup>
     <MakeDir Directories="$(OutDir)Assets" />
     <Copy SourceFiles="@(AssetFiles)" DestinationFiles="@(AssetFiles->'$(OutDir)%(Identity)')" SkipUnchangedFiles="true" />
