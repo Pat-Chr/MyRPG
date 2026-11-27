@@ -354,25 +354,10 @@ inline void RenderDefaultGround(sf::RenderTarget& target, const Viewport& viewpo
     }
 }
 
-/**
- * @brief Renders all map objects (walls, NPCs, and interactive elements).
- * 
- * Iterates through all objects in the active map and renders each as a texture
- * sprite or colored rectangle fallback according to object type:
- * - Wall: gray (140, 140, 140)
- * - Npc: beige (225, 180, 130)
- * - Ground: green (72, 152, 76)
- * - Other: light green (110, 138, 110)
- * 
- * @param target SFML target used for rendering.
- * @param viewport Current viewport dimensions.
- * @param game Current game state containing the map-object list.
- */
-inline void RenderMapObjects(sf::RenderTarget& target, const Viewport& viewport, const GameState& game)
+inline void RenderMapObject(sf::RenderTarget& target, const Viewport& viewport, const GameState& game,
+                            const MapObject& object)
 {
     constexpr float objectSize = 64.0f;
-
-    for (const MapObject& object : game.activeMap.objects)
     {
         const sf::Vector2f screenPos = WorldToScreen(object.x, object.y, game, viewport);
 
@@ -417,7 +402,7 @@ inline void RenderMapObjects(sf::RenderTarget& target, const Viewport& viewport,
                 DrawSpriteShadow(target, *shadowData, frameIndex, frame, screenPos, sprite.getScale().x, sprite.getScale().y);
             }
             target.draw(sprite);
-            continue;
+            return;
         }
 
         // Fallback rectangle when no texture is available.
@@ -444,6 +429,27 @@ inline void RenderMapObjects(sf::RenderTarget& target, const Viewport& viewport,
 
         target.draw(fallback);
     }
+}
+
+inline void RenderMapObjects(sf::RenderTarget& target, const Viewport& viewport, const GameState& game)
+{
+    for (const MapObject& object : game.activeMap.objects)
+        RenderMapObject(target, viewport, game, object);
+}
+
+inline std::vector<const MapObject*> CharacterRenderOrder(const GameState& game)
+{
+    std::vector<const MapObject*> characters;
+    for (const MapObject& object : game.activeMap.objects)
+        if (object.type == MapObjectType::Npc) characters.push_back(&object);
+    characters.push_back(nullptr);
+    std::stable_sort(characters.begin(), characters.end(), [&](const MapObject* left, const MapObject* right)
+    {
+        const float leftY = left ? left->y : game.player.y;
+        const float rightY = right ? right->y : game.player.y;
+        return leftY < rightY;
+    });
+    return characters;
 }
 
 /**
@@ -564,9 +570,9 @@ inline void RenderTriggerDebug(sf::RenderTarget& target, const Viewport& viewpor
  * 1. Clear the background (dark green: 22, 34, 26)
  * 2. Draw the debug grid (Debug build only)
  * 3. Draw the ground texture and tiles
- * 4. Draw map objects (walls, NPCs, and so on)
- * 5. Draw trigger zones (Debug build only)
- * 6. Draw the player character (texture or fallback rectangle)
+ * 4. Draw non-NPC map objects
+ * 5. Draw trigger glow and debug zones
+ * 6. Draw NPCs and player in world-Y order
  * 7. Draw magic effects and weather
  * 8. Optionally draw FPS and debug UI (coordinates and events are Debug-build only)
  * 9. Draw the map-transition overlay (fade-in/fade-out effect)
@@ -635,13 +641,15 @@ inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewpo
 #endif
 
     RenderDefaultGround(target, viewport, game);
-    RenderMapObjects(target, viewport, game);
+    for (const MapObject& object : game.activeMap.objects)
+        if (object.type != MapObjectType::Npc) RenderMapObject(target, viewport, game, object);
     RenderTriggerGlow(target, viewport, game);
 #ifdef _DEBUG
     RenderTriggerDebug(target, viewport, game);
 #endif
 
-    // Render the player character (animated sprite or fallback rectangle).
+    const auto renderPlayer = [&]()
+    {
     const float playerSize = static_cast<float>(game.player.size);
     struct PlayerAnimation
     {
@@ -712,6 +720,13 @@ inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewpo
 
         target.draw(player);
     }
+    };
+
+    for (const MapObject* character : CharacterRenderOrder(game))
+    {
+        if (character) RenderMapObject(target, viewport, game, *character);
+        else renderPlayer();
+    }
 
     RenderMagicEffects(target, game.magicEffects,
                        game.player.x - game.cameraShake.offsetX,
@@ -741,6 +756,14 @@ inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewpo
     hitbox.setOutlineColor(sf::Color(90, 255, 215));
     hitbox.setOutlineThickness(-1.0f);
     target.draw(hitbox);
+
+    for (const MapObject& object : game.activeMap.objects)
+    {
+        if (object.type != MapObjectType::Npc) continue;
+        hitbox.setPosition(WorldToScreen(object.x, Player::HitboxCenterY(object.y), game, viewport));
+        hitbox.setOutlineColor(object.solid ? sf::Color(255, 170, 90) : sf::Color(150, 150, 150));
+        target.draw(hitbox);
+    }
 
     constexpr bool showDebug = true;
 #else

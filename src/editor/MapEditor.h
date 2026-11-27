@@ -856,7 +856,7 @@ private:
 		GameState test;
 		test.activeMap = loaded;
 		bool warning = IsSolidObjectBlockingPosition(test, spawn.x, spawn.y);
-		for (const TriggerZone& trigger : loaded.triggers) warning = warning || (trigger.eventName != NoTriggerEvent && IsInsideTrigger(trigger, spawn.x, spawn.y));
+		for (const TriggerZone& trigger : loaded.triggers) warning = warning || (trigger.eventName != NoTriggerEvent && IsPlayerOverlappingTrigger(trigger, spawn.x, spawn.y));
 		if (warning && MessageBoxW(owner, L"Die Spielerposition liegt in einem Hindernis oder Trigger. Trotzdem uebernehmen?", L"Map-Editor", MB_YESNO | MB_ICONWARNING) != IDYES) return;
 		game.activeMap = std::move(loaded);
 		game.activeMapPath = document.path.lexically_relative(root).generic_string();
@@ -1130,7 +1130,7 @@ private:
 				GameState test;
 				test.activeMap = targetMap;
 				bool warning = IsSolidObjectBlockingPosition(test, pos.x, pos.y);
-				for (const TriggerZone& zone : targetMap.triggers) warning = warning || (zone.eventName != NoTriggerEvent && IsInsideTrigger(zone, pos.x, pos.y));
+				for (const TriggerZone& zone : targetMap.triggers) warning = warning || (zone.eventName != NoTriggerEvent && IsPlayerOverlappingTrigger(zone, pos.x, pos.y));
 				if (warning && MessageBoxW(owner, L"Die Zielposition liegt in einem Hindernis oder Trigger. Trotzdem waehlen?", L"Map-Editor", MB_YESNO | MB_ICONWARNING) != IDYES) return;
 				auto& trigger = document.map.triggers[selectedTrigger];
 				if (trigger.spawnX != pos.x || trigger.spawnY != pos.y)

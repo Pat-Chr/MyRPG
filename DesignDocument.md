@@ -162,7 +162,8 @@ Mischung aus ernst und leicht humorvoll
 - Die optionale FPS-Anzeige ist in Debug- und Release-Builds verfügbar und im Einstellungsmenü abschaltbar.
 - Nur im Debug-Build: Karten-ID, Spielerkoordinaten und letztes Trigger-Ereignis; zusätzlich werden Trigger-Bereiche und das Debug-Raster sichtbar dargestellt. Ein Linksklick auf die angezeigten Spielerkoordinaten kopiert X und Y in die Zwischenablage. Im Release-Build entfallen diese Debug-Anzeigen und die Kopierfunktion, die Trigger-Funktion bleibt erhalten.
 - Debug-Informationen und Trigger-Markierungen sind nur in Debug-Builds sichtbar. Die FPS-Anzeige ist davon unabhängig.
-- Nur im Debug-Build zeigt eine ungefüllte Kontur die tatsächliche Kollisionsfläche der Spielfigur. Seitenlänge und vertikaler Versatz relativ zur Spielerposition werden ausschließlich im Code über `Player::hitboxSize` und `Player::hitboxOffsetY` festgelegt. Positive Versatzwerte verschieben die Hitbox nach unten. Sprite und Trigger-Auslösung bleiben davon unabhängig.
+- Spieler und NPCs verwenden dieselbe quadratische Hitbox für Kollisionen. Seitenlänge und vertikaler Versatz relativ zur jeweiligen Position werden im Code über `Player::hitboxSize` und `Player::hitboxOffsetY` festgelegt. Positive Versatzwerte verschieben die Hitbox nach unten; die Sprites bleiben davon unabhängig. Andere Objekte behalten ihre 64×64-Kollisionsfläche und nur Objekte mit `solid=1` blockieren. NPCs werden bei ihrer eigenen Bewegung weiterhin vom Spieler und soliden Objekten blockiert. Nur im Debug-Build zeigen ungefüllte Konturen diese Spieler- und NPC-Hitboxen: Spieler türkis, solide NPCs orange und nicht solide NPCs grau.
+- Trigger lösen aus, sobald sich ihre Fläche mit der Spieler-Hitbox überlappt; eine reine Randberührung zählt nicht. Nach vollständigem Verlassen können sie erneut auslösen. Dies gilt auch im Release-Build und für Triggerwarnungen im Map-Editor.
 
 ### Menüs
 - Hauptmenü: Der Titelbildschirm bietet `Spiel laden`, `Neues Spiel` und `Spiel beenden`. `Spiel laden` öffnet eine nach Spielstandnummer absteigende Liste mit Spielname (falls vorhanden), Karte und den Aktionen `Laden`, `Löschen` und `Zurück`. Hoch/Runter wählt einen Stand, Links/Rechts wechselt die Seite, Enter/Leertaste lädt, Entf öffnet die Löschbestätigung und Esc kehrt zum Titel zurück. Zeilen und Schaltflächen sind auch per Maus bedienbar. `Neues Spiel` öffnet zuerst ein Namensfeld für bis zu 32 Zeichen. `Spiel starten` oder Enter bestätigt die Eingabe, legt einen eigenen Stand an und beginnt auf der Startkarte. `Abbrechen` oder Esc kehrt ohne neuen Stand zum Hauptmenü zurück.
@@ -195,7 +196,7 @@ Warm/erdig
 ### Animation
 - Spieler: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 - Gegner: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
-- NPCs und Spieler verwenden aus der Sprite-Silhouette erzeugte, weichgezeichnete Bodenschatten.
+- NPCs und Spieler verwenden aus der Sprite-Silhouette erzeugte, weichgezeichnete Bodenschatten. Im Spiel werden sie unabhängig von Spritegröße und Animation nach ihrer gemeinsamen Bodenposition von oben nach unten gezeichnet. Bei gleicher Y-Position stehen NPCs in Kartenreihenfolge und der Spieler zuletzt. Andere Kartenobjekte bleiben in ihrer Kartenreihenfolge unter den Figuren; die Editoransicht behält ihre bisherige Objekt-Reihenfolge.
 - VFX: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 
 ---

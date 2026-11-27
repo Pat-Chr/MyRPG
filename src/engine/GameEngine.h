@@ -14,11 +14,14 @@
 #include "MagicEffectRegistry.h"
 #include "MapLoader.h"
 
-// Checks whether a given point lies inside a trigger area.
-// A trigger is a rectangular area with defined dimensions.
-inline bool IsInsideTrigger(const TriggerZone& trigger, float x, float y)
+// Checks whether the player's collision box overlaps a trigger area.
+inline bool IsPlayerOverlappingTrigger(const TriggerZone& trigger, float playerX, float playerY)
 {
-    return x >= trigger.x && x <= (trigger.x + trigger.width) && y >= trigger.y && y <= (trigger.y + trigger.height);
+    constexpr float playerHalfSize = Player::hitboxSize * 0.5f;
+    const float hitboxCenterY = Player::HitboxCenterY(playerY);
+    return trigger.width > 0.0f && trigger.height > 0.0f &&
+        playerX + playerHalfSize > trigger.x && playerX - playerHalfSize < trigger.x + trigger.width &&
+        hitboxCenterY + playerHalfSize > trigger.y && hitboxCenterY - playerHalfSize < trigger.y + trigger.height;
 }
 
 // Checks whether a map-transition animation is running.
@@ -213,7 +216,7 @@ inline void UpdateTriggers(GameState& game)
 
     for (TriggerZone& trigger : game.activeMap.triggers)
     {
-        const bool isInside = IsInsideTrigger(trigger, game.player.x, game.player.y);
+        const bool isInside = IsPlayerOverlappingTrigger(trigger, game.player.x, game.player.y);
 
         if (isInside && !trigger.isPlayerInside && trigger.eventName != NoTriggerEvent)
         {
@@ -347,18 +350,21 @@ inline void SetMovementState(InputState& input, bool up, bool down, bool left, b
     input.right = right;
 }
 
-inline bool IsObjectBlockingPlayer(const MapObject& object, float playerX, float playerY)
+inline bool IsCharacterOverlappingObject(float x, float y, const MapObject& object)
 {
-    constexpr float objectHalfSize = 32.0f;
-    constexpr float playerHalfSize = Player::hitboxSize * 0.5f;
-    const float hitboxCenterY = Player::HitboxCenterY(playerY);
-    return object.solid && playerX + playerHalfSize > object.x - objectHalfSize &&
-        playerX - playerHalfSize < object.x + objectHalfSize &&
-        hitboxCenterY + playerHalfSize > object.y - objectHalfSize &&
-        hitboxCenterY - playerHalfSize < object.y + objectHalfSize;
+    constexpr float characterHalfSize = Player::hitboxSize * 0.5f;
+    const float objectHalfSize = object.type == MapObjectType::Npc ? characterHalfSize : 32.0f;
+    const float objectCenterY = object.type == MapObjectType::Npc ? Player::HitboxCenterY(object.y) : object.y;
+    return std::abs(x - object.x) < characterHalfSize + objectHalfSize &&
+        std::abs(Player::HitboxCenterY(y) - objectCenterY) < characterHalfSize + objectHalfSize;
 }
 
-// Checks overlapping collision boxes. Only the solid flag matters, not the object type.
+inline bool IsObjectBlockingPlayer(const MapObject& object, float playerX, float playerY)
+{
+    return object.solid && IsCharacterOverlappingObject(playerX, playerY, object);
+}
+
+// Checks overlapping collision boxes; only solid objects block the player.
 inline bool IsSolidObjectBlockingPosition(const GameState& game, float playerX, float playerY)
 {
     for (const MapObject& object : game.activeMap.objects)
@@ -452,7 +458,7 @@ inline bool TryResolvePlayerPositionCollisions(GameState& restored, const std::s
     }
 
     for (TriggerZone& trigger : restored.activeMap.triggers)
-        trigger.isPlayerInside = IsInsideTrigger(trigger, x, y);
+        trigger.isPlayerInside = IsPlayerOverlappingTrigger(trigger, x, y);
     return true;
 }
 
@@ -550,11 +556,11 @@ inline bool IsNpcPositionBlocked(const GameState& game, const MapObject& npc, fl
 {
     for (const MapObject& other : game.activeMap.objects)
     {
-        if (&other != &npc && other.solid && std::abs(x - other.x) < 64.0f && std::abs(y - other.y) < 64.0f)
+        if (&other != &npc && other.solid && IsCharacterOverlappingObject(x, y, other))
             return true;
     }
-    return std::abs(x - game.player.x) < 32.0f + Player::hitboxSize * 0.5f &&
-        std::abs(y - Player::HitboxCenterY(game.player.y)) < 32.0f + Player::hitboxSize * 0.5f;
+    return std::abs(x - game.player.x) < Player::hitboxSize &&
+        std::abs(Player::HitboxCenterY(y) - Player::HitboxCenterY(game.player.y)) < Player::hitboxSize;
 }
 
 inline void UpdateNpcWalking(GameState& game, MapObject& npc, float deltaTime)
