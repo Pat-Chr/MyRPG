@@ -17,6 +17,18 @@ enum class PlayerDirection
 	Down, Up, Left, Right, Northwest, Northeast, Southwest, Southeast
 };
 
+inline constexpr PlayerDirection CardinalPlayerDirection(PlayerDirection direction)
+{
+	switch (direction)
+	{
+	case PlayerDirection::Northwest:
+	case PlayerDirection::Southwest: return PlayerDirection::Left;
+	case PlayerDirection::Northeast:
+	case PlayerDirection::Southeast: return PlayerDirection::Right;
+	default: return direction;
+	}
+}
+
 // Player information with position and movement speed.
 struct Player
 {
@@ -39,6 +51,8 @@ struct Player
 
 	PlayerDirection direction = PlayerDirection::Down;
 	bool moving = false;
+	bool attacking = false;
+	float attackElapsed = 0.0f;
 };
 
 // Keyboard state used for movement controls.

@@ -651,12 +651,12 @@ inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewpo
     };
     static const auto playerAnimations = []
     {
-        std::array<PlayerAnimation, 12> animations;
-        PlayerAnimations clips;
-        if (!LoadPlayerAnimationsFromFile("Assets/Animations/Characters/player.anim", clips)) return animations;
+        std::array<PlayerAnimation, 16> animations;
+        const PlayerAnimations& clips = GetPlayerAnimations();
         for (std::size_t i = 0; i < clips.size(); ++i)
         {
-            animations[i].animation = std::move(*clips[i]);
+            if (!clips[i]) continue;
+            animations[i].animation = *clips[i];
             animations[i].texture = GetCachedTexture(animations[i].animation.texturePath);
             if (animations[i].texture == nullptr)
             {
@@ -667,28 +667,27 @@ inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewpo
         }
         return animations;
     }();
-    static constexpr std::array<PlayerDirection, 8> idleDirections = {
-        PlayerDirection::Down, PlayerDirection::Up, PlayerDirection::Left, PlayerDirection::Right,
-        PlayerDirection::Left, PlayerDirection::Right, PlayerDirection::Left, PlayerDirection::Right
-    };
     const std::size_t direction = static_cast<std::size_t>(game.player.direction);
-    const PlayerAnimation& selected = game.player.moving
-        ? playerAnimations[4 + direction]
-        : playerAnimations[static_cast<std::size_t>(idleDirections[direction])];
+    const std::size_t cardinal = static_cast<std::size_t>(CardinalPlayerDirection(game.player.direction));
+    const std::size_t selectedIndex = game.player.attacking ? 12 + cardinal :
+        game.player.moving ? 4 + direction : cardinal;
+    const PlayerAnimation& selected = playerAnimations[selectedIndex];
     if (selected.texture != nullptr)
     {
         static sf::Clock playerAnimationClock;
-        static bool wasPlayerMoving = false;
+        static std::size_t previousIndex = 0;
         static PlayerDirection previousDirection = PlayerDirection::Down;
-        if (game.player.moving != wasPlayerMoving || game.player.direction != previousDirection)
+        if (selectedIndex != previousIndex || game.player.direction != previousDirection)
         {
             playerAnimationClock.restart();
-            wasPlayerMoving = game.player.moving;
+            previousIndex = selectedIndex;
             previousDirection = game.player.direction;
         }
 
         const SpriteAnimation& playerAnimation = selected.animation;
-        const std::size_t frameIndex = static_cast<std::size_t>(playerAnimationClock.getElapsedTime().asSeconds() / playerAnimation.frameDuration) % playerAnimation.frames.size();
+        const std::size_t frameIndex = game.player.attacking
+            ? (std::min)(static_cast<std::size_t>(game.player.attackElapsed / playerAnimation.frameDuration), playerAnimation.frames.size() - 1)
+            : GetAnimationFrameIndex(playerAnimation, playerAnimationClock.getElapsedTime().asSeconds());
         const sf::IntRect& frame = playerAnimation.frames[frameIndex];
 
         sf::Sprite playerSprite(*selected.texture);

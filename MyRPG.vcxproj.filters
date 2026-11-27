@@ -812,42 +812,6 @@
     <None Include="Assets\Shaders\Weather\weather.vert">
       <Filter>Ressourcendateien</Filter>
     </None>
-    <None Include="Assets\Sprites\Characters\HeroFox-iso_idle_down.png">
-      <Filter>Ressourcendateien</Filter>
-    </None>
-    <None Include="Assets\Sprites\Characters\HeroFox-iso_idle_left.png">
-      <Filter>Ressourcendateien</Filter>
-    </None>
-    <None Include="Assets\Sprites\Characters\HeroFox-iso_idle_right.png">
-      <Filter>Ressourcendateien</Filter>
-    </None>
-    <None Include="Assets\Sprites\Characters\HeroFox-iso_idle_up.png">
-      <Filter>Ressourcendateien</Filter>
-    </None>
-    <None Include="Assets\Sprites\Characters\HeroFox-iso_walk_down.png">
-      <Filter>Ressourcendateien</Filter>
-    </None>
-    <None Include="Assets\Sprites\Characters\HeroFox-iso_walk_left.png">
-      <Filter>Ressourcendateien</Filter>
-    </None>
-    <None Include="Assets\Sprites\Characters\HeroFox-iso_walk_northeast-trimmed.png">
-      <Filter>Ressourcendateien</Filter>
-    </None>
-    <None Include="Assets\Sprites\Characters\HeroFox-iso_walk_northwest-trimmed.png">
-      <Filter>Ressourcendateien</Filter>
-    </None>
-    <None Include="Assets\Sprites\Characters\HeroFox-iso_walk_right.png">
-      <Filter>Ressourcendateien</Filter>
-    </None>
-    <None Include="Assets\Sprites\Characters\HeroFox-iso_walk_southeast-trimmed.png">
-      <Filter>Ressourcendateien</Filter>
-    </None>
-    <None Include="Assets\Sprites\Characters\HeroFox-iso_walk_southwest-trimmed.png">
-      <Filter>Ressourcendateien</Filter>
-    </None>
-    <None Include="Assets\Sprites\Characters\HeroFox-iso_walk_up.png">
-      <Filter>Ressourcendateien</Filter>
-    </None>
     <None Include="Assets\Sprites\Characters\NPC_Baker1.png">
       <Filter>Ressourcendateien</Filter>
     </None>

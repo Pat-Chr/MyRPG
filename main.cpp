@@ -434,6 +434,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 {
                     StartMagicEffect(game.magicEffects, "sparkle", game.player.x, game.player.y);
                 }
+                else if (key->code == sf::Keyboard::Key::Space && !dialogueClosedThisFrame)
+                {
+                    StartPlayerAttack(game);
+                }
                 else if (key->code == sf::Keyboard::Key::E)
                 {
                     // First, the game logic determines whether an NPC is in front of the player;

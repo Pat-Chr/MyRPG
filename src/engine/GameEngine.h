@@ -9,6 +9,7 @@
 #include <set>
 #include <utility>
 
+#include "AnimationLoader.h"
 #include "GameTypes.h"
 #include "MagicEffectRegistry.h"
 #include "MapLoader.h"
@@ -100,6 +101,7 @@ inline void BeginMapTransition(GameState& game,
     std::cout << "[Map] Transition requested to '" << targetMapPath << "' at spawn ("
         << targetPlayerX << ", " << targetPlayerY << ").\n";
 #endif
+    game.player.attacking = false;
     game.mapTransition.phase = MapTransitionPhase::FadeOut;
     game.mapTransition.timer = 0.0f;
     game.mapTransition.targetMapPath = std::move(targetMapPath);
@@ -184,6 +186,7 @@ inline void BeginPlayerMonologue(GameState& game)
     game.monologueOriginalDirection = game.player.direction;
     game.player.direction = PlayerDirection::Down;
     game.player.moving = false;
+    game.player.attacking = false;
     game.input = InputState{};
 }
 
@@ -313,6 +316,8 @@ inline void InitializeGameState(GameState& game)
     game.player.y = 0.0f;
     game.player.direction = PlayerDirection::Down;
     game.player.moving = false;
+    game.player.attacking = false;
+    game.player.attackElapsed = 0.0f;
     game.lastTriggeredEvent.clear();
     game.pendingMonologue.clear();
     game.monologueOriginalDirection.reset();
@@ -640,6 +645,19 @@ inline void UpdateNpcWalking(GameState& game, MapObject& npc, float deltaTime)
     }
 }
 
+inline void StartPlayerAttack(GameState& game)
+{
+    if (IsMapTransitionActive(game) || game.player.attacking ||
+        !game.pendingMonologue.empty() || game.monologueOriginalDirection) return;
+    const PlayerDirection direction = CardinalPlayerDirection(game.player.direction);
+    const auto& animation = GetPlayerAnimations()[12 + static_cast<std::size_t>(direction)];
+    if (!animation) return;
+    game.player.direction = direction;
+    game.player.moving = false;
+    game.player.attacking = true;
+    game.player.attackElapsed = 0.0f;
+}
+
 // Effects continue during map transitions; movement and trigger checks are paused.
 inline void UpdateGame(GameState& game, float deltaTime)
 {
@@ -669,6 +687,15 @@ inline void UpdateGame(GameState& game, float deltaTime)
 
     for (MapObject& object : game.activeMap.objects)
         if (object.type == MapObjectType::Npc) UpdateNpcWalking(game, object, deltaTime);
+
+    if (game.player.attacking)
+    {
+        const auto& animation = GetPlayerAnimations()[12 + static_cast<std::size_t>(game.player.direction)];
+        game.player.attackElapsed += deltaTime;
+        if (game.player.attackElapsed >= animation->frameDuration * animation->frames.size())
+            game.player.attacking = false;
+        return;
+    }
 
     float moveX = 0.0f;
     float moveY = 0.0f;

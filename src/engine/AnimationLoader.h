@@ -236,11 +236,22 @@ inline bool LoadNpcAnimationsFromFile(const std::string& path, NpcAnimations& an
 	return LoadAnimationSetFromFile(path, names, 4, animations);
 }
 
-using PlayerAnimations = std::array<std::optional<SpriteAnimation>, 12>;
+using PlayerAnimations = std::array<std::optional<SpriteAnimation>, 16>;
 inline bool LoadPlayerAnimationsFromFile(const std::string& path, PlayerAnimations& animations)
 {
-	const std::array<std::string, 12> names{ "idle_down", "idle_up", "idle_left", "idle_right",
+	const std::array<std::string, 16> names{ "idle_down", "idle_up", "idle_left", "idle_right",
 		"walk_down", "walk_up", "walk_left", "walk_right", "walk_northwest", "walk_northeast",
-		"walk_southwest", "walk_southeast" };
+		"walk_southwest", "walk_southeast", "attack_down", "attack_up", "attack_left", "attack_right" };
 	return LoadAnimationSetFromFile(path, names, names.size(), animations);
+}
+
+inline const PlayerAnimations& GetPlayerAnimations()
+{
+	static const PlayerAnimations animations = []
+	{
+		PlayerAnimations loaded;
+		LoadPlayerAnimationsFromFile("Assets/Animations/Characters/player.anim", loaded);
+		return loaded;
+	}();
+	return animations;
 }

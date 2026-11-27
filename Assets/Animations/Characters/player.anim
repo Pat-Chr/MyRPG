@@ -1,241 +1,129 @@
 ANIM 2
 
-animation idle_down
-texture Assets/Sprites/Characters/HeroFox-iso_idle_down.png
-frame_duration 0.2
-scale 1.0
+animation walk-down
+texture Assets/Sprites/Characters/player.png
+frame_duration 0.33
 frame 0 0 128 128
 frame 128 0 128 128
 frame 256 0 128 128
 frame 384 0 128 128
+
+animation walk-left
+texture Assets/Sprites/Characters/player.png
+frame_duration 0.33
 frame 0 128 128 128
 frame 128 128 128 128
 frame 256 128 128 128
 frame 384 128 128 128
+
+animation walk-right
+texture Assets/Sprites/Characters/player.png
+frame_duration 0.33
 frame 0 256 128 128
 frame 128 256 128 128
 frame 256 256 128 128
 frame 384 256 128 128
+
+animation walk-up
+texture Assets/Sprites/Characters/player.png
+frame_duration 0.33
 frame 0 384 128 128
 frame 128 384 128 128
 frame 256 384 128 128
 frame 384 384 128 128
 
-animation idle_up
-texture Assets/Sprites/Characters/HeroFox-iso_idle_up.png
-frame_duration 0.2
-scale 1.0
-frame 0 0 128 128
-frame 128 0 128 128
-frame 256 0 128 128
-frame 384 0 128 128
-frame 0 128 128 128
-frame 128 128 128 128
-frame 256 128 128 128
-frame 384 128 128 128
-frame 0 256 128 128
-frame 128 256 128 128
-frame 256 256 128 128
-frame 384 256 128 128
-frame 0 384 128 128
-frame 128 384 128 128
-frame 256 384 128 128
-frame 384 384 128 128
+animation idle-down
+texture Assets/Sprites/Characters/player.png
+frame_duration 0.33
+frame 0 512 128 128
+frame 128 512 128 128
+frame 256 512 128 128
+frame 384 512 128 128
 
-animation idle_left
-texture Assets/Sprites/Characters/HeroFox-iso_idle_left.png
-frame_duration 0.2
-scale 1.0
-frame 0 0 128 128
-frame 128 0 128 128
-frame 256 0 128 128
-frame 384 0 128 128
-frame 0 128 128 128
-frame 128 128 128 128
-frame 256 128 128 128
-frame 384 128 128 128
-frame 0 256 128 128
-frame 128 256 128 128
-frame 256 256 128 128
-frame 384 256 128 128
-frame 0 384 128 128
-frame 128 384 128 128
-frame 256 384 128 128
-frame 384 384 128 128
+animation idle-left
+texture Assets/Sprites/Characters/player.png
+frame_duration 0.33
+frame 0 640 128 128
+frame 128 640 128 128
+frame 256 640 128 128
+frame 384 640 128 128
 
-animation idle_right
-texture Assets/Sprites/Characters/HeroFox-iso_idle_right.png
-frame_duration 0.2
-scale 1.0
-frame 0 0 128 128
-frame 128 0 128 128
-frame 256 0 128 128
-frame 384 0 128 128
-frame 0 128 128 128
-frame 128 128 128 128
-frame 256 128 128 128
-frame 384 128 128 128
-frame 0 256 128 128
-frame 128 256 128 128
-frame 256 256 128 128
-frame 384 256 128 128
-frame 0 384 128 128
-frame 128 384 128 128
-frame 256 384 128 128
-frame 384 384 128 128
+animation idle-right
+texture Assets/Sprites/Characters/player.png
+frame_duration 0.33
+frame 0 768 128 128
+frame 128 768 128 128
+frame 256 768 128 128
+frame 384 768 128 128
 
-animation walk_down
-texture Assets/Sprites/Characters/HeroFox-iso_walk_down.png
-frame_duration 0.2
-scale 1.2
-frame 0 0 128 128
-frame 128 0 128 128
-frame 256 0 128 128
-frame 384 0 128 128
-frame 0 128 128 128
-frame 128 128 128 128
-frame 256 128 128 128
-frame 384 128 128 128
-frame 0 256 128 128
-frame 128 256 128 128
-frame 256 256 128 128
-frame 384 256 128 128
-frame 0 384 128 128
-frame 128 384 128 128
-frame 256 384 128 128
-frame 384 384 128 128
+animation idle-up
+texture Assets/Sprites/Characters/player.png
+frame_duration 0.33
+frame 0 896 128 128
+frame 128 896 128 128
+frame 256 896 128 128
+frame 384 896 128 128
 
-animation walk_up
-texture Assets/Sprites/Characters/HeroFox-iso_walk_up.png
-frame_duration 0.2
-scale 1.1
-frame 0 0 128 128
-frame 128 0 128 128
-frame 256 0 128 128
-frame 384 0 128 128
-frame 0 128 128 128
-frame 128 128 128 128
-frame 256 128 128 128
-frame 384 128 128 128
-frame 0 256 128 128
-frame 128 256 128 128
-frame 256 256 128 128
-frame 384 256 128 128
-frame 0 384 128 128
-frame 128 384 128 128
-frame 256 384 128 128
-frame 384 384 128 128
+animation walk-southwest
+texture Assets/Sprites/Characters/player.png
+frame_duration 0.33
+frame 0 1024 128 128
+frame 128 1024 128 128
+frame 256 1024 128 128
+frame 384 1024 128 128
 
-animation walk_left
-texture Assets/Sprites/Characters/HeroFox-iso_walk_left.png
-frame_duration 0.2
-scale 1.1
-frame 0 0 128 128
-frame 128 0 128 128
-frame 256 0 128 128
-frame 384 0 128 128
-frame 0 128 128 128
-frame 128 128 128 128
-frame 256 128 128 128
-frame 384 128 128 128
-frame 0 256 128 128
-frame 128 256 128 128
-frame 256 256 128 128
-frame 384 256 128 128
-frame 0 384 128 128
-frame 128 384 128 128
-frame 256 384 128 128
-frame 384 384 128 128
+animation walk-southeast
+texture Assets/Sprites/Characters/player.png
+frame_duration 0.33
+frame 0 1152 128 128
+frame 128 1152 128 128
+frame 256 1152 128 128
+frame 384 1152 128 128
 
-animation walk_right
-texture Assets/Sprites/Characters/HeroFox-iso_walk_right.png
-frame_duration 0.2
-scale 1.1
-frame 0 0 128 128
-frame 128 0 128 128
-frame 256 0 128 128
-frame 384 0 128 128
-frame 0 128 128 128
-frame 128 128 128 128
-frame 256 128 128 128
-frame 384 128 128 128
-frame 0 256 128 128
-frame 128 256 128 128
-frame 256 256 128 128
-frame 384 256 128 128
-frame 0 384 128 128
-frame 128 384 128 128
-frame 256 384 128 128
-frame 384 384 128 128
+animation walk-northwest
+texture Assets/Sprites/Characters/player.png
+frame_duration 0.33
+frame 0 1280 128 128
+frame 128 1280 128 128
+frame 256 1280 128 128
+frame 384 1280 128 128
 
-animation walk_northwest
-texture Assets/Sprites/Characters/HeroFox-iso_walk_northwest-trimmed.png
-frame_duration 0.2
-scale 1.1
-frame 0 0 128 128
-frame 128 0 128 128
-frame 256 0 128 128
-frame 384 0 128 128
-frame 0 128 128 128
-frame 128 128 128 128
-frame 256 128 128 128
-frame 384 128 128 128
-frame 0 256 128 128
-frame 128 256 128 128
-frame 256 256 128 128
-frame 384 256 128 128
-frame 0 384 128 128
+animation walk-northeast
+texture Assets/Sprites/Characters/player.png
+frame_duration 0.33
+frame 0 1408 128 128
+frame 128 1408 128 128
+frame 256 1408 128 128
+frame 384 1408 128 128
 
-animation walk_northeast
-texture Assets/Sprites/Characters/HeroFox-iso_walk_northeast-trimmed.png
-frame_duration 0.2
-scale 1.1
-frame 0 0 128 128
-frame 128 0 128 128
-frame 256 0 128 128
-frame 384 0 128 128
-frame 0 128 128 128
-frame 128 128 128 128
-frame 256 128 128 128
-frame 384 128 128 128
-frame 0 256 128 128
-frame 128 256 128 128
-frame 256 256 128 128
-frame 384 256 128 128
-frame 0 384 128 128
+animation attack-down
+texture Assets/Sprites/Characters/player.png
+frame_duration 0.33
+frame 0 1536 128 128
+frame 128 1536 128 128
+frame 256 1536 128 128
+frame 384 1536 128 128
 
-animation walk_southwest
-texture Assets/Sprites/Characters/HeroFox-iso_walk_southwest-trimmed.png
-frame_duration 0.2
-scale 1.1
-frame 0 0 128 128
-frame 128 0 128 128
-frame 256 0 128 128
-frame 384 0 128 128
-frame 0 128 128 128
-frame 128 128 128 128
-frame 256 128 128 128
-frame 384 128 128 128
-frame 0 256 128 128
-frame 128 256 128 128
-frame 256 256 128 128
-frame 384 256 128 128
-frame 0 384 128 128
+animation attack-left
+texture Assets/Sprites/Characters/player.png
+frame_duration 0.33
+frame 0 1664 128 128
+frame 128 1664 128 128
+frame 256 1664 128 128
+frame 384 1664 128 128
 
-animation walk_southeast
-texture Assets/Sprites/Characters/HeroFox-iso_walk_southeast-trimmed.png
-frame_duration 0.2
-scale 1.1
-frame 0 0 128 128
-frame 128 0 128 128
-frame 256 0 128 128
-frame 384 0 128 128
-frame 0 128 128 128
-frame 128 128 128 128
-frame 256 128 128 128
-frame 384 128 128 128
-frame 0 256 128 128
-frame 128 256 128 128
-frame 256 256 128 128
-frame 384 256 128 128
-frame 0 384 128 128
+animation attack-right
+texture Assets/Sprites/Characters/player.png
+frame_duration 0.33
+frame 0 1792 128 128
+frame 128 1792 128 128
+frame 256 1792 128 128
+frame 384 1792 128 128
+
+animation attack-up
+texture Assets/Sprites/Characters/player.png
+frame_duration 0.33
+frame 0 1920 128 128
+frame 128 1920 128 128
+frame 256 1920 128 128
+frame 384 1920 128 128
