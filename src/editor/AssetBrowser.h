@@ -33,7 +33,8 @@ public:
 			if (ec) { error = "Asset konnte nicht geprueft werden: " + ec.message(); return false; }
 			const auto localPath = path.lexically_relative(sprites);
 			const bool characterChild = localPath.parent_path() == L"Characters";
-			if (characterChild && (folder || !path.filename().wstring().starts_with(L"NPC_")))
+			const bool npcSprite = path.filename().wstring().starts_with(L"NPC_") || path.stem() == L"TrainingDummy1";
+			if (characterChild && (folder || !npcSprite))
 			{
 				if (folder) it.disable_recursion_pending();
 			}

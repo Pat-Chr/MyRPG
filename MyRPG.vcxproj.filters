@@ -93,6 +93,15 @@
     <ClInclude Include="src\engine\DialogueLoader.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="src\engine\Combat.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="src\engine\DamageNumbers.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="src\engine\DamageNumberRenderer.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -927,5 +936,8 @@
     <None Include="Assets\Animations\Characters\player.anim" />
     <None Include="Directory.Build.props" />
     <None Include="Assets\Dialogues\Karl Nickel.json" />
+    <None Include="Assets\Animations\Characters\TrainingDummy1.anim" />
+    <None Include="Assets\Shaders\Combat\damage_numbers.vert" />
+    <None Include="Assets\Shaders\Combat\damage_numbers.frag" />
   </ItemGroup>
 </Project>

@@ -2,11 +2,14 @@
 
 #include <SFML/Graphics.hpp>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdio>
+#include <filesystem>
 #include <fstream>
 #include <optional>
+#include <unordered_map>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -227,13 +230,55 @@ inline bool LoadAnimationSetFromFile(const std::string& path, const std::array<s
 	return true;
 }
 
-// The first four clips are idle directions; NPC walk clips are optional.
-using NpcAnimations = std::array<std::optional<SpriteAnimation>, 8>;
+inline constexpr std::size_t NpcStaticClip = 8;
+inline constexpr std::size_t NpcHitClip = 9;
+using NpcAnimations = std::array<std::optional<SpriteAnimation>, 10>;
 inline bool LoadNpcAnimationsFromFile(const std::string& path, NpcAnimations& animations)
 {
-	const std::array<std::string, 8> names{ "idle_down", "idle_up", "idle_left", "idle_right",
-		"walk_down", "walk_up", "walk_left", "walk_right" };
-	return LoadAnimationSetFromFile(path, names, 4, animations);
+	const std::array<std::string, 10> names{ "idle_down", "idle_up", "idle_left", "idle_right",
+		"walk_down", "walk_up", "walk_left", "walk_right", "static", "hit" };
+	NpcAnimations loaded;
+	if (!LoadAnimationSetFromFile(path, names, 0, loaded)) return false;
+	if (loaded[NpcStaticClip])
+	{
+		if (loaded[NpcStaticClip]->frames.size() != 1 ||
+			std::any_of(loaded.begin(), loaded.begin() + NpcStaticClip, [](const auto& clip) { return clip.has_value(); }))
+		{
+			std::fprintf(stderr, "Static NPC requires one static frame and no idle/walk clips: %s\n", path.c_str());
+			return false;
+		}
+	}
+	else
+	{
+		for (std::size_t i = 0; i < 4; ++i)
+			if (!loaded[i])
+			{
+				std::fprintf(stderr, "Missing NPC idle animation '%s': %s\n", names[i].c_str(), path.c_str());
+				return false;
+			}
+	}
+	animations = std::move(loaded);
+	return true;
+}
+
+inline const NpcAnimations* GetNpcAnimations(const std::string& spritePath)
+{
+	static std::unordered_map<std::string, std::optional<NpcAnimations>> cache;
+	auto found = cache.find(spritePath);
+	if (found == cache.end())
+	{
+		const std::string path = "Assets/Animations/Characters/" + std::filesystem::path(spritePath).stem().string() + ".anim";
+		std::error_code ec;
+		std::optional<NpcAnimations> loaded;
+		if (std::filesystem::exists(path, ec))
+		{
+			NpcAnimations animations;
+			if (LoadNpcAnimationsFromFile(path, animations)) loaded = std::move(animations);
+		}
+		if (ec) std::fprintf(stderr, "Failed to inspect NPC animation: %s (%s)\n", path.c_str(), ec.message().c_str());
+		found = cache.emplace(spritePath, std::move(loaded)).first;
+	}
+	return found->second ? &*found->second : nullptr;
 }
 
 using PlayerAnimations = std::array<std::optional<SpriteAnimation>, 16>;

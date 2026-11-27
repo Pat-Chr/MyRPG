@@ -183,9 +183,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     std::string activeSaveName;
     bool inMainMenu = true;
     // Load shaders after creating the window and render context so they are ready for first use
-    // and are not loaded in the middle of a game effect.
+    // and are not loaded isn the middle of a game effect.
     PreloadMagicShaders();
     PreloadWeatherShaders();
+    PreloadDamageNumberRenderer();
 
     sf::Clock frameClock;
     sf::FloatRect debugCoordinatesBounds{};

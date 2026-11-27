@@ -164,6 +164,7 @@ inline void UpdateMapTransition(GameState& game, float deltaTime)
             game.player.y = game.mapTransition.targetPlayerY;
             game.weather = WeatherState{ game.activeMap.defaultWeather };
             ClearMagicEffects(game.magicEffects);
+            game.damageNumbers.clear();
             game.cameraShake = CameraShakeState{};
             game.lastTriggeredEvent = "MapLoaded: " + game.activeMap.id;
         }
@@ -325,6 +326,7 @@ inline void InitializeGameState(GameState& game)
     game.pendingMonologue.clear();
     game.monologueOriginalDirection.reset();
     ClearMagicEffects(game.magicEffects);
+    game.damageNumbers.clear();
     game.cameraShake = CameraShakeState{};
 
     constexpr const char* startMapPath = "Assets/Maps/0001_TestMap.map";
@@ -361,7 +363,8 @@ inline bool IsCharacterOverlappingObject(float x, float y, const MapObject& obje
 
 inline bool IsObjectBlockingPlayer(const MapObject& object, float playerX, float playerY)
 {
-    return object.solid && IsCharacterOverlappingObject(playerX, playerY, object);
+    return object.solid && (object.type != MapObjectType::Npc || IsNpcAlive(object)) &&
+        IsCharacterOverlappingObject(playerX, playerY, object);
 }
 
 // Checks overlapping collision boxes; only solid objects block the player.
@@ -528,7 +531,7 @@ inline MapObject* InteractWithNpc(GameState& game)
     MapObject* closest = nullptr;
     for (MapObject& object : game.activeMap.objects)
     {
-        if (object.type != MapObjectType::Npc) continue;
+        if (object.type != MapObjectType::Npc || !IsNpcAlive(object) || IsStationaryNpc(object)) continue;
         const float dx = object.x - game.player.x, dy = object.y - game.player.y;
         const float distanceSquared = dx * dx + dy * dy;
         if (dx * facingX + dy * facingY <= 0.0f ||
@@ -556,7 +559,8 @@ inline bool IsNpcPositionBlocked(const GameState& game, const MapObject& npc, fl
 {
     for (const MapObject& other : game.activeMap.objects)
     {
-        if (&other != &npc && other.solid && IsCharacterOverlappingObject(x, y, other))
+        if (&other != &npc && other.solid && (other.type != MapObjectType::Npc || IsNpcAlive(other)) &&
+            IsCharacterOverlappingObject(x, y, other))
             return true;
     }
     return std::abs(x - game.player.x) < Player::hitboxSize &&
@@ -565,7 +569,7 @@ inline bool IsNpcPositionBlocked(const GameState& game, const MapObject& npc, fl
 
 inline void UpdateNpcWalking(GameState& game, MapObject& npc, float deltaTime)
 {
-    if (!npc.walkingAreaEnabled || npc.walkingCells.empty())
+    if (!IsNpcAlive(npc) || IsStationaryNpc(npc) || !npc.walkingAreaEnabled || npc.walkingCells.empty())
     {
         if (npc.npcMoving) npc.npcAnimationTime = 0.0;
         npc.npcMoving = false;
@@ -664,6 +668,7 @@ inline void StartPlayerAttack(GameState& game)
     game.player.sprintExhausted = true;
     game.player.attacking = true;
     game.player.attackElapsed = 0.0f;
+    game.player.attackDamageApplied = false;
 }
 
 inline void UpdatePlayerStamina(Player& player, float deltaTime, bool sprinting)
@@ -690,12 +695,16 @@ inline void UpdateGame(GameState& game, float deltaTime)
     if (!game.pendingMonologue.empty() || game.monologueOriginalDirection) return;
     if (!game.input.sprint) game.player.sprintExhausted = false;
     UpdateMagicEffects(game.magicEffects, deltaTime);
+    UpdateDamageNumbers(game.damageNumbers, deltaTime);
     UpdateCameraShake(game.cameraShake, deltaTime);
     UpdateWeather(game.weather, deltaTime);
     for (MapObject& object : game.activeMap.objects)
     {
         if (object.type == MapObjectType::Npc)
+        {
             object.npcAnimationTime += deltaTime;
+            object.hitRemaining = (std::max)(0.0f, object.hitRemaining - deltaTime);
+        }
     }
 
     if (IsMapTransitionActive(game))
@@ -721,7 +730,9 @@ inline void UpdateGame(GameState& game, float deltaTime)
         if (deltaTime > 0.0f) game.player.staminaRecoveryRequiresStop = false;
         const auto& animation = GetPlayerAnimations()[12 + static_cast<std::size_t>(game.player.direction)];
         game.player.attackElapsed += deltaTime * Player::attackAnimationSpeedMultiplier;
-        if (game.player.attackElapsed >= animation->frameDuration * animation->frames.size())
+        const float duration = animation->frameDuration * static_cast<float>(animation->frames.size());
+        if (game.player.attackElapsed >= duration * 0.5f) ApplyPlayerAttackDamage(game);
+        if (game.player.attackElapsed >= duration)
             game.player.attacking = false;
         return;
     }

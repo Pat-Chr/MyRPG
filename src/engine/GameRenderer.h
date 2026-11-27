@@ -17,6 +17,8 @@
 #include <vector>
 
 #include "AnimationLoader.h"
+#include "Combat.h"
+#include "DamageNumberRenderer.h"
 #include "GameTypes.h"
 #include "MagicRenderer.h"
 #include "WeatherRenderer.h"
@@ -96,15 +98,16 @@ inline const SpriteAnimation* GetNpcAnimation(const MapObject& object, const sf:
             std::fprintf(stderr, "Failed to inspect NPC animation: %s (%s)\n", path.c_str(), ec.message().c_str());
         else if (exists)
         {
-            NpcAnimations animations;
-            bool valid = LoadNpcAnimationsFromFile(path, animations);
+            const NpcAnimations* definition = GetNpcAnimations(object.spritePath);
+            NpcAnimations animations = definition ? *definition : NpcAnimations{};
+            bool valid = definition != nullptr;
             for (std::size_t i = 0; valid && i < animations.size(); ++i)
             {
                 if (!animations[i]) continue;
                 const SpriteAnimation& animation = *animations[i];
-                if (i < 4 && animation.texturePath != object.spritePath)
+                if ((i < 4 || i == NpcStaticClip) && animation.texturePath != object.spritePath)
                 {
-                    std::fprintf(stderr, "NPC idle animation texture does not match object: %s\n", path.c_str());
+                    std::fprintf(stderr, "NPC base animation texture does not match object: %s\n", path.c_str());
                     valid = false; break;
                 }
                 const sf::Texture* clipTexture = animation.texturePath == object.spritePath ? &texture : GetCachedTexture(animation.texturePath);
@@ -132,7 +135,9 @@ inline const SpriteAnimation* GetNpcAnimation(const MapObject& object, const sf:
     if (!found->second) return nullptr;
     const std::size_t direction = static_cast<std::size_t>(object.npcDirection);
     const std::size_t idle = direction < 4 ? direction : 0;
-    const std::size_t clip = object.npcMoving && (*found->second)[idle + 4] ? idle + 4 : idle;
+    const std::size_t clip = object.hitRemaining > 0.0f && (*found->second)[NpcHitClip] ? NpcHitClip :
+        (*found->second)[NpcStaticClip] ? NpcStaticClip :
+        object.npcMoving && (*found->second)[idle + 4] ? idle + 4 : idle;
     return &*(*found->second)[clip];
 }
 
@@ -274,7 +279,7 @@ inline const SpriteShadowData* GetNpcShadowData(const MapObject& object, const S
 {
     static std::unordered_map<std::string, std::optional<SpriteShadowData>> cache;
     const std::string key = object.spritePath + "#" + std::to_string(static_cast<int>(object.npcDirection)) +
-        "#" + animation.texturePath + "#" + (object.npcMoving ? "walk" : "idle");
+        "#" + animation.texturePath + "#" + (object.hitRemaining > 0.0f ? "hit" : object.npcMoving ? "walk" : "idle");
     auto found = cache.find(key);
     if (found == cache.end())
     {
@@ -357,6 +362,7 @@ inline void RenderDefaultGround(sf::RenderTarget& target, const Viewport& viewpo
 inline void RenderMapObject(sf::RenderTarget& target, const Viewport& viewport, const GameState& game,
                             const MapObject& object)
 {
+    if (object.type == MapObjectType::Npc && !IsNpcAlive(object)) return;
     constexpr float objectSize = 64.0f;
     {
         const sf::Vector2f screenPos = WorldToScreen(object.x, object.y, game, viewport);
@@ -376,7 +382,12 @@ inline void RenderMapObject(sf::RenderTarget& target, const Viewport& viewport, 
             }
             else if ((animation = GetNpcAnimation(object, *texture)) != nullptr)
             {
-                frameIndex = GetAnimationFrameIndex(*animation, object.npcAnimationTime);
+                const NpcAnimations* definition = GetNpcAnimations(object.spritePath);
+                const bool hit = object.hitRemaining > 0.0f && definition && (*definition)[NpcHitClip];
+                const double elapsed = hit ? (std::max)(0.0,
+                    animation->frameDuration * static_cast<double>(animation->frames.size()) - object.hitRemaining) : object.npcAnimationTime;
+                frameIndex = hit ? (std::min)(static_cast<std::size_t>(elapsed / animation->frameDuration), animation->frames.size() - 1)
+                    : GetAnimationFrameIndex(*animation, elapsed);
                 frame = animation->frames[frameIndex];
                 if (animation->texturePath != object.spritePath)
                 {
@@ -747,6 +758,10 @@ inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewpo
         RenderWeather(target, game.weather, static_cast<float>(viewport.width), static_cast<float>(viewport.height), worldOrigin);
     }
 
+    RenderDamageNumbers(target, game.damageNumbers,
+        game.player.x - game.cameraShake.offsetX, game.player.y - game.cameraShake.offsetY,
+        static_cast<float>(viewport.width), static_cast<float>(viewport.height));
+
 #ifdef _DEBUG
     constexpr float side = Player::hitboxSize;
     sf::RectangleShape hitbox({ side, side });
@@ -759,7 +774,7 @@ inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewpo
 
     for (const MapObject& object : game.activeMap.objects)
     {
-        if (object.type != MapObjectType::Npc) continue;
+        if (object.type != MapObjectType::Npc || !IsNpcAlive(object)) continue;
         hitbox.setPosition(WorldToScreen(object.x, Player::HitboxCenterY(object.y), game, viewport));
         hitbox.setOutlineColor(object.solid ? sf::Color(255, 170, 90) : sf::Color(150, 150, 150));
         target.draw(hitbox);

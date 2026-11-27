@@ -513,7 +513,7 @@ private:
 	float ObjectPanelHeight() const
 	{
 		return mode == Mode::Select && selectedObject < document.map.objects.size() &&
-			document.map.objects[selectedObject].type == MapObjectType::Npc ? 360.0f : 200.0f;
+			document.map.objects[selectedObject].type == MapObjectType::Npc ? 460.0f : 200.0f;
 	}
 	bool IsOverObjectPanel(sf::Vector2f position) const
 	{
@@ -959,6 +959,7 @@ private:
 		std::string id;
 		do { id = "object_" + std::to_string(number++); } while (document.HasUsedId(id));
 		MapObject object{ id, newType, position.x, position.y, browser.selected, newSolid };
+		ApplyNpcAssetDefaults(object);
 		if (brushTile)
 		{
 			object.hasTile = true;
@@ -1105,6 +1106,7 @@ private:
 		type = type == MapObjectType::Scenery ? MapObjectType::Ground : type == MapObjectType::Ground ? MapObjectType::Wall : type == MapObjectType::Wall ? MapObjectType::Npc : MapObjectType::Scenery;
 		if (object)
 		{
+			if (type == MapObjectType::Npc) ApplyNpcAssetDefaults(*object);
 			if (type == MapObjectType::Scenery || type == MapObjectType::Ground)
 			{
 				object->x = SnapToGrid(object->x, 64);
@@ -1184,6 +1186,15 @@ private:
 		if (IsOverObjectPanel(position))
 		{
 			if (event.button == sf::Mouse::Button::Left && mode == Mode::Select &&
+				document.map.objects[selectedObject].type == MapObjectType::Npc && x >= 970 && x < 1270 &&
+				y >= 435 + PanelOffset && y < 525 + PanelOffset)
+			{
+				auto& object = document.map.objects[selectedObject];
+				bool& flag = y < 465 + PanelOffset ? object.infiniteHealth : y < 495 + PanelOffset ? object.passive : object.enemy;
+				flag = !flag;
+				document.dirty = true;
+			}
+			else if (event.button == sf::Mouse::Button::Left && mode == Mode::Select &&
 				document.map.objects[selectedObject].type == MapObjectType::Npc && x >= 970 && x < 1270 && y >= 270 + PanelOffset && y < 300 + PanelOffset)
 			{
 				auto& object = document.map.objects[selectedObject];
@@ -1511,6 +1522,16 @@ private:
 			Label(window, font, "Startfeld des NPCs muss markiert sein.", 970, 360 + PanelOffset, 12);
 			FillRect(window, { { 970, 390 + PanelOffset }, { 300, 34 } }, sf::Color(65, 70, 80));
 			Label(window, font, "Dialoguedatei erstellen / bearbeiten", 978, 399 + PanelOffset, 13);
+			auto checkbox = [&](float y, bool checked, const char* text)
+			{
+				FillRect(window, { { 970, y + PanelOffset }, { 20, 20 } }, sf::Color(185, 190, 195));
+				FillRect(window, { { 972, y + 2 + PanelOffset }, { 16, 16 } }, checked ? sf::Color(70, 145, 150) : sf::Color(35, 38, 45));
+				if (checked) Label(window, font, "X", 975, y + PanelOffset, 14);
+				Label(window, font, text, 998, y + 1 + PanelOffset, 14);
+			};
+			checkbox(435, object->infiniteHealth, "Unendlich leben");
+			checkbox(465, object->passive, "Passiv (greift nicht an)");
+			checkbox(495, object->enemy, "Enemy");
 		}
 	}
 	void DrawTriggerPanel(sf::RenderWindow& window, const sf::Font& font) const

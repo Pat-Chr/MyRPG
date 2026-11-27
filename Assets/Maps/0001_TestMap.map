@@ -17,6 +17,7 @@ OBJECT rock_05 scenery -192 128 Assets/Sprites/Environment/Forest/forest_rock.pn
 OBJECT rock_06 scenery -64 128 Assets/Sprites/Environment/Forest/forest_rock.png solid=1
 OBJECT rock_07 scenery 128 128 Assets/Sprites/Environment/Forest/forest_rock.png solid=1
 OBJECT rock_08 scenery 256 192 Assets/Sprites/Environment/Forest/forest_rock.png solid=1
+OBJECT training_dummy npc -606.788757 313.481689 Assets/Sprites/Characters/TrainingDummy1.png solid=1 health=100 infinite_health=1 passive=1 enemy=1
 
 TRIGGER magic_sparkle 288 -32 64 64 magic_sparkle glow=1
 TRIGGER magic_fire 448 -32 64 64 magic_fire glow=1

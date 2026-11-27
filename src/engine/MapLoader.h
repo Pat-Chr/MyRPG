@@ -9,6 +9,7 @@
 #include <sstream>
 #include <string>
 
+#include "Combat.h"
 #include "GameTypes.h"
 
 inline std::string EncodeObjectName(const std::string& name)
@@ -254,12 +255,40 @@ inline bool TryLoadMapFromFile(const std::string& filePath, MapData& outMap)
 				}
 
 				object.solid = solidFlag != 0; // The object is solid when the flag is not 0.
+				ApplyNpcAssetDefaults(object);
 
 				std::string token;
 				bool hasName = false, hasWalkingArea = false, hasWalkingCells = false;
+				bool hasInfiniteHealth = false, hasPassive = false, hasHealth = false, hasEnemy = false;
 				while (lineStream >> token)
 				{
-					if (token.starts_with("tile="))
+					if (token.starts_with("infinite_health=") || token.starts_with("passive=") || token.starts_with("enemy="))
+					{
+						const bool infinite = token.starts_with("infinite_health=");
+						const bool enemy = token.starts_with("enemy=");
+						bool& seen = infinite ? hasInfiniteHealth : enemy ? hasEnemy : hasPassive;
+						int flag = 0;
+						if (object.type != MapObjectType::Npc || seen || !TryParseFlag(token, infinite ? "infinite_health" : enemy ? "enemy" : "passive", flag))
+						{
+							std::cerr << filePath << ':' << lineNumber << ": Invalid combat flag: " << token << '\n';
+							return false;
+						}
+						seen = true;
+						(infinite ? object.infiniteHealth : enemy ? object.enemy : object.passive) = flag != 0;
+					}
+					else if (token.starts_with("health="))
+					{
+						const char* begin = token.data() + 7;
+						const char* end = token.data() + token.size();
+						const auto result = std::from_chars(begin, end, object.health);
+						if (object.type != MapObjectType::Npc || hasHealth || result.ec != std::errc{} || result.ptr != end || object.health <= 0)
+						{
+							std::cerr << filePath << ':' << lineNumber << ": Invalid NPC health: " << token << '\n';
+							return false;
+						}
+						hasHealth = true;
+					}
+					else if (token.starts_with("tile="))
 					{
 						char comma1 = 0, comma2 = 0, comma3 = 0;
 						std::istringstream tileStream(token.substr(5));

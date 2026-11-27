@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 
+#include "DamageNumbers.h"
 #include "MagicEffects.h"
 #include "Weather.h"
 
@@ -62,6 +63,8 @@ struct Player
 	bool moving = false;
 	bool attacking = false;
 	float attackElapsed = 0.0f;
+	int attackDamage = 10;
+	bool attackDamageApplied = false;
 };
 
 // Keyboard state used for movement controls.
@@ -145,6 +148,12 @@ struct MapObject
 	bool npcMoving = false;
 	float npcWalkWait = 2.0f;
 	float npcTargetX = 0.0f, npcTargetY = 0.0f;
+	int health = 100;
+	bool infiniteHealth = false;
+	bool passive = true;
+	bool enemy = false;
+	float hitRemaining = 0.0f;
+	int lastDamage = 0;
 };
 
 // Event trigger zone.
@@ -259,4 +268,5 @@ struct GameState
 
 	MagicEffects magicEffects;
 	WeatherState weather;
+	std::vector<DamageNumber> damageNumbers;
 };

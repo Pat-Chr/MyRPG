@@ -1,0 +1,9 @@
+ANIM 2
+animation static
+texture Assets/Sprites/Characters/TrainingDummy1.png
+frame_duration 1.0
+frame 0 0 128 128
+animation hit
+texture Assets/Sprites/Characters/TrainingDummy1.png
+frame_duration 0.2
+frame 128 0 128 128
