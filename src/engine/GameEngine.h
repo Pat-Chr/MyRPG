@@ -671,10 +671,15 @@ inline void UpdatePlayerStamina(Player& player, float deltaTime, bool sprinting)
     if (sprinting)
     {
         player.stamina = (std::max)(0.0f, player.stamina - Player::staminaDrainPerSecond * deltaTime);
-        if (player.stamina == 0.0f) player.sprintExhausted = true;
+        if (player.stamina == 0.0f)
+        {
+            player.sprintExhausted = true;
+            player.staminaRecoveryRequiresStop = true;
+        }
     }
-    else
+    else if (!player.staminaRecoveryRequiresStop || (!player.moving && deltaTime > 0.0f))
     {
+        player.staminaRecoveryRequiresStop = false;
         player.stamina = (std::min)(Player::maxStamina, player.stamina + Player::staminaRecoveryPerSecond * deltaTime);
     }
 }
@@ -713,6 +718,7 @@ inline void UpdateGame(GameState& game, float deltaTime)
 
     if (game.player.attacking)
     {
+        if (deltaTime > 0.0f) game.player.staminaRecoveryRequiresStop = false;
         const auto& animation = GetPlayerAnimations()[12 + static_cast<std::size_t>(game.player.direction)];
         game.player.attackElapsed += deltaTime * Player::attackAnimationSpeedMultiplier;
         if (game.player.attackElapsed >= animation->frameDuration * animation->frames.size())

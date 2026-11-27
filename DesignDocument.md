@@ -61,7 +61,7 @@ Steuerung eines einzelnen Spieler-Avatars im Fensterraum.
 ## 4. Kernsysteme
 ### 4.1 Bewegung
 - Laufgeschwindigkeit: 220 px/s (`Player.speed`)
-- Sprint: Linke oder rechte Umschalttaste bei gleichzeitiger Bewegung; 1,65-fache Laufgeschwindigkeit. Die Ausdauer beträgt 100 Punkte, sinkt beim tatsächlichen Sprinten um 30 Punkte/s und regeneriert ohne Sprinten um 30 Punkte/s (50 % schneller als zuvor). Bei leerer Ausdauer ist Sprinten bis zum Loslassen der Umschalttaste gesperrt. Jeder erfolgreiche Schlag verbraucht die gesamte Ausdauer; während der Schlaganimation regeneriert sie nicht.
+- Sprint: Linke oder rechte Umschalttaste bei gleichzeitiger Bewegung; 1,65-fache Laufgeschwindigkeit. Die Ausdauer beträgt 100 Punkte, sinkt beim tatsächlichen Sprinten um 30 Punkte/s und regeneriert ohne Sprinten um 30 Punkte/s. Wird sie beim Sprinten vollständig verbraucht, bleibt sie beim Weitergehen auf null, bis der Spieler stehenbleibt. Bei leerer Ausdauer ist Sprinten bis zum Loslassen der Umschalttaste gesperrt. Jeder erfolgreiche Schlag verbraucht die gesamte Ausdauer; während der Schlaganimation regeneriert sie nicht.
 - Kollision: Bewusst offen (Prototyp-Phase), als nächster technischer Schritt geplant
 
 ### 4.2 Kampf
@@ -74,7 +74,7 @@ Steuerung eines einzelnen Spieler-Avatars im Fensterraum.
 
 ### 4.3 Ressourcen
 - Gesundheit: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
-- Ausdauer: 100 Punkte; wird für Sprinten verbraucht und regeneriert mit 30 Punkten/s, sobald nicht gesprintet wird. Jeder erfolgreiche Schlag setzt sie auf null; Regeneration beginnt nach der Schlaganimation.
+- Ausdauer: 100 Punkte; wird für Sprinten verbraucht und regeneriert mit 30 Punkten/s, solange nicht gesprintet wird. Nach vollständigem Verbrauch beim Sprinten beginnt die Regeneration erst beim Stillstand. Jeder erfolgreiche Schlag setzt sie auf null; nach der Schlaganimation regeneriert sie wieder.
 - Mana: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 - Währung: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 - Verbrauchsgegenstände: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf

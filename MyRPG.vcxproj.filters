@@ -686,6 +686,54 @@
     <None Include="Assets\Dialogues\Karl Nickel.json">
       <Filter>Ressourcendateien</Filter>
     </None>
+    <None Include="Assets\Shaders\Effects\magic_effect.vert">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_effects.cfg">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_fire.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_frost.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_heal.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_lightning.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_screen_test.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_shockwave.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_sparkle.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Effects\magic_vortex.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Weather\fog.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Weather\rain.frag">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Shaders\Weather\weather.vert">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Animations\Characters\NPC_Trader1.anim">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Animations\Characters\player.anim">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="Assets\Dialogues\Karl Nickel.json">
+      <Filter>Ressourcendateien</Filter>
+    </None>
     <None Include="Assets\Maps\0001_TestMap.map">
       <Filter>Ressourcendateien</Filter>
     </None>
@@ -749,6 +797,14 @@
     <None Include="Assets\Sprites\Environment\Forest\forest_tree.png">
       <Filter>Ressourcendateien</Filter>
     </None>
+    <None Include="Assets\Maps\0001_TestMap.map" />
+    <None Include="Assets\Sprites\Environment\Forest\forest_bush.png" />
+    <None Include="Assets\Sprites\Environment\Forest\forest_flower.png" />
+    <None Include="Assets\Sprites\Environment\Forest\forest_ground.png" />
+    <None Include="Assets\Sprites\Environment\Forest\forest_path.png" />
+    <None Include="Assets\Sprites\Environment\Forest\forest_rock.png" />
+    <None Include="Assets\Sprites\Environment\Forest\forest_stump.png" />
+    <None Include="Assets\Sprites\Environment\Forest\forest_tree.png" />
     <None Include="Assets\Animations\Characters\NPC_Trader1.anim">
       <Filter>Ressourcendateien</Filter>
     </None>
@@ -818,6 +874,9 @@
     <None Include="Assets\Sprites\Characters\NPC_Trader1.png">
       <Filter>Ressourcendateien</Filter>
     </None>
+    <None Include="Assets\Sprites\Characters\player.png">
+      <Filter>Ressourcendateien</Filter>
+    </None>
     <None Include="Assets\Sprites\Environment\Forest\forest_bush.png">
       <Filter>Ressourcendateien</Filter>
     </None>
@@ -843,17 +902,6 @@
       <Filter>Ressourcendateien</Filter>
     </None>
     <None Include="Assets\UI\title_screen.png">
-      <Filter>Ressourcendateien</Filter>
-    </None>
-    <None Include="Assets\Maps\0001_TestMap.map" />
-    <None Include="Assets\Sprites\Environment\Forest\forest_bush.png" />
-    <None Include="Assets\Sprites\Environment\Forest\forest_flower.png" />
-    <None Include="Assets\Sprites\Environment\Forest\forest_ground.png" />
-    <None Include="Assets\Sprites\Environment\Forest\forest_path.png" />
-    <None Include="Assets\Sprites\Environment\Forest\forest_rock.png" />
-    <None Include="Assets\Sprites\Environment\Forest\forest_stump.png" />
-    <None Include="Assets\Sprites\Environment\Forest\forest_tree.png" />
-    <None Include="Assets\**\*">
       <Filter>Ressourcendateien</Filter>
     </None>
     <None Include="Assets\**\*">

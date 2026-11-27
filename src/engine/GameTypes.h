@@ -48,6 +48,7 @@ struct Player
 	static constexpr float attackAnimationSpeedMultiplier = 2.0f;
 	float stamina = maxStamina;
 	bool sprintExhausted = false;
+	bool staminaRecoveryRequiresStop = false;
 
 	int size = 64;
 
