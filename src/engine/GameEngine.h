@@ -660,14 +660,30 @@ inline void StartPlayerAttack(GameState& game)
     if (!animation) return;
     game.player.direction = direction;
     game.player.moving = false;
+    game.player.stamina = 0.0f;
+    game.player.sprintExhausted = true;
     game.player.attacking = true;
     game.player.attackElapsed = 0.0f;
+}
+
+inline void UpdatePlayerStamina(Player& player, float deltaTime, bool sprinting)
+{
+    if (sprinting)
+    {
+        player.stamina = (std::max)(0.0f, player.stamina - Player::staminaDrainPerSecond * deltaTime);
+        if (player.stamina == 0.0f) player.sprintExhausted = true;
+    }
+    else
+    {
+        player.stamina = (std::min)(Player::maxStamina, player.stamina + Player::staminaRecoveryPerSecond * deltaTime);
+    }
 }
 
 // Effects continue during map transitions; movement and trigger checks are paused.
 inline void UpdateGame(GameState& game, float deltaTime)
 {
     if (!game.pendingMonologue.empty() || game.monologueOriginalDirection) return;
+    if (!game.input.sprint) game.player.sprintExhausted = false;
     UpdateMagicEffects(game.magicEffects, deltaTime);
     UpdateCameraShake(game.cameraShake, deltaTime);
     UpdateWeather(game.weather, deltaTime);
@@ -680,6 +696,7 @@ inline void UpdateGame(GameState& game, float deltaTime)
     if (IsMapTransitionActive(game))
     {
         game.player.moving = false;
+        UpdatePlayerStamina(game.player, deltaTime, false);
         for (MapObject& object : game.activeMap.objects)
             if (object.type == MapObjectType::Npc && object.npcMoving)
             {
@@ -697,7 +714,7 @@ inline void UpdateGame(GameState& game, float deltaTime)
     if (game.player.attacking)
     {
         const auto& animation = GetPlayerAnimations()[12 + static_cast<std::size_t>(game.player.direction)];
-        game.player.attackElapsed += deltaTime;
+        game.player.attackElapsed += deltaTime * Player::attackAnimationSpeedMultiplier;
         if (game.player.attackElapsed >= animation->frameDuration * animation->frames.size())
             game.player.attacking = false;
         return;
@@ -712,6 +729,9 @@ inline void UpdateGame(GameState& game, float deltaTime)
     if (game.input.down) moveY += 1.0f;
 
     const float length = std::sqrt((moveX * moveX) + (moveY * moveY));
+    const bool wantsToSprint = game.input.sprint && !game.player.sprintExhausted &&
+        game.player.stamina > 0.0f && length > 0.0f;
+    const float movementSpeed = game.player.speed * (wantsToSprint ? Player::sprintSpeedMultiplier : 1.0f);
     if (length > 0.0f)
     {
         moveX /= length;
@@ -721,13 +741,13 @@ inline void UpdateGame(GameState& game, float deltaTime)
     // Check axes separately so diagonal movement can slide along obstacles.
     const float previousX = game.player.x;
     const float previousY = game.player.y;
-    const float nextX = game.player.x + (moveX * game.player.speed * deltaTime);
+    const float nextX = game.player.x + (moveX * movementSpeed * deltaTime);
     if (!IsSolidObjectBlockingPosition(game, nextX, game.player.y))
     {
         game.player.x = nextX;
     }
 
-    const float nextY = game.player.y + (moveY * game.player.speed * deltaTime);
+    const float nextY = game.player.y + (moveY * movementSpeed * deltaTime);
     if (!IsSolidObjectBlockingPosition(game, game.player.x, nextY))
     {
         game.player.y = nextY;
@@ -736,6 +756,7 @@ inline void UpdateGame(GameState& game, float deltaTime)
     const float actualX = game.player.x - previousX;
     const float actualY = game.player.y - previousY;
     game.player.moving = actualX != 0.0f || actualY != 0.0f;
+    UpdatePlayerStamina(game.player, deltaTime, wantsToSprint && game.player.moving);
     const float facingX = game.player.moving ? actualX : moveX;
     const float facingY = game.player.moving ? actualY : moveY;
     if (facingY < 0.0f)

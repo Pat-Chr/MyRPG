@@ -61,11 +61,12 @@ Steuerung eines einzelnen Spieler-Avatars im Fensterraum.
 ## 4. Kernsysteme
 ### 4.1 Bewegung
 - Laufgeschwindigkeit: 220 px/s (`Player.speed`)
-- Sprint/Ausweichen: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
+- Sprint: Linke oder rechte Umschalttaste bei gleichzeitiger Bewegung; 1,65-fache Laufgeschwindigkeit. Die Ausdauer beträgt 100 Punkte, sinkt beim tatsächlichen Sprinten um 30 Punkte/s und regeneriert ohne Sprinten um 30 Punkte/s (50 % schneller als zuvor). Bei leerer Ausdauer ist Sprinten bis zum Loslassen der Umschalttaste gesperrt. Jeder erfolgreiche Schlag verbraucht die gesamte Ausdauer; während der Schlaganimation regeneriert sie nicht.
 - Kollision: Bewusst offen (Prototyp-Phase), als nächster technischer Schritt geplant
 
 ### 4.2 Kampf
 - Echtzeit / Rundenbasiert: Echtzeit
+- Schlaganimation: Läuft mit doppelter Geschwindigkeit.
 - Primärwaffen: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 - Sekundärfähigkeiten: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 - Schadenstypen: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
@@ -73,7 +74,8 @@ Steuerung eines einzelnen Spieler-Avatars im Fensterraum.
 
 ### 4.3 Ressourcen
 - Gesundheit: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
-- Mana/Stamina: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
+- Ausdauer: 100 Punkte; wird für Sprinten verbraucht und regeneriert mit 30 Punkten/s, sobald nicht gesprintet wird. Jeder erfolgreiche Schlag setzt sie auf null; Regeneration beginnt nach der Schlaganimation.
+- Mana: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 - Währung: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 - Verbrauchsgegenstände: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 
@@ -152,12 +154,13 @@ Mischung aus ernst und leicht humorvoll
 
 ## 8. UX, UI und Steuerung
 ### Eingabe
-- Tastatur/Maus: WASD + Pfeiltasten für Bewegung; Leertaste löst außerhalb von Menüs und Dialogues eine einmalige Schlaganimation in Blickrichtung aus. Während des Schlags bleiben Bewegung und Richtung gesperrt; diagonale Blickrichtungen verwenden wie im Stillstand die linke bzw. rechte Richtung. Erneutes Drücken während des Schlags wird ignoriert. Der Schlag verursacht noch keinen Schaden. `M` startet testweise einen Magieeffekt an der aktuellen Spielerposition. `E` spricht den nächsten NPC im Blickfeld innerhalb von 100 Welteinheiten an; dieser dreht sich zum Spieler und öffnet einen Dialogue. Linksklick, `E`, Enter oder Leertaste zeigen den nächsten Absatz bzw. schließen nach dem letzten Absatz; Esc schließt den Dialogue sofort.
+- Tastatur/Maus: WASD + Pfeiltasten für Bewegung; linke oder rechte Umschalttaste sprintet bei gleichzeitiger Bewegung. Leertaste löst außerhalb von Menüs und Dialogues eine einmalige Schlaganimation in Blickrichtung aus. Während des Schlags bleiben Bewegung und Richtung gesperrt; diagonale Blickrichtungen verwenden wie im Stillstand die linke bzw. rechte Richtung. Erneutes Drücken während des Schlags wird ignoriert. Der Schlag verursacht noch keinen Schaden. `M` startet testweise einen Magieeffekt an der aktuellen Spielerposition. `E` spricht den nächsten NPC im Blickfeld innerhalb von 100 Welteinheiten an; dieser dreht sich zum Spieler und öffnet einen Dialogue. Linksklick, `E`, Enter oder Leertaste zeigen den nächsten Absatz bzw. schließen nach dem letzten Absatz; Esc schließt den Dialogue sofort.
 - Spieleingaben werden nur angenommen, solange das Fenster den Fokus hat. Bei Fokusverlust wird die Bewegung gestoppt; das Spiel läuft ansonsten weiter.
 - Controller: Später geplant
 
 ### HUD
 - Muss anzeigen: Health, Ausdauer, XP, Level
+- Die Ausdauerleiste steht während des Spiels unten links und wird in beiden Builds unabhängig von Debug- und FPS-Anzeigen dargestellt. Ihr aktueller Wert wird als Zahl von 0 bis 100 angezeigt.
 - Optional: Weitere Elemente kommen später hinzu
 - Die optionale FPS-Anzeige ist in Debug- und Release-Builds verfügbar und im Einstellungsmenü abschaltbar.
 - Nur im Debug-Build: Karten-ID, Spielerkoordinaten und letztes Trigger-Ereignis; zusätzlich werden Trigger-Bereiche und das Debug-Raster sichtbar dargestellt. Ein Linksklick auf die angezeigten Spielerkoordinaten kopiert X und Y in die Zwischenablage. Im Release-Build entfallen diese Debug-Anzeigen und die Kopierfunktion, die Trigger-Funktion bleibt erhalten.

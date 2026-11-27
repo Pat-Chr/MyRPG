@@ -518,6 +518,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             hasFocus && (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Down)),
             hasFocus && (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left)),
             hasFocus && (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right)));
+        game.input.sprint = hasFocus &&
+            (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LShift) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::RShift));
 
         // Delta time makes the simulation independent of frame rate. Since the same clock
         // is restarted after dialogues and error messages, no time jumps occur afterward.

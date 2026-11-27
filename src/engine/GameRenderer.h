@@ -769,29 +769,28 @@ inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewpo
 #else
     constexpr bool showDebug = false;
 #endif
-    if (showFps || showDebug)
+    static sf::Font overlayFont;
+    static const bool fontLoaded = []
     {
-        static sf::Font overlayFont;
-        static const bool fontLoaded = []
+        wchar_t windowsDirectory[MAX_PATH];
+        const UINT length = GetWindowsDirectoryW(windowsDirectory, MAX_PATH);
+        if (length == 0 || length >= MAX_PATH)
         {
-            wchar_t windowsDirectory[MAX_PATH];
-            const UINT length = GetWindowsDirectoryW(windowsDirectory, MAX_PATH);
-            if (length == 0 || length >= MAX_PATH)
-            {
-                std::fprintf(stderr, "Failed to locate the Windows font directory for the FPS overlay.\n");
-                return false;
-            }
-            const std::filesystem::path fontDirectory = std::filesystem::path(windowsDirectory) / L"Fonts";
-            if (overlayFont.openFromFile(fontDirectory / L"consola.ttf") ||
-                overlayFont.openFromFile(fontDirectory / L"arial.ttf"))
-            {
-                return true;
-            }
-            std::fprintf(stderr, "Failed to load a font for the FPS overlay.\n");
+            std::fprintf(stderr, "Failed to locate the Windows font directory for the HUD overlay.\n");
             return false;
-        }();
+        }
+        const std::filesystem::path fontDirectory = std::filesystem::path(windowsDirectory) / L"Fonts";
+        if (overlayFont.openFromFile(fontDirectory / L"consola.ttf") ||
+            overlayFont.openFromFile(fontDirectory / L"arial.ttf"))
+        {
+            return true;
+        }
+        std::fprintf(stderr, "Failed to load a font for the HUD overlay.\n");
+        return false;
+    }();
 
-        if (fontLoaded)
+    if (fontLoaded && (showFps || showDebug))
+    {
         {
             char overlayBuffer[96];
 #ifdef _DEBUG
@@ -832,6 +831,40 @@ inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewpo
             }
 #endif
         }
+    }
+
+    constexpr float staminaFrameWidth = 224.0f;
+    constexpr float staminaFrameHeight = 18.0f;
+    constexpr float staminaInset = 4.0f;
+    const float staminaRatio = std::clamp(game.player.stamina / Player::maxStamina, 0.0f, 1.0f);
+    sf::RectangleShape staminaFrame({ staminaFrameWidth, staminaFrameHeight });
+    staminaFrame.setPosition({ 16.0f, static_cast<float>(viewport.height) - staminaFrameHeight - 16.0f });
+    staminaFrame.setFillColor(sf::Color(18, 24, 35, 220));
+    staminaFrame.setOutlineColor(sf::Color(199, 186, 128));
+    staminaFrame.setOutlineThickness(1.0f);
+    target.draw(staminaFrame);
+
+    sf::RectangleShape staminaFill({ (staminaFrameWidth - 2.0f * staminaInset) * staminaRatio,
+                                     staminaFrameHeight - 2.0f * staminaInset });
+    staminaFill.setPosition({ 16.0f + staminaInset,
+                              static_cast<float>(viewport.height) - staminaFrameHeight - 16.0f + staminaInset });
+    staminaFill.setFillColor(sf::Color(226, 180, 62));
+    target.draw(staminaFill);
+
+    if (fontLoaded)
+    {
+        char staminaBuffer[16];
+        std::snprintf(staminaBuffer, sizeof(staminaBuffer), "%d / 100",
+                      static_cast<int>(std::lround(staminaRatio * Player::maxStamina)));
+        sf::Text staminaText(overlayFont, staminaBuffer, 14);
+        staminaText.setFillColor(sf::Color::White);
+        staminaText.setOutlineColor(sf::Color(18, 24, 35));
+        staminaText.setOutlineThickness(1.0f);
+        const sf::FloatRect textBounds = staminaText.getLocalBounds();
+        staminaText.setPosition({ 16.0f + (staminaFrameWidth - textBounds.size.x) * 0.5f - textBounds.position.x,
+                                  static_cast<float>(viewport.height) - staminaFrameHeight - 16.0f +
+                                      (staminaFrameHeight - textBounds.size.y) * 0.5f - textBounds.position.y });
+        target.draw(staminaText);
     }
 
     // Map-transition overlay (fade-in or fade-out effect).

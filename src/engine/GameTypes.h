@@ -41,6 +41,14 @@ struct Player
 	// Movement speed in pixels per second.
 	float speed = 220.0f;
 
+	static constexpr float maxStamina = 100.0f;
+	static constexpr float sprintSpeedMultiplier = 1.65f;
+	static constexpr float staminaDrainPerSecond = 30.0f;
+	static constexpr float staminaRecoveryPerSecond = 30.0f;
+	static constexpr float attackAnimationSpeedMultiplier = 2.0f;
+	float stamina = maxStamina;
+	bool sprintExhausted = false;
+
 	int size = 64;
 
 	// Side length of the square collision area, independent of the sprite size.
@@ -69,6 +77,9 @@ struct InputState
 
 	// Right key (D/Right) is pressed.
 	bool right = false;
+
+	// A Shift key is pressed during active gameplay.
+	bool sprint = false;
 };
 
 // Camera viewport and visible area.
