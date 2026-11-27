@@ -513,7 +513,7 @@ private:
 	float ObjectPanelHeight() const
 	{
 		return mode == Mode::Select && selectedObject < document.map.objects.size() &&
-			document.map.objects[selectedObject].type == MapObjectType::Npc ? 310.0f : 200.0f;
+			document.map.objects[selectedObject].type == MapObjectType::Npc ? 360.0f : 200.0f;
 	}
 	bool IsOverObjectPanel(sf::Vector2f position) const
 	{
@@ -572,7 +572,9 @@ private:
 	}
 	static bool SafeName(const std::string& value)
 	{
-		return !value.empty() && std::all_of(value.begin(), value.end(), [](unsigned char c) { return std::isalnum(c) || c == '_' || c == '-'; });
+		return !value.empty() && std::all_of(value.begin(), value.end(), [](unsigned char c) {
+			return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_' || c == '-';
+		});
 	}
 	void RefreshAssets()
 	{
@@ -675,9 +677,29 @@ private:
 	void EditTriggerDialogue(bool askBeforeEditing)
 	{
 		const auto& trigger = document.map.triggers[selectedTrigger];
+		EditDialogueFile(trigger.id, "monologue", { "Hier beginnt mein Abenteuer.", "Was mich wohl erwartet?" }, askBeforeEditing);
+	}
+	void EditNpcDialogue()
+	{
+		if (selectedObject >= document.map.objects.size() || document.map.objects[selectedObject].type != MapObjectType::Npc)
+		{
+			Error("Bitte zuerst einen NPC auswaehlen.");
+			return;
+		}
+		const auto& npc = document.map.objects[selectedObject];
+		if (npc.npcName.empty())
+		{
+			Error("Bitte zuerst einen Anzeigenamen fuer den NPC festlegen.");
+			return;
+		}
+		EditDialogueFile(npc.npcName, "greeting", { "Hallo, Reisender!", "Was kann ich fuer dich tun?" }, false);
+	}
+	void EditDialogueFile(const std::string& name, const std::string& section,
+		const std::vector<std::string>& defaultParagraphs, bool askBeforeEditing)
+	{
 		std::filesystem::path relativePath;
 		std::string error;
-		if (!ResolveDialoguePath(trigger.id, relativePath, error)) { Error(error); return; }
+		if (!ResolveDialoguePath(name, relativePath, error)) { Error(error); return; }
 		const auto path = root / relativePath;
 		std::error_code ec;
 		const bool exists = std::filesystem::exists(path, ec);
@@ -706,7 +728,7 @@ private:
 				Error("Dialoguedatei konnte nicht erstellt werden (Windows-Fehler " + std::to_string(GetLastError()) + ").");
 				return;
 			}
-			const std::string contents = nlohmann::json{ { "monologue", { "Hier beginnt mein Abenteuer.", "Was mich wohl erwartet?" } } }.dump(2) + "\n";
+			const std::string contents = nlohmann::json{ { section, defaultParagraphs } }.dump(2) + "\n";
 			DWORD written = 0;
 			const bool writeSucceeded = WriteFile(file, contents.data(), static_cast<DWORD>(contents.size()), &written, nullptr) != 0;
 			const DWORD writeError = writeSucceeded ? ERROR_WRITE_FAULT : GetLastError();
@@ -794,9 +816,16 @@ private:
 		}
 		result = file;
 		std::error_code ec;
-		if (!std::filesystem::equivalent(result.parent_path(), maps, ec) || ec || result.extension() != L".map" || !SafeName(result.stem().string()))
+		const bool isInMaps = std::filesystem::equivalent(result.parent_path(), maps, ec);
+		if (ec) { Error("Kartenpfad konnte nicht geprueft werden: " + ec.message()); return false; }
+		if (!isInMaps || result.extension() != L".map")
 		{
-			Error("Karten muessen direkt in Assets\\Maps liegen und einen Namen aus Buchstaben, Ziffern, _ oder - haben.");
+			Error("Karten muessen direkt in Assets\\Maps liegen und die Endung .map haben.");
+			return false;
+		}
+		if (create && !SafeName(result.stem().string()))
+		{
+			Error("Neue Karten muessen einen Namen aus Buchstaben, Ziffern, _ oder - haben.");
 			return false;
 		}
 		if (create && std::filesystem::exists(result, ec))
@@ -1177,6 +1206,11 @@ private:
 				sheetWindow.reset();
 				sheetDragging = sheetPanning = false;
 			}
+			else if (event.button == sf::Mouse::Button::Left && mode == Mode::Select &&
+				document.map.objects[selectedObject].type == MapObjectType::Npc && x >= 970 && x < 1270 && y >= 390 + PanelOffset && y < 424 + PanelOffset)
+			{
+				EditNpcDialogue();
+			}
 			else if (event.button == sf::Mouse::Button::Left && x >= 970 && x < 1270 && y >= 150 + PanelOffset && y < 180 + PanelOffset)
 			{
 				if (mode == Mode::Select)
@@ -1475,6 +1509,8 @@ private:
 			Label(window, font, editingWalkingArea ? "Fertig (Esc)" : "Flaeche bearbeiten", 978, 313 + PanelOffset, 13);
 			Label(window, font, "Rasterfelder anklicken: an / aus", 970, 344 + PanelOffset, 12);
 			Label(window, font, "Startfeld des NPCs muss markiert sein.", 970, 360 + PanelOffset, 12);
+			FillRect(window, { { 970, 390 + PanelOffset }, { 300, 34 } }, sf::Color(65, 70, 80));
+			Label(window, font, "Dialoguedatei erstellen / bearbeiten", 978, 399 + PanelOffset, 13);
 		}
 	}
 	void DrawTriggerPanel(sf::RenderWindow& window, const sf::Font& font) const
