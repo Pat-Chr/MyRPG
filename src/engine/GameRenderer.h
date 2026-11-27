@@ -354,25 +354,10 @@ inline void RenderDefaultGround(sf::RenderTarget& target, const Viewport& viewpo
     }
 }
 
-/**
- * @brief Renders all map objects (walls, NPCs, and interactive elements).
- * 
- * Iterates through all objects in the active map and renders each as a texture
- * sprite or colored rectangle fallback according to object type:
- * - Wall: gray (140, 140, 140)
- * - Npc: beige (225, 180, 130)
- * - Ground: green (72, 152, 76)
- * - Other: light green (110, 138, 110)
- * 
- * @param target SFML target used for rendering.
- * @param viewport Current viewport dimensions.
- * @param game Current game state containing the map-object list.
- */
-inline void RenderMapObjects(sf::RenderTarget& target, const Viewport& viewport, const GameState& game)
+inline void RenderMapObject(sf::RenderTarget& target, const Viewport& viewport, const GameState& game,
+                            const MapObject& object)
 {
     constexpr float objectSize = 64.0f;
-
-    for (const MapObject& object : game.activeMap.objects)
     {
         const sf::Vector2f screenPos = WorldToScreen(object.x, object.y, game, viewport);
 
@@ -417,7 +402,7 @@ inline void RenderMapObjects(sf::RenderTarget& target, const Viewport& viewport,
                 DrawSpriteShadow(target, *shadowData, frameIndex, frame, screenPos, sprite.getScale().x, sprite.getScale().y);
             }
             target.draw(sprite);
-            continue;
+            return;
         }
 
         // Fallback rectangle when no texture is available.
@@ -444,6 +429,27 @@ inline void RenderMapObjects(sf::RenderTarget& target, const Viewport& viewport,
 
         target.draw(fallback);
     }
+}
+
+inline void RenderMapObjects(sf::RenderTarget& target, const Viewport& viewport, const GameState& game)
+{
+    for (const MapObject& object : game.activeMap.objects)
+        RenderMapObject(target, viewport, game, object);
+}
+
+inline std::vector<const MapObject*> CharacterRenderOrder(const GameState& game)
+{
+    std::vector<const MapObject*> characters;
+    for (const MapObject& object : game.activeMap.objects)
+        if (object.type == MapObjectType::Npc) characters.push_back(&object);
+    characters.push_back(nullptr);
+    std::stable_sort(characters.begin(), characters.end(), [&](const MapObject* left, const MapObject* right)
+    {
+        const float leftY = left ? left->y : game.player.y;
+        const float rightY = right ? right->y : game.player.y;
+        return leftY < rightY;
+    });
+    return characters;
 }
 
 /**
@@ -564,9 +570,9 @@ inline void RenderTriggerDebug(sf::RenderTarget& target, const Viewport& viewpor
  * 1. Clear the background (dark green: 22, 34, 26)
  * 2. Draw the debug grid (Debug build only)
  * 3. Draw the ground texture and tiles
- * 4. Draw map objects (walls, NPCs, and so on)
- * 5. Draw trigger zones (Debug build only)
- * 6. Draw the player character (texture or fallback rectangle)
+ * 4. Draw non-NPC map objects
+ * 5. Draw trigger glow and debug zones
+ * 6. Draw NPCs and player in world-Y order
  * 7. Draw magic effects and weather
  * 8. Optionally draw FPS and debug UI (coordinates and events are Debug-build only)
  * 9. Draw the map-transition overlay (fade-in/fade-out effect)
@@ -635,13 +641,15 @@ inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewpo
 #endif
 
     RenderDefaultGround(target, viewport, game);
-    RenderMapObjects(target, viewport, game);
+    for (const MapObject& object : game.activeMap.objects)
+        if (object.type != MapObjectType::Npc) RenderMapObject(target, viewport, game, object);
     RenderTriggerGlow(target, viewport, game);
 #ifdef _DEBUG
     RenderTriggerDebug(target, viewport, game);
 #endif
 
-    // Render the player character (animated sprite or fallback rectangle).
+    const auto renderPlayer = [&]()
+    {
     const float playerSize = static_cast<float>(game.player.size);
     struct PlayerAnimation
     {
@@ -651,12 +659,12 @@ inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewpo
     };
     static const auto playerAnimations = []
     {
-        std::array<PlayerAnimation, 12> animations;
-        PlayerAnimations clips;
-        if (!LoadPlayerAnimationsFromFile("Assets/Animations/Characters/player.anim", clips)) return animations;
+        std::array<PlayerAnimation, 16> animations;
+        const PlayerAnimations& clips = GetPlayerAnimations();
         for (std::size_t i = 0; i < clips.size(); ++i)
         {
-            animations[i].animation = std::move(*clips[i]);
+            if (!clips[i]) continue;
+            animations[i].animation = *clips[i];
             animations[i].texture = GetCachedTexture(animations[i].animation.texturePath);
             if (animations[i].texture == nullptr)
             {
@@ -667,28 +675,27 @@ inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewpo
         }
         return animations;
     }();
-    static constexpr std::array<PlayerDirection, 8> idleDirections = {
-        PlayerDirection::Down, PlayerDirection::Up, PlayerDirection::Left, PlayerDirection::Right,
-        PlayerDirection::Left, PlayerDirection::Right, PlayerDirection::Left, PlayerDirection::Right
-    };
     const std::size_t direction = static_cast<std::size_t>(game.player.direction);
-    const PlayerAnimation& selected = game.player.moving
-        ? playerAnimations[4 + direction]
-        : playerAnimations[static_cast<std::size_t>(idleDirections[direction])];
+    const std::size_t cardinal = static_cast<std::size_t>(CardinalPlayerDirection(game.player.direction));
+    const std::size_t selectedIndex = game.player.attacking ? 12 + cardinal :
+        game.player.moving ? 4 + direction : cardinal;
+    const PlayerAnimation& selected = playerAnimations[selectedIndex];
     if (selected.texture != nullptr)
     {
         static sf::Clock playerAnimationClock;
-        static bool wasPlayerMoving = false;
+        static std::size_t previousIndex = 0;
         static PlayerDirection previousDirection = PlayerDirection::Down;
-        if (game.player.moving != wasPlayerMoving || game.player.direction != previousDirection)
+        if (selectedIndex != previousIndex || game.player.direction != previousDirection)
         {
             playerAnimationClock.restart();
-            wasPlayerMoving = game.player.moving;
+            previousIndex = selectedIndex;
             previousDirection = game.player.direction;
         }
 
         const SpriteAnimation& playerAnimation = selected.animation;
-        const std::size_t frameIndex = static_cast<std::size_t>(playerAnimationClock.getElapsedTime().asSeconds() / playerAnimation.frameDuration) % playerAnimation.frames.size();
+        const std::size_t frameIndex = game.player.attacking
+            ? (std::min)(static_cast<std::size_t>(game.player.attackElapsed / playerAnimation.frameDuration), playerAnimation.frames.size() - 1)
+            : GetAnimationFrameIndex(playerAnimation, playerAnimationClock.getElapsedTime().asSeconds());
         const sf::IntRect& frame = playerAnimation.frames[frameIndex];
 
         sf::Sprite playerSprite(*selected.texture);
@@ -712,6 +719,13 @@ inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewpo
                              viewport.height * 0.5f + game.cameraShake.offsetY });
 
         target.draw(player);
+    }
+    };
+
+    for (const MapObject* character : CharacterRenderOrder(game))
+    {
+        if (character) RenderMapObject(target, viewport, game, *character);
+        else renderPlayer();
     }
 
     RenderMagicEffects(target, game.magicEffects,
@@ -743,33 +757,40 @@ inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewpo
     hitbox.setOutlineThickness(-1.0f);
     target.draw(hitbox);
 
+    for (const MapObject& object : game.activeMap.objects)
+    {
+        if (object.type != MapObjectType::Npc) continue;
+        hitbox.setPosition(WorldToScreen(object.x, Player::HitboxCenterY(object.y), game, viewport));
+        hitbox.setOutlineColor(object.solid ? sf::Color(255, 170, 90) : sf::Color(150, 150, 150));
+        target.draw(hitbox);
+    }
+
     constexpr bool showDebug = true;
 #else
     constexpr bool showDebug = false;
 #endif
-    if (showFps || showDebug)
+    static sf::Font overlayFont;
+    static const bool fontLoaded = []
     {
-        static sf::Font overlayFont;
-        static const bool fontLoaded = []
+        wchar_t windowsDirectory[MAX_PATH];
+        const UINT length = GetWindowsDirectoryW(windowsDirectory, MAX_PATH);
+        if (length == 0 || length >= MAX_PATH)
         {
-            wchar_t windowsDirectory[MAX_PATH];
-            const UINT length = GetWindowsDirectoryW(windowsDirectory, MAX_PATH);
-            if (length == 0 || length >= MAX_PATH)
-            {
-                std::fprintf(stderr, "Failed to locate the Windows font directory for the FPS overlay.\n");
-                return false;
-            }
-            const std::filesystem::path fontDirectory = std::filesystem::path(windowsDirectory) / L"Fonts";
-            if (overlayFont.openFromFile(fontDirectory / L"consola.ttf") ||
-                overlayFont.openFromFile(fontDirectory / L"arial.ttf"))
-            {
-                return true;
-            }
-            std::fprintf(stderr, "Failed to load a font for the FPS overlay.\n");
+            std::fprintf(stderr, "Failed to locate the Windows font directory for the HUD overlay.\n");
             return false;
-        }();
+        }
+        const std::filesystem::path fontDirectory = std::filesystem::path(windowsDirectory) / L"Fonts";
+        if (overlayFont.openFromFile(fontDirectory / L"consola.ttf") ||
+            overlayFont.openFromFile(fontDirectory / L"arial.ttf"))
+        {
+            return true;
+        }
+        std::fprintf(stderr, "Failed to load a font for the HUD overlay.\n");
+        return false;
+    }();
 
-        if (fontLoaded)
+    if (fontLoaded && (showFps || showDebug))
+    {
         {
             char overlayBuffer[96];
 #ifdef _DEBUG
@@ -810,6 +831,40 @@ inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewpo
             }
 #endif
         }
+    }
+
+    constexpr float staminaFrameWidth = 224.0f;
+    constexpr float staminaFrameHeight = 18.0f;
+    constexpr float staminaInset = 4.0f;
+    const float staminaRatio = std::clamp(game.player.stamina / Player::maxStamina, 0.0f, 1.0f);
+    sf::RectangleShape staminaFrame({ staminaFrameWidth, staminaFrameHeight });
+    staminaFrame.setPosition({ 16.0f, static_cast<float>(viewport.height) - staminaFrameHeight - 16.0f });
+    staminaFrame.setFillColor(sf::Color(18, 24, 35, 220));
+    staminaFrame.setOutlineColor(sf::Color(199, 186, 128));
+    staminaFrame.setOutlineThickness(1.0f);
+    target.draw(staminaFrame);
+
+    sf::RectangleShape staminaFill({ (staminaFrameWidth - 2.0f * staminaInset) * staminaRatio,
+                                     staminaFrameHeight - 2.0f * staminaInset });
+    staminaFill.setPosition({ 16.0f + staminaInset,
+                              static_cast<float>(viewport.height) - staminaFrameHeight - 16.0f + staminaInset });
+    staminaFill.setFillColor(sf::Color(226, 180, 62));
+    target.draw(staminaFill);
+
+    if (fontLoaded)
+    {
+        char staminaBuffer[16];
+        std::snprintf(staminaBuffer, sizeof(staminaBuffer), "%d / 100",
+                      static_cast<int>(std::lround(staminaRatio * Player::maxStamina)));
+        sf::Text staminaText(overlayFont, staminaBuffer, 14);
+        staminaText.setFillColor(sf::Color::White);
+        staminaText.setOutlineColor(sf::Color(18, 24, 35));
+        staminaText.setOutlineThickness(1.0f);
+        const sf::FloatRect textBounds = staminaText.getLocalBounds();
+        staminaText.setPosition({ 16.0f + (staminaFrameWidth - textBounds.size.x) * 0.5f - textBounds.position.x,
+                                  static_cast<float>(viewport.height) - staminaFrameHeight - 16.0f +
+                                      (staminaFrameHeight - textBounds.size.y) * 0.5f - textBounds.position.y });
+        target.draw(staminaText);
     }
 
     // Map-transition overlay (fade-in or fade-out effect).

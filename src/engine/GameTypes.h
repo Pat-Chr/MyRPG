@@ -17,6 +17,18 @@ enum class PlayerDirection
 	Down, Up, Left, Right, Northwest, Northeast, Southwest, Southeast
 };
 
+inline constexpr PlayerDirection CardinalPlayerDirection(PlayerDirection direction)
+{
+	switch (direction)
+	{
+	case PlayerDirection::Northwest:
+	case PlayerDirection::Southwest: return PlayerDirection::Left;
+	case PlayerDirection::Northeast:
+	case PlayerDirection::Southeast: return PlayerDirection::Right;
+	default: return direction;
+	}
+}
+
 // Player information with position and movement speed.
 struct Player
 {
@@ -29,6 +41,15 @@ struct Player
 	// Movement speed in pixels per second.
 	float speed = 220.0f;
 
+	static constexpr float maxStamina = 100.0f;
+	static constexpr float sprintSpeedMultiplier = 1.65f;
+	static constexpr float staminaDrainPerSecond = 30.0f;
+	static constexpr float staminaRecoveryPerSecond = 30.0f;
+	static constexpr float attackAnimationSpeedMultiplier = 2.0f;
+	float stamina = maxStamina;
+	bool sprintExhausted = false;
+	bool staminaRecoveryRequiresStop = false;
+
 	int size = 64;
 
 	// Side length of the square collision area, independent of the sprite size.
@@ -39,6 +60,8 @@ struct Player
 
 	PlayerDirection direction = PlayerDirection::Down;
 	bool moving = false;
+	bool attacking = false;
+	float attackElapsed = 0.0f;
 };
 
 // Keyboard state used for movement controls.
@@ -55,6 +78,9 @@ struct InputState
 
 	// Right key (D/Right) is pressed.
 	bool right = false;
+
+	// A Shift key is pressed during active gameplay.
+	bool sprint = false;
 };
 
 // Camera viewport and visible area.

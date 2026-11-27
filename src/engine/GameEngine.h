@@ -9,15 +9,19 @@
 #include <set>
 #include <utility>
 
+#include "AnimationLoader.h"
 #include "GameTypes.h"
 #include "MagicEffectRegistry.h"
 #include "MapLoader.h"
 
-// Checks whether a given point lies inside a trigger area.
-// A trigger is a rectangular area with defined dimensions.
-inline bool IsInsideTrigger(const TriggerZone& trigger, float x, float y)
+// Checks whether the player's collision box overlaps a trigger area.
+inline bool IsPlayerOverlappingTrigger(const TriggerZone& trigger, float playerX, float playerY)
 {
-    return x >= trigger.x && x <= (trigger.x + trigger.width) && y >= trigger.y && y <= (trigger.y + trigger.height);
+    constexpr float playerHalfSize = Player::hitboxSize * 0.5f;
+    const float hitboxCenterY = Player::HitboxCenterY(playerY);
+    return trigger.width > 0.0f && trigger.height > 0.0f &&
+        playerX + playerHalfSize > trigger.x && playerX - playerHalfSize < trigger.x + trigger.width &&
+        hitboxCenterY + playerHalfSize > trigger.y && hitboxCenterY - playerHalfSize < trigger.y + trigger.height;
 }
 
 // Checks whether a map-transition animation is running.
@@ -100,6 +104,7 @@ inline void BeginMapTransition(GameState& game,
     std::cout << "[Map] Transition requested to '" << targetMapPath << "' at spawn ("
         << targetPlayerX << ", " << targetPlayerY << ").\n";
 #endif
+    game.player.attacking = false;
     game.mapTransition.phase = MapTransitionPhase::FadeOut;
     game.mapTransition.timer = 0.0f;
     game.mapTransition.targetMapPath = std::move(targetMapPath);
@@ -184,6 +189,7 @@ inline void BeginPlayerMonologue(GameState& game)
     game.monologueOriginalDirection = game.player.direction;
     game.player.direction = PlayerDirection::Down;
     game.player.moving = false;
+    game.player.attacking = false;
     game.input = InputState{};
 }
 
@@ -210,7 +216,7 @@ inline void UpdateTriggers(GameState& game)
 
     for (TriggerZone& trigger : game.activeMap.triggers)
     {
-        const bool isInside = IsInsideTrigger(trigger, game.player.x, game.player.y);
+        const bool isInside = IsPlayerOverlappingTrigger(trigger, game.player.x, game.player.y);
 
         if (isInside && !trigger.isPlayerInside && trigger.eventName != NoTriggerEvent)
         {
@@ -313,6 +319,8 @@ inline void InitializeGameState(GameState& game)
     game.player.y = 0.0f;
     game.player.direction = PlayerDirection::Down;
     game.player.moving = false;
+    game.player.attacking = false;
+    game.player.attackElapsed = 0.0f;
     game.lastTriggeredEvent.clear();
     game.pendingMonologue.clear();
     game.monologueOriginalDirection.reset();
@@ -342,18 +350,21 @@ inline void SetMovementState(InputState& input, bool up, bool down, bool left, b
     input.right = right;
 }
 
-inline bool IsObjectBlockingPlayer(const MapObject& object, float playerX, float playerY)
+inline bool IsCharacterOverlappingObject(float x, float y, const MapObject& object)
 {
-    constexpr float objectHalfSize = 32.0f;
-    constexpr float playerHalfSize = Player::hitboxSize * 0.5f;
-    const float hitboxCenterY = Player::HitboxCenterY(playerY);
-    return object.solid && playerX + playerHalfSize > object.x - objectHalfSize &&
-        playerX - playerHalfSize < object.x + objectHalfSize &&
-        hitboxCenterY + playerHalfSize > object.y - objectHalfSize &&
-        hitboxCenterY - playerHalfSize < object.y + objectHalfSize;
+    constexpr float characterHalfSize = Player::hitboxSize * 0.5f;
+    const float objectHalfSize = object.type == MapObjectType::Npc ? characterHalfSize : 32.0f;
+    const float objectCenterY = object.type == MapObjectType::Npc ? Player::HitboxCenterY(object.y) : object.y;
+    return std::abs(x - object.x) < characterHalfSize + objectHalfSize &&
+        std::abs(Player::HitboxCenterY(y) - objectCenterY) < characterHalfSize + objectHalfSize;
 }
 
-// Checks overlapping collision boxes. Only the solid flag matters, not the object type.
+inline bool IsObjectBlockingPlayer(const MapObject& object, float playerX, float playerY)
+{
+    return object.solid && IsCharacterOverlappingObject(playerX, playerY, object);
+}
+
+// Checks overlapping collision boxes; only solid objects block the player.
 inline bool IsSolidObjectBlockingPosition(const GameState& game, float playerX, float playerY)
 {
     for (const MapObject& object : game.activeMap.objects)
@@ -447,7 +458,7 @@ inline bool TryResolvePlayerPositionCollisions(GameState& restored, const std::s
     }
 
     for (TriggerZone& trigger : restored.activeMap.triggers)
-        trigger.isPlayerInside = IsInsideTrigger(trigger, x, y);
+        trigger.isPlayerInside = IsPlayerOverlappingTrigger(trigger, x, y);
     return true;
 }
 
@@ -545,11 +556,11 @@ inline bool IsNpcPositionBlocked(const GameState& game, const MapObject& npc, fl
 {
     for (const MapObject& other : game.activeMap.objects)
     {
-        if (&other != &npc && other.solid && std::abs(x - other.x) < 64.0f && std::abs(y - other.y) < 64.0f)
+        if (&other != &npc && other.solid && IsCharacterOverlappingObject(x, y, other))
             return true;
     }
-    return std::abs(x - game.player.x) < 32.0f + Player::hitboxSize * 0.5f &&
-        std::abs(y - Player::HitboxCenterY(game.player.y)) < 32.0f + Player::hitboxSize * 0.5f;
+    return std::abs(x - game.player.x) < Player::hitboxSize &&
+        std::abs(Player::HitboxCenterY(y) - Player::HitboxCenterY(game.player.y)) < Player::hitboxSize;
 }
 
 inline void UpdateNpcWalking(GameState& game, MapObject& npc, float deltaTime)
@@ -640,10 +651,44 @@ inline void UpdateNpcWalking(GameState& game, MapObject& npc, float deltaTime)
     }
 }
 
+inline void StartPlayerAttack(GameState& game)
+{
+    if (IsMapTransitionActive(game) || game.player.attacking ||
+        !game.pendingMonologue.empty() || game.monologueOriginalDirection) return;
+    const PlayerDirection direction = CardinalPlayerDirection(game.player.direction);
+    const auto& animation = GetPlayerAnimations()[12 + static_cast<std::size_t>(direction)];
+    if (!animation) return;
+    game.player.direction = direction;
+    game.player.moving = false;
+    game.player.stamina = 0.0f;
+    game.player.sprintExhausted = true;
+    game.player.attacking = true;
+    game.player.attackElapsed = 0.0f;
+}
+
+inline void UpdatePlayerStamina(Player& player, float deltaTime, bool sprinting)
+{
+    if (sprinting)
+    {
+        player.stamina = (std::max)(0.0f, player.stamina - Player::staminaDrainPerSecond * deltaTime);
+        if (player.stamina == 0.0f)
+        {
+            player.sprintExhausted = true;
+            player.staminaRecoveryRequiresStop = true;
+        }
+    }
+    else if (!player.staminaRecoveryRequiresStop || (!player.moving && deltaTime > 0.0f))
+    {
+        player.staminaRecoveryRequiresStop = false;
+        player.stamina = (std::min)(Player::maxStamina, player.stamina + Player::staminaRecoveryPerSecond * deltaTime);
+    }
+}
+
 // Effects continue during map transitions; movement and trigger checks are paused.
 inline void UpdateGame(GameState& game, float deltaTime)
 {
     if (!game.pendingMonologue.empty() || game.monologueOriginalDirection) return;
+    if (!game.input.sprint) game.player.sprintExhausted = false;
     UpdateMagicEffects(game.magicEffects, deltaTime);
     UpdateCameraShake(game.cameraShake, deltaTime);
     UpdateWeather(game.weather, deltaTime);
@@ -656,6 +701,7 @@ inline void UpdateGame(GameState& game, float deltaTime)
     if (IsMapTransitionActive(game))
     {
         game.player.moving = false;
+        UpdatePlayerStamina(game.player, deltaTime, false);
         for (MapObject& object : game.activeMap.objects)
             if (object.type == MapObjectType::Npc && object.npcMoving)
             {
@@ -670,6 +716,16 @@ inline void UpdateGame(GameState& game, float deltaTime)
     for (MapObject& object : game.activeMap.objects)
         if (object.type == MapObjectType::Npc) UpdateNpcWalking(game, object, deltaTime);
 
+    if (game.player.attacking)
+    {
+        if (deltaTime > 0.0f) game.player.staminaRecoveryRequiresStop = false;
+        const auto& animation = GetPlayerAnimations()[12 + static_cast<std::size_t>(game.player.direction)];
+        game.player.attackElapsed += deltaTime * Player::attackAnimationSpeedMultiplier;
+        if (game.player.attackElapsed >= animation->frameDuration * animation->frames.size())
+            game.player.attacking = false;
+        return;
+    }
+
     float moveX = 0.0f;
     float moveY = 0.0f;
 
@@ -679,6 +735,9 @@ inline void UpdateGame(GameState& game, float deltaTime)
     if (game.input.down) moveY += 1.0f;
 
     const float length = std::sqrt((moveX * moveX) + (moveY * moveY));
+    const bool wantsToSprint = game.input.sprint && !game.player.sprintExhausted &&
+        game.player.stamina > 0.0f && length > 0.0f;
+    const float movementSpeed = game.player.speed * (wantsToSprint ? Player::sprintSpeedMultiplier : 1.0f);
     if (length > 0.0f)
     {
         moveX /= length;
@@ -688,13 +747,13 @@ inline void UpdateGame(GameState& game, float deltaTime)
     // Check axes separately so diagonal movement can slide along obstacles.
     const float previousX = game.player.x;
     const float previousY = game.player.y;
-    const float nextX = game.player.x + (moveX * game.player.speed * deltaTime);
+    const float nextX = game.player.x + (moveX * movementSpeed * deltaTime);
     if (!IsSolidObjectBlockingPosition(game, nextX, game.player.y))
     {
         game.player.x = nextX;
     }
 
-    const float nextY = game.player.y + (moveY * game.player.speed * deltaTime);
+    const float nextY = game.player.y + (moveY * movementSpeed * deltaTime);
     if (!IsSolidObjectBlockingPosition(game, game.player.x, nextY))
     {
         game.player.y = nextY;
@@ -703,6 +762,7 @@ inline void UpdateGame(GameState& game, float deltaTime)
     const float actualX = game.player.x - previousX;
     const float actualY = game.player.y - previousY;
     game.player.moving = actualX != 0.0f || actualY != 0.0f;
+    UpdatePlayerStamina(game.player, deltaTime, wantsToSprint && game.player.moving);
     const float facingX = game.player.moving ? actualX : moveX;
     const float facingY = game.player.moving ? actualY : moveY;
     if (facingY < 0.0f)
