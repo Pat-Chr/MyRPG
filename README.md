@@ -40,7 +40,7 @@ Das [DesignDocument.md](./DesignDocument.md) beschreibt die technische Architekt
 - **Wetter**: Regen, Nebel und Hitze als Shader-Overlays in `Assets/Shaders/Weather/`; das Standardwetter ist pro Karte festlegbar und kann über Trigger geändert oder ausgeschaltet werden. Die Waldkarte startet mit Nebel; auf der Testkarte liegen vier Wetter-Testzonen südlich des Startpunkts.
 - **Textur-Cache** zur Wiederverwendung geladener Texturen
 - **Kamera und Letterbox-Viewport** mit einer Basisauflösung von 1280 × 960 (4:3); das Seitenverhältnis bleibt beim Ändern der Fenstergröße erhalten
-- **Debug-Anzeigen** für Karten-ID, Position, letztes Ereignis, Raster und Triggerbereiche nur im Debug-Build. Ein Linksklick auf die Koordinaten kopiert X und Y in die Zwischenablage. Im Release-Build bleiben diese Anzeigen verborgen; die Trigger-Funktion selbst bleibt aktiv.
+- **Debug-Anzeigen** für Karten-ID, Position, letztes Ereignis, Raster und Triggerbereiche nur im Debug-Build. Im Release-Build bleiben diese Anzeigen verborgen; die Trigger-Funktion selbst bleibt aktiv.
 - **Map-Editor**: Im Debug-Build öffnet `F2` während des Spiels ein separates Fenster und pausiert das Spiel. Im Release-Build bleibt die gespeicherte Freigabe erforderlich; der Aktivierungsbutton ist ausgeblendet. Nicht während eines Kartenübergangs verfügbar.
 
 ### Map-Editor

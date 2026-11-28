@@ -5,7 +5,6 @@
 
 #include <algorithm>
 #include <cstdio>
-#include <cstring>
 #include <filesystem>
 #include <optional>
 #include <string>
@@ -54,60 +53,6 @@ sf::FloatRect ComputeLetterboxViewport(sf::Vector2u windowSize, sf::Vector2u bas
     }
 
     return { { 0.0f, 0.0f }, { 1.0f, 1.0f } };
-}
-
-// Copies Unicode text through the Win32 clipboard. After SetClipboardData succeeds,
-// the operating system owns the memory; on failure, this function releases it.
-bool CopyTextToClipboard(HWND owner, const std::wstring& text)
-{
-    const SIZE_T byteCount = static_cast<SIZE_T>((text.size() + 1) * sizeof(wchar_t));
-    HGLOBAL clipboardMemory = GlobalAlloc(GMEM_MOVEABLE, byteCount);
-    if (clipboardMemory == nullptr)
-    {
-        std::fprintf(stderr, "Failed to allocate clipboard memory (Win32 error %lu).\n", GetLastError());
-        return false;
-    }
-
-    void* memory = GlobalLock(clipboardMemory);
-    if (memory == nullptr)
-    {
-        const DWORD error = GetLastError();
-        GlobalFree(clipboardMemory);
-        std::fprintf(stderr, "Failed to lock clipboard memory (Win32 error %lu).\n", error);
-        return false;
-    }
-
-    std::memcpy(memory, text.c_str(), byteCount);
-    GlobalUnlock(clipboardMemory);
-
-    if (!OpenClipboard(owner))
-    {
-        const DWORD error = GetLastError();
-        GlobalFree(clipboardMemory);
-        std::fprintf(stderr, "Failed to open the clipboard (Win32 error %lu).\n", error);
-        return false;
-    }
-
-    if (!EmptyClipboard())
-    {
-        const DWORD error = GetLastError();
-        CloseClipboard();
-        GlobalFree(clipboardMemory);
-        std::fprintf(stderr, "Failed to clear the clipboard (Win32 error %lu).\n", error);
-        return false;
-    }
-
-    if (SetClipboardData(CF_UNICODETEXT, clipboardMemory) == nullptr)
-    {
-        const DWORD error = GetLastError();
-        CloseClipboard();
-        GlobalFree(clipboardMemory);
-        std::fprintf(stderr, "Failed to set clipboard text (Win32 error %lu).\n", error);
-        return false;
-    }
-
-    CloseClipboard();
-    return true;
 }
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -199,7 +144,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     sf::Clock frameClock;
     sf::Clock playtimeClock;
-    sf::FloatRect debugCoordinatesBounds{};
     // Shared save-game error path: emit diagnostics, show a dialogue to the player, and
     // restart the clock so dialogue time is not applied as a large update step.
     const auto showSaveGameError = [&](const std::string& error)
@@ -556,6 +500,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                     MapObject* npc = InteractWithNpc(game);
                     if (npc)
                     {
+#ifdef _DEBUG
+                        std::printf("[Dialogue] Speaking to NPC '%s'.\n",
+                                    npc->npcName.empty() ? "<unnamed>" : npc->npcName.c_str());
+#endif
                         std::vector<std::string> greeting;
                         std::string error;
                         if (!LoadNpcGreeting(npc->npcName, greeting, error))
@@ -570,6 +518,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                         }
                         else if (dialogue.Open(greeting, npc->npcName))
                         {
+#ifdef _DEBUG
+                            std::printf("[Dialogue] Opened greeting for NPC '%s' (%zu paragraph(s)).\n",
+                                        npc->npcName.empty() ? "<unnamed>" : npc->npcName.c_str(), greeting.size());
+#endif
                             pendingSavepoint = npc->savepoint;
                             savepointSpeaker = npc->npcName;
                             SetMovementState(game.input, false, false, false, false);
@@ -614,15 +566,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                     {
                         handleSettingsAction(settingsMenu.HandleClick(position, baseResolution, window));
                     }
-#ifdef _DEBUG
-                    else if (!dialogue.IsOpen() && debugCoordinatesBounds.contains(position))
-                    {
-                        char coordinates[64];
-                        std::snprintf(coordinates, sizeof(coordinates), "X: %.1f  Y: %.1f", game.player.x, game.player.y);
-                        const std::wstring clipboardText(coordinates, coordinates + std::strlen(coordinates));
-                        CopyTextToClipboard(window.getNativeHandle(), clipboardText);
-                    }
-#endif
                 }
             }
         }
@@ -710,7 +653,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         }
         else
         {
-            debugCoordinatesBounds = RenderGame(window, viewport, game, fps, settingsMenu.GetSettings().showFps);
+            RenderGame(window, viewport, game, fps, settingsMenu.GetSettings().showFps);
             if (saveListOpen)
             {
                 sf::RectangleShape overlay({ static_cast<float>(baseResolution.x), static_cast<float>(baseResolution.y) });

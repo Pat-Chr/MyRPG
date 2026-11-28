@@ -594,11 +594,9 @@ inline void RenderTriggerDebug(sf::RenderTarget& target, const Viewport& viewpor
  * @param fps Current frames per second for the UI display.
  * @param showFps Whether the FPS display is visible.
  */
-inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewport, const GameState& game,
-                                float fps, bool showFps)
+inline void RenderGame(sf::RenderTarget& target, const Viewport& viewport, const GameState& game,
+                       float fps, bool showFps)
 {
-    sf::FloatRect debugCoordinatesBounds{};
-
     // Clear the background with a dark green forest/rainforest tone.
     target.clear(sf::Color(22, 34, 26));
 
@@ -833,7 +831,6 @@ inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewpo
             coordinatesText.setFillColor(sf::Color(230, 230, 230));
             const sf::FloatRect coordinatesTextBounds = coordinatesText.getLocalBounds();
             coordinatesText.setPosition({ static_cast<float>(viewport.width) - coordinatesTextBounds.size.x - 12.0f, 30.0f });
-            debugCoordinatesBounds = coordinatesText.getGlobalBounds();
             target.draw(coordinatesText);
 
             if (!game.lastTriggeredEvent.empty())
@@ -896,6 +893,4 @@ inline sf::FloatRect RenderGame(sf::RenderTarget& target, const Viewport& viewpo
         fadeOverlay.setFillColor(sf::Color(0, 0, 0, alpha)); // Black overlay with variable opacity.
         target.draw(fadeOverlay);
     }
-
-    return debugCoordinatesBounds;
 }
