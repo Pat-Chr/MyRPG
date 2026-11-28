@@ -186,7 +186,7 @@ Mischung aus ernst und leicht humorvoll
 
 ### Feedback
 - Visuell: Rendering-Pipeline vorgesehen, Detailausgestaltung bewusst offen (Prototyp-Phase)
-- Audio: Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
+- Audio: Ein kurzer Klick begleitet Menü- und Dialogue-Eingaben sowie gestartete Spieleraktionen; Bewegung bleibt vorerst ohne Sound.
 - Haptisch (falls relevant): Nicht relevant für aktuelle Windows-Basis
 
 ---
@@ -216,9 +216,8 @@ Warm/erdig
 - Dynamik (kampf-/explorationsabhängig): Nein, vorerst statisch
 
 ### Soundeffekte
-- Schritte: Bewusst offen (Prototyp-Phase), erste Priorität
-- Treffer: Bewusst offen (Prototyp-Phase), erste Priorität
-- UI: Bewusst offen (Prototyp-Phase), nachgelagert
+- Ein gemeinsamer Klickton begleitet Tastendrücke und Linksklicks in Hauptmenü, Spielstandauswahl, Einstellungen und Dialogues sowie das Öffnen der Einstellungen. Bei gestarteten Schlägen, angesprochenen NPCs und dem Magie-Testeffekt erklingt derselbe Ton. Wiederholte Schläge während einer laufenden Animation und Interaktionen ohne NPC erzeugen keinen Ton; Bewegung bleibt stumm. Der Map-Editor und native Windows-Dialoge gehören nicht zur Spieloberfläche.
+- Kurze Soundeffekte liegen als unkomprimiertes PCM-WAV unter `Assets/Sounds/`, der erste UI-Effekt unter `Assets/Sounds/UI/click.wav`. SFML lädt den Effekt einmal; ein neuer Klick startet ihn erneut. Die vorhandene Asset-Kopierregel übernimmt die Dateien in Debug und Release. Fehlt der Klickton oder ist er nicht ladbar, erscheint beim Start eine Fehlermeldung. Weitere Effekte und Musik bleiben offen.
 
 ### Audio-Hinweise fürs Gameplay
 Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
@@ -249,6 +248,7 @@ Bewusst offen (Prototyp-Phase), Ergänzung im Entwicklungsverlauf
 - Zielstruktur: Systeme getrennt nach Modulen (z. B. Combat, Inventory, Dialogue)
 - Zielstruktur: Inhalte getrennt nach Typen (z. B. Sounds, Sprites, Story-Skripte)
 - Asset-Ordner für Sprites: `Assets/Sprites/Characters/` und `Assets/Sprites/Environment/`
+- Asset-Ordner für Soundeffekte: `Assets/Sounds/`, nach Verwendung unterteilt; kurze Effekte als PCM-WAV.
 - Asset-Ordner für Animationen: `Assets/Animations/Characters/`; Animationen liegen getrennt vom Renderer als `.anim`-Dateien vor
 - `Assets/screenshots/` enthält ausschließlich Bilder für das README und ist kein Game-Asset-Ordner. Der Ordner wird weder als Projektinhalt aufgenommen noch beim Build in das Ausgabeverzeichnis kopiert.
 - `.anim`-Format Version 1 für einzelne Animationen: `ANIM 1`, `texture <spritePath>`, `frame_duration <seconds>` und eine `frame <x> <y> <width> <height>`-Zeile pro Spritesheet-Ausschnitt. Optional legt `scale <faktor>` einen positiven, endlichen visuellen Skalierungsfaktor fest; ohne Angabe gilt `1.0`. Die Anzahl und Reihenfolge der `frame`-Zeilen bestimmen die Animation; mindestens ein Frame ist erforderlich. Ein separates Anzahlfeld ist nicht nötig. Das Spiel lädt Animationen aus dem Asset-Ordner im Build-Ausgabeverzeichnis und cached sie während der Laufzeit. Nach Änderungen im Projekt die Dateien speichern, das Projekt erneut erstellen und das Spiel neu starten.

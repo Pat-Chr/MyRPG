@@ -1,5 +1,12 @@
 <Project>
   <ItemGroup Condition="'$(MSBuildProjectName)' == 'MyRPG'">
 	<UpToDateCheckInput Include="$(MSBuildProjectDirectory)\Assets\**\*" Exclude="$(MSBuildProjectDirectory)\Assets\screenshots\**\*" />
+	<ClInclude Include="$(MSBuildProjectDirectory)\src\engine\SoundEffects.h" />
   </ItemGroup>
+  <ItemDefinitionGroup Condition="'$(MSBuildProjectName)' == 'MyRPG' and '$(Configuration)' == 'Debug'">
+	<Link><AdditionalDependencies>sfml-audio-d.lib;%(AdditionalDependencies)</AdditionalDependencies></Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(MSBuildProjectName)' == 'MyRPG' and '$(Configuration)' == 'Release'">
+	<Link><AdditionalDependencies>sfml-audio.lib;%(AdditionalDependencies)</AdditionalDependencies></Link>
+  </ItemDefinitionGroup>
 </Project>

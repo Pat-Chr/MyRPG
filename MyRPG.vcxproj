@@ -118,6 +118,7 @@
     <ClInclude Include="src\engine\SaveGameStore.h" />
     <ClInclude Include="src\engine\SettingsMenu.h" />
     <ClInclude Include="src\engine\SettingsStore.h" />
+    <ClInclude Include="src\engine\SoundEffects.h" />
     <ClInclude Include="src\engine\UserDataFiles.h" />
     <ClInclude Include="src\engine\Weather.h" />
     <ClInclude Include="src\engine\WeatherRenderer.h" />

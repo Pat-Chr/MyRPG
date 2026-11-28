@@ -22,6 +22,7 @@
 #include "src/engine/MainMenu.h"
 #include "src/engine/SaveGameStore.h"
 #include "src/engine/SettingsMenu.h"
+#include "src/engine/SoundEffects.h"
 #ifdef MYRPG_MAP_EDITOR
 #include "src/editor/MapEditor.h"
 #endif
@@ -101,6 +102,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     sf::RenderWindow window(sf::VideoMode(baseResolution), "MyRPG");
     window.setKeyRepeatEnabled(false);
+
+    SoundEffects soundEffects;
+    if (!soundEffects.Load())
+    {
+        std::fprintf(stderr, "Failed to load Assets/Sounds/UI/click.wav.\n");
+        MessageBoxW(window.getNativeHandle(), L"Der Klickton Assets/Sounds/UI/click.wav konnte nicht geladen werden.",
+                    L"MyRPG - Audio", MB_OK | MB_ICONERROR);
+        return 1;
+    }
 
     SettingsStore settingsStore;
     GameSettings settings;
@@ -427,6 +437,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                     continue;
                 }
 
+                if (inMainMenu || saveListOpen || dialogue.IsOpen() || settingsMenu.IsOpen() ||
+                    key->code == sf::Keyboard::Key::Escape)
+                {
+                    soundEffects.PlayClick();
+                }
+
                 if (inMainMenu)
                 {
                     handleMainMenuAction(mainMenu.HandleKey(key->code));
@@ -488,10 +504,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 else if (key->code == sf::Keyboard::Key::M && !IsMapTransitionActive(game))
                 {
                     StartMagicEffect(game.magicEffects, "sparkle", game.player.x, game.player.y);
+                    soundEffects.PlayClick();
                 }
                 else if (key->code == sf::Keyboard::Key::Space && !dialogueClosedThisFrame)
                 {
+                    const bool wasAttacking = game.player.attacking;
                     StartPlayerAttack(game);
+                    if (!wasAttacking && game.player.attacking) soundEffects.PlayClick();
                 }
                 else if (key->code == sf::Keyboard::Key::E)
                 {
@@ -500,6 +519,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                     MapObject* npc = InteractWithNpc(game);
                     if (npc)
                     {
+                        soundEffects.PlayClick();
 #ifdef _DEBUG
                         std::printf("[Dialogue] Speaking to NPC '%s'.\n",
                                     npc->npcName.empty() ? "<unnamed>" : npc->npcName.c_str());
@@ -544,6 +564,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                     // Converts window pixels to logical game coordinates so clicks
                     // are evaluated correctly with scaling and letterbox borders.
                     const sf::Vector2f position = window.mapPixelToCoords(mouseButton->position);
+                    if (inMainMenu || saveListOpen || dialogue.IsOpen() || settingsMenu.IsOpen())
+                    {
+                        soundEffects.PlayClick();
+                    }
                     if (inMainMenu)
                     {
                         handleMainMenuAction(mainMenu.HandleClick(position, baseResolution));
