@@ -30,7 +30,7 @@ public:
 
 	bool OpenSaveChoice(const std::string& speaker)
 	{
-		if (!Open({ "M\xc3\xb6" "chtest du \xc3\xbc" "bernachten? (Spiel speichern)" }, speaker)) return false;
+		if (!Open({ "M\xc3\xb6" "chtest du \xc3\xbc" "bernachten? (Spiel speichern/laden)" }, speaker)) return false;
 		choice = true;
 		choiceYes = false;
 		return true;
