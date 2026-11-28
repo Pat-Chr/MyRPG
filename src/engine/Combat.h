@@ -52,19 +52,35 @@ inline bool IsNpcInPlayerAttackRange(const Player& player, const MapObject& npc)
 
 inline bool ApplyNpcDamage(GameState& game, MapObject& npc, int damage)
 {
-	if (damage <= 0)
+	if (damage < 0)
 	{
 		std::fprintf(stderr, "Invalid damage %d for NPC '%s'\n", damage, npc.id.c_str());
 		return false;
 	}
 	if (npc.type != MapObjectType::Npc || !npc.enemy || !IsNpcAlive(npc)) return false;
-	if (!npc.infiniteHealth) npc.health = (std::max)(0, npc.health - damage);
+	if (damage > 0)
+	{
+		if (!npc.infiniteHealth) npc.health = (std::max)(0, npc.health - damage);
+		const NpcAnimations* animations = GetNpcAnimations(npc.spritePath);
+		npc.hitRemaining = animations && (*animations)[NpcHitClip]
+			? (*animations)[NpcHitClip]->frameDuration * static_cast<float>((*animations)[NpcHitClip]->frames.size()) : 0.2f;
+	}
 	npc.lastDamage = damage;
-	const NpcAnimations* animations = GetNpcAnimations(npc.spritePath);
-	npc.hitRemaining = animations && (*animations)[NpcHitClip]
-		? (*animations)[NpcHitClip]->frameDuration * static_cast<float>((*animations)[NpcHitClip]->frames.size()) : 0.2f;
 	game.damageNumbers.push_back({ std::to_string(damage), npc.x, npc.y - 48.0f });
 	return true;
+}
+
+inline int CalculatePlayerAttackDamage(const Player& player)
+{
+	if (player.attackDamage <= 0) return player.attackDamage;
+	const double staminaRatio = std::clamp(static_cast<double>(player.stamina) / Player::maxStamina, 0.0, 1.0);
+	if (staminaRatio <= 0.1) return 0;
+	if (staminaRatio >= 1.0) return player.attackDamage;
+	const double normalizedStamina = (staminaRatio - 0.1) / 0.9;
+	const double damageMultiplier = 0.49 * std::sqrt(normalizedStamina) +
+		0.51 * std::pow(normalizedStamina, 80.0);
+	return (std::min)(player.attackDamage - 1,
+		static_cast<int>(player.attackDamage * damageMultiplier));
 }
 
 inline void ApplyPlayerAttackDamage(GameState& game)
@@ -72,7 +88,7 @@ inline void ApplyPlayerAttackDamage(GameState& game)
 	if (game.player.attackDamageApplied) return;
 	game.player.attackDamageApplied = true;
 	for (MapObject& npc : game.activeMap.objects)
-		if (IsNpcInPlayerAttackRange(game.player, npc) && ApplyNpcDamage(game, npc, game.player.attackDamage))
+		if (IsNpcInPlayerAttackRange(game.player, npc) && ApplyNpcDamage(game, npc, game.player.currentAttackDamage))
 		{
 #ifdef _DEBUG
 			std::printf("[Combat] NPC '%s' received %d damage; health: %s\n", npc.id.c_str(),

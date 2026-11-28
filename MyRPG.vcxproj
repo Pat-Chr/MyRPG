@@ -154,6 +154,7 @@
     <None Include="Assets\Shaders\Effects\magic_vortex.frag" />
     <None Include="Assets\Shaders\Weather\fog.frag" />
     <None Include="Assets\Shaders\Weather\rain.frag" />
+    <None Include="Assets\Shaders\Weather\snow.frag" />
     <None Include="Assets\Shaders\Weather\weather.vert" />
     <None Include="DesignDocument.md" />
     <Content Include="Assets\**\*" Exclude="Assets\screenshots\**\*" />
