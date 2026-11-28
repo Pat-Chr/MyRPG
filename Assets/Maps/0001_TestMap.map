@@ -1,7 +1,7 @@
 # Simple map format
 # MAP <mapId>
 # GROUND <defaultSpritePath>
-# WEATHER <none|rain|fog>
+# WEATHER <none|shaderName>
 # OBJECT <id> <type> <x> <y> <spritePath> solid=<0|1>
 # TRIGGER <id> <x> <y> <width> <height> <eventName> [glow=0|1] [spawn_x=<x> spawn_y=<y>]
 
@@ -32,6 +32,7 @@ TRIGGER weather_rain -32 224 64 64 weather_rain glow=1
 TRIGGER weather_fog -32 384 64 64 weather_fog glow=1
 TRIGGER weather_none -32 544 64 64 weather_none glow=1
 TRIGGER weather_heat -32 704 64 64 weather_heat glow=1
+TRIGGER weather_snow -32 864 64 64 weather_snow glow=1
 TRIGGER north_path_to_forest -71.999939 -271 220 120 Load_0001_Forest glow=0 spawn_x=-246.800049 spawn_y=1056.3999
 OBJECT object_1 scenery 64 0 Assets/Sprites/Environment/Forest/forest_path.png solid=0
 OBJECT object_2 scenery -0 -64 Assets/Sprites/Environment/Forest/forest_path.png solid=0
@@ -122,6 +123,8 @@ OBJECT object_86 scenery 768 320 Assets/Sprites/Environment/Forest/Spritesheet_F
 OBJECT object_87 scenery -0 640 Assets/Sprites/Environment/Forest/forest_path.png solid=0
 OBJECT object_88 scenery -0 704 Assets/Sprites/Environment/Forest/forest_path.png solid=0
 OBJECT object_89 scenery 0 768 Assets/Sprites/Environment/Forest/forest_path.png solid=0
+OBJECT weather_snow_path_1 scenery 0 832 Assets/Sprites/Environment/Forest/forest_path.png solid=0
+OBJECT weather_snow_path_2 scenery 0 896 Assets/Sprites/Environment/Forest/forest_path.png solid=0
 TRIGGER Geheimpfad_Norden -246.281342 -142.166687 78.9638214 50 Load_0001_Forest glow=0 spawn_x=-127.719574 spawn_y=-1167.50708
 OBJECT object_90 scenery 448 384 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=128,192,16,16
 OBJECT object_91 scenery 512 448 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=96,176,16,16

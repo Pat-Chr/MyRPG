@@ -18,12 +18,12 @@ float noise(vec2 p)
 
 void main()
 {
-	vec2 screenPixel = gl_TexCoord[0].xy * resolution;
-	vec2 cloudPosition = (screenPixel + worldOrigin - vec2(18.0, 6.0) * time) / 280.0;
+	vec2 worldPixel = gl_TexCoord[0].xy * resolution + worldOrigin;
+	vec2 cloudPosition = (worldPixel - vec2(18.0, 6.0) * time) / 280.0;
 	float clouds = 0.7 * noise(cloudPosition) + 0.3 * noise(cloudPosition * 2.1);
 	float shadowAlpha = 0.38 * smoothstep(0.28, 0.72, clouds);
 
-	vec2 p = screenPixel;
+	vec2 p = worldPixel;
 	p.x += p.y * 0.18;
 	vec2 grid = vec2(p.x / 16.0, (p.y - time * 440.0) / 80.0);
 	vec2 cell = floor(grid);

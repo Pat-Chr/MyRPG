@@ -90,8 +90,8 @@ inline void RenderWeather(sf::RenderTarget& target, const WeatherState& weather,
 	};
 	shader->setUniform("time", weather.elapsed);
 	shader->setUniform("resolution", sf::Glsl::Vec2(width, height));
-	// Cloud shadows stay attached to the world; raindrops remain fixed to the screen.
-	if (weather.effectId == "rain")
+	// Rain, snow and their cloud shadows are anchored to the world.
+	if (weather.effectId == "rain" || weather.effectId == "snow")
 	{
 		shader->setUniform("worldOrigin", sf::Glsl::Vec2(worldOrigin));
 	}
