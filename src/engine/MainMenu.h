@@ -12,7 +12,8 @@
 class MainMenu
 {
 public:
-	enum class Action { None, OpenSaves, LoadSelected, DeleteSelected, OpenNewGame, StartNewGame, ExitGame };
+	enum class Action { None, OpenSaves, LoadSelected, DeleteSelected, OpenNewGame, StartNewGame, ExitGame,
+		SaveSelected, CreateSave, CloseSaveList };
 
 	bool Load()
 	{
@@ -32,6 +33,8 @@ public:
 	{
 		CloseSaves();
 		showNewGame = false;
+		creatingSaveName = false;
+		ignoreNewSaveShortcutText = false;
 		newGameName.clear();
 		selected = 0;
 	}
@@ -39,6 +42,7 @@ public:
 	void OpenNewGame()
 	{
 		newGameName.clear();
+		creatingSaveName = false;
 		showNewGame = true;
 	}
 
@@ -53,6 +57,11 @@ public:
 	void HandleText(char32_t character)
 	{
 		if (!showNewGame) return;
+		if (ignoreNewSaveShortcutText)
+		{
+			ignoreNewSaveShortcutText = false;
+			if (character == U'n' || character == U'N') return;
+		}
 		if (character == U'\b')
 		{
 			if (!newGameName.isEmpty()) newGameName.erase(newGameName.getSize() - 1);
@@ -65,11 +74,25 @@ public:
 		}
 	}
 
-	void OpenSaves(std::vector<SaveGameSlot> slots)
+	void OpenSaves(std::vector<SaveGameSlot> slots, bool forSaving = false,
+		std::optional<SaveGameSlot::Id> active = std::nullopt)
 	{
 		saveSlots = std::move(slots);
 		selectedSlot = 0;
+		if (active)
+		{
+			for (std::size_t i = 0; i < saveSlots.size(); ++i)
+				if (saveSlots[i].id == *active) { selectedSlot = i; break; }
+		}
+		saving = forSaving;
 		showSaves = true;
+	}
+
+	void CloseSaveList() { CloseSaves(); }
+	void DrawSaveList(sf::RenderTarget& target, sf::Vector2u resolution) const
+	{
+		DrawSaves(target, resolution);
+		if (showNewGame && creatingSaveName) DrawNewGame(target, resolution);
 	}
 
 	const SaveGameSlot* SelectedSave() const
@@ -86,10 +109,12 @@ public:
 
 	Action HandleKey(sf::Keyboard::Key key)
 	{
+		ignoreNewSaveShortcutText = false;
 		if (showNewGame)
 		{
-			if (key == sf::Keyboard::Key::Escape) showNewGame = false;
-			if (key == sf::Keyboard::Key::Enter && !newGameName.isEmpty()) return Action::StartNewGame;
+			if (key == sf::Keyboard::Key::Escape) { showNewGame = false; ignoreNewSaveShortcutText = false; }
+			if (key == sf::Keyboard::Key::Enter && !NewGameName().empty())
+				return creatingSaveName ? Action::CreateSave : Action::StartNewGame;
 			return Action::None;
 		}
 		if (showSaves) return HandleSaveKey(key);
@@ -109,9 +134,9 @@ public:
 	{
 		if (showNewGame)
 		{
-			if (NewGameButtonBounds(true, resolution).contains(position)) showNewGame = false;
-			else if (NewGameButtonBounds(false, resolution).contains(position) && !newGameName.isEmpty())
-				return Action::StartNewGame;
+			if (NewGameButtonBounds(true, resolution).contains(position)) { showNewGame = false; ignoreNewSaveShortcutText = false; }
+			else if (NewGameButtonBounds(false, resolution).contains(position) && !NewGameName().empty())
+				return creatingSaveName ? Action::CreateSave : Action::StartNewGame;
 			return Action::None;
 		}
 		if (showSaves) return HandleSaveClick(position, resolution);
@@ -165,17 +190,17 @@ private:
 		panel.setOutlineColor(sf::Color(160, 150, 115));
 		target.draw(panel);
 
-		sf::Text title(font, "Neues Spiel", 32);
+		sf::Text title(font, creatingSaveName ? "Neuer Spielstand" : "Neues Spiel", 32);
 		title.setPosition({ left + 24.0f, top + 14.0f });
 		target.draw(title);
-		sf::Text prompt(font, "Spielname (max. 32 Zeichen)", 20);
+		sf::Text prompt(font, creatingSaveName ? "Speichername (max. 32 Zeichen)" : "Spielname (max. 32 Zeichen)", 20);
 		prompt.setPosition({ left + 24.0f, top + 70.0f });
 		target.draw(prompt);
 		DrawButton(target, { { left + 24.0f, top + 104.0f }, { 512.0f, 46.0f } },
 			newGameName + L"|", 24, true);
 
-		const bool hasName = !newGameName.isEmpty();
-		DrawButton(target, NewGameButtonBounds(false, resolution), "Spiel starten", 22, hasName, hasName);
+		const bool hasName = !NewGameName().empty();
+		DrawButton(target, NewGameButtonBounds(false, resolution), creatingSaveName ? "Speichern" : "Spiel starten", 22, hasName, hasName);
 		DrawButton(target, NewGameButtonBounds(true, resolution), "Abbrechen", 22, false);
 	}
 
@@ -188,8 +213,20 @@ private:
 	void CloseSaves()
 	{
 		showSaves = false;
+		saving = false;
+		showNewGame = false;
+		creatingSaveName = false;
+		ignoreNewSaveShortcutText = false;
 		saveSlots.clear();
 		selectedSlot = 0;
+	}
+
+	void OpenSaveName(bool fromShortcut)
+	{
+		newGameName.clear();
+		creatingSaveName = true;
+		showNewGame = true;
+		ignoreNewSaveShortcutText = fromShortcut;
 	}
 
 	std::size_t FirstVisibleSlot() const { return selectedSlot / RowsPerPage * RowsPerPage; }
@@ -199,7 +236,12 @@ private:
 	Action HandleSaveKey(sf::Keyboard::Key key)
 	{
 		using Key = sf::Keyboard::Key;
-		if (key == Key::Escape) CloseSaves();
+		if (key == Key::Escape)
+		{
+			if (saving) return Action::CloseSaveList;
+			CloseSaves();
+		}
+		else if (saving && key == Key::N) OpenSaveName(true);
 		else if (SelectedSave())
 		{
 			if (key == Key::Up && selectedSlot > 0) --selectedSlot;
@@ -208,7 +250,8 @@ private:
 				selectedSlot = FirstVisibleSlot() - RowsPerPage;
 			else if ((key == Key::Right || key == Key::PageDown) && HasNextPage())
 				selectedSlot = FirstVisibleSlot() + RowsPerPage;
-			else if (key == Key::Enter || key == Key::Space) return Action::LoadSelected;
+			else if (key == Key::Enter || key == Key::Space) return saving ? Action::SaveSelected : Action::LoadSelected;
+			else if (saving && key == Key::L) return Action::LoadSelected;
 			else if (key == Key::Delete) return Action::DeleteSelected;
 		}
 		return Action::None;
@@ -224,10 +267,16 @@ private:
 				return Action::None;
 			}
 		}
-		if (SaveControlBounds(2, resolution).contains(position)) CloseSaves();
+		if (SaveControlBounds(2, resolution).contains(position))
+		{
+			if (saving) return Action::CloseSaveList;
+			CloseSaves();
+		}
+		else if (saving && NewSaveBounds(resolution).contains(position)) OpenSaveName(false);
 		else if (SelectedSave())
 		{
-			if (SaveControlBounds(0, resolution).contains(position)) return Action::LoadSelected;
+			if (saving && LoadSaveBounds(resolution).contains(position)) return Action::LoadSelected;
+			if (SaveControlBounds(0, resolution).contains(position)) return saving ? Action::SaveSelected : Action::LoadSelected;
 			if (SaveControlBounds(1, resolution).contains(position)) return Action::DeleteSelected;
 			if (HasPreviousPage() && PageButtonBounds(false, resolution).contains(position))
 				selectedSlot = FirstVisibleSlot() - RowsPerPage;
@@ -247,7 +296,7 @@ private:
 		panel.setOutlineColor(sf::Color(160, 150, 115));
 		target.draw(panel);
 
-		sf::Text title(font, "Spiel laden", 32);
+		sf::Text title(font, saving ? "Spiel speichern" : "Spiel laden", 32);
 		title.setPosition({ left + 24.0f, 118.0f });
 		target.draw(title);
 
@@ -264,8 +313,11 @@ private:
 			const auto map = slot.mapFile.empty() ? "Nicht lesbar" :
 				(slot.mapFile.size() > 32 ? slot.mapFile.substr(0, 29) + "..." : slot.mapFile);
 			const auto rowText = slot.Label() + "  |  " + map;
-			DrawButton(target, SaveRowBounds(row, resolution), sf::String::fromUtf8(rowText.begin(), rowText.end()),
-				20, index == selectedSlot);
+			const auto bounds = SaveRowBounds(row, resolution);
+			DrawButton(target, { bounds.position, { 460.0f, bounds.size.y } },
+				sf::String::fromUtf8(rowText.begin(), rowText.end()), 20, index == selectedSlot);
+			DrawButton(target, { bounds.position + sf::Vector2f(460.0f, 0.0f), { bounds.size.x - 460.0f, bounds.size.y } },
+				slot.PlaytimeLabel(), 18, index == selectedSlot);
 		}
 
 		if (SelectedSave())
@@ -277,10 +329,16 @@ private:
 			DrawButton(target, PageButtonBounds(false, resolution), "<", 20, false, HasPreviousPage());
 			DrawButton(target, PageButtonBounds(true, resolution), ">", 20, false, HasNextPage());
 		}
-		DrawButton(target, SaveControlBounds(0, resolution), "Laden", 22, false, SelectedSave() != nullptr);
+		DrawButton(target, SaveControlBounds(0, resolution), saving ? "Ueberschreiben" : "Laden", 22, false, SelectedSave() != nullptr);
 		DrawButton(target, SaveControlBounds(1, resolution), L"Löschen", 22, false, SelectedSave() != nullptr);
 		DrawButton(target, SaveControlBounds(2, resolution), L"Zurück", 22, false);
-		sf::Text help(font, "Enter: Laden   |   Entf: Loeschen   |   Esc: Zurueck", 17);
+		if (saving)
+		{
+			DrawButton(target, NewSaveBounds(resolution), "Neuer Spielstand", 18, false);
+			DrawButton(target, LoadSaveBounds(resolution), "Laden", 18, false, SelectedSave() != nullptr);
+		}
+		sf::Text help(font, saving ? "Enter: Ueberschreiben | N: Neu | L: Laden | Entf: Loeschen | Esc: Zurueck" :
+			"Enter: Laden   |   Entf: Loeschen   |   Esc: Zurueck", 17);
 		help.setPosition({ left + 24.0f, 603.0f });
 		target.draw(help);
 	}
@@ -323,6 +381,16 @@ private:
 		return { { SavePanelLeft(resolution) + (next ? 196.0f : 24.0f), 484.0f }, { 48.0f, 36.0f } };
 	}
 
+	static sf::FloatRect NewSaveBounds(sf::Vector2u resolution)
+	{
+		return { { SavePanelLeft(resolution) + 444.0f, 484.0f }, { 212.0f, 36.0f } };
+	}
+
+	static sf::FloatRect LoadSaveBounds(sf::Vector2u resolution)
+	{
+		return { { SavePanelLeft(resolution) + 272.0f, 484.0f }, { 154.0f, 36.0f } };
+	}
+
 	struct MenuButton { const char* label; Action action; };
 	static constexpr MenuButton Buttons[] = {
 		{ "Spiel laden", Action::OpenSaves },
@@ -341,8 +409,11 @@ private:
 	sf::Texture background;
 	int selected = 0;
 	bool showNewGame = false;
+	bool creatingSaveName = false;
+	bool ignoreNewSaveShortcutText = false;
 	sf::String newGameName;
 	bool showSaves = false;
+	bool saving = false;
 	std::vector<SaveGameSlot> saveSlots;
 	std::size_t selectedSlot = 0;
 };

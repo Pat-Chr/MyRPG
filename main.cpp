@@ -3,6 +3,7 @@
 
 #include <Windows.h>
 
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
@@ -151,7 +152,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     // The game world and UI use a fixed logical resolution; the window may be resized
     // without changing the displayed aspect ratio.
-    constexpr sf::Vector2u baseResolution{ 1024u, 768u };
+    constexpr sf::Vector2u baseResolution{ 1280u, 960u };
 
     sf::RenderWindow window(sf::VideoMode(baseResolution), "MyRPG");
     window.setKeyRepeatEnabled(false);
@@ -181,7 +182,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     SaveGameStore saveGameStore;
     std::optional<SaveGameSlot::Id> activeSave;
     std::string activeSaveName;
+    double playtimeSeconds = 0.0;
+    bool playtimeComplete = true;
     bool inMainMenu = true;
+    bool pendingSavepoint = false;
+    std::string savepointSpeaker;
+    bool saveListOpen = false;
+    bool nightFadeActive = false;
+    float nightFadeTime = 0.0f;
+    constexpr float nightFadeDuration = 1.2f;
     // Load shaders after creating the window and render context so they are ready for first use
     // and are not loaded isn the middle of a game effect.
     PreloadMagicShaders();
@@ -189,6 +198,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     PreloadDamageNumberRenderer();
 
     sf::Clock frameClock;
+    sf::Clock playtimeClock;
     sf::FloatRect debugCoordinatesBounds{};
     // Shared save-game error path: emit diagnostics, show a dialogue to the player, and
     // restart the clock so dialogue time is not applied as a large update step.
@@ -197,21 +207,59 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         std::fprintf(stderr, "Savegame: %s\n", error.c_str());
         MessageBoxA(window.getNativeHandle(), error.c_str(), "MyRPG - Spielstand", MB_OK | MB_ICONERROR);
         frameClock.restart();
+        playtimeClock.restart();
     };
-    const auto getSavePosition = [](const GameState& state, const std::string& name)
+    const auto getSavePosition = [](const GameState& state, const std::string& name, double seconds, bool complete)
     {
         return SaveGamePosition{ std::filesystem::path(state.activeMapPath).filename().string(),
-            state.player.x, state.player.y, name };
+            state.player.x, state.player.y, name, seconds, complete };
     };
     // Activates an existing or loaded slot and resets the menu selection to a defined
     // state for a later return to the menu.
-    const auto beginGame = [&](SaveGameSlot::Id id, std::string name)
+    const auto beginGame = [&](SaveGameSlot::Id id, std::string name, double seconds, bool complete)
     {
         activeSave = id;
         activeSaveName = std::move(name);
+        playtimeSeconds = seconds;
+        playtimeComplete = complete;
         mainMenu.Reset();
         inMainMenu = false;
         frameClock.restart();
+        playtimeClock.restart();
+    };
+    const auto deleteSelectedSave = [&]()
+    {
+        const SaveGameSlot* slot = mainMenu.SelectedSave();
+        if (!slot) return;
+        const auto id = slot->id;
+        const std::string label = slot->Label();
+        const std::wstring question = L"„" + sf::String::fromUtf8(label.begin(), label.end()).toWideString() + L"“ endgültig löschen?";
+        const int choice = MessageBoxW(window.getNativeHandle(), question.c_str(), L"MyRPG - Spielstand löschen",
+            MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2);
+        frameClock.restart();
+        if (choice == 0) { showSaveGameError("Die Loeschbestaetigung konnte nicht angezeigt werden."); return; }
+        if (choice != IDYES) return;
+        std::string error;
+        if (!saveGameStore.Delete(id, error)) { showSaveGameError(error); return; }
+        if (activeSave && *activeSave == id) activeSave.reset();
+        mainMenu.RemoveSelectedSave();
+    };
+    const auto loadSelectedSave = [&]() -> bool
+    {
+        const SaveGameSlot* slot = mainMenu.SelectedSave();
+        if (!slot) return false;
+        const auto id = slot->id;
+        SaveGamePosition position;
+        std::string error;
+        if (!saveGameStore.Load(id, position, error) ||
+            !TryRestorePlayerPosition(game, (std::filesystem::path(L"Assets\\Maps") / position.mapFile).generic_string(),
+                position.x, position.y, error))
+        {
+            showSaveGameError(error);
+            return false;
+        }
+        beginGame(id, std::move(position.name), position.playtimeSeconds.value_or(0.0), position.playtimeComplete);
+        return true;
     };
     // Converts menu actions into game-state changes and delegates file operations to the store.
     const auto handleMainMenuAction = [&](MainMenu::Action action)
@@ -236,12 +284,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 showSaveGameError("Die Startposition liegt in einem Hindernis und kann nicht gespeichert werden.");
                 return;
             }
-            if (!saveGameStore.Create(getSavePosition(game, name), id, error))
+            if (!saveGameStore.Create(getSavePosition(game, name, 0.0, true), id, error))
             {
                 showSaveGameError(error);
                 return;
             }
-            beginGame(id, std::move(name));
+            beginGame(id, std::move(name), 0.0, true);
         }
         else if (action == MainMenu::Action::OpenSaves)
         {
@@ -253,70 +301,95 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         {
             const SaveGameSlot* slot = mainMenu.SelectedSave();
             if (!slot) return;
-            if (action == MainMenu::Action::LoadSelected)
-            {
-                SaveGamePosition position;
-                if (!saveGameStore.Load(slot->id, position, error) ||
-                    !TryRestorePlayerPosition(game, (std::filesystem::path(L"Assets\\Maps") / position.mapFile).generic_string(),
-                        position.x, position.y, error))
-                {
-                    showSaveGameError(error);
-                    return;
-                }
-                beginGame(slot->id, std::move(position.name));
-                return;
-            }
-
-            const std::string label = slot->Label();
-            const std::wstring question = L"„" + sf::String::fromUtf8(label.begin(), label.end()).toWideString() + L"“ endgültig löschen?";
-            if (MessageBoxW(window.getNativeHandle(), question.c_str(), L"MyRPG - Spielstand löschen",
-                MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) != IDYES) return;
-            if (saveGameStore.Delete(slot->id, error)) mainMenu.RemoveSelectedSave();
-            else showSaveGameError(error);
+            if (action == MainMenu::Action::LoadSelected) loadSelectedSave();
+            else deleteSelectedSave();
         }
     };
-    // Shared save path for menu return and exit. Invalid positions or a
-    // and a failed write prevent the corresponding state change.
-    const auto saveCurrentGame = [&]() -> bool
+    const auto handleSaveListAction = [&](MainMenu::Action action)
     {
+        if (action == MainMenu::Action::CloseSaveList)
+        {
+            mainMenu.CloseSaveList();
+            saveListOpen = false;
+            frameClock.restart();
+            playtimeClock.restart();
+            return;
+        }
+        if (action == MainMenu::Action::DeleteSelected)
+        {
+            deleteSelectedSave();
+            return;
+        }
+        if (action == MainMenu::Action::LoadSelected)
+        {
+            if (!mainMenu.SelectedSave()) return;
+            const int choice = MessageBoxW(window.getNativeHandle(),
+                L"Der aktuelle ungespeicherte Fortschritt geht verloren. Spielstand laden?",
+                L"MyRPG - Spielstand laden", MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2);
+            frameClock.restart();
+            playtimeClock.restart();
+            if (choice == 0) { showSaveGameError("Die Ladebestaetigung konnte nicht angezeigt werden."); return; }
+            if (choice == IDYES && loadSelectedSave()) saveListOpen = false;
+            return;
+        }
+        if (action != MainMenu::Action::SaveSelected && action != MainMenu::Action::CreateSave) return;
+
+        SaveGameSlot::Id id{};
+        if (action == MainMenu::Action::SaveSelected)
+        {
+            const SaveGameSlot* slot = mainMenu.SelectedSave();
+            if (!slot) return;
+            id = slot->id;
+            const std::string label = slot->Label();
+            const std::wstring question = L"„" + sf::String::fromUtf8(label.begin(), label.end()).toWideString() +
+                L"“ überschreiben? Der bisherige Spielstand geht verloren.";
+            const int choice = MessageBoxW(window.getNativeHandle(), question.c_str(), L"MyRPG - Spielstand überschreiben",
+                MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2);
+            frameClock.restart();
+            if (choice == 0) { showSaveGameError("Die Ueberschreibbestaetigung konnte nicht angezeigt werden."); return; }
+            if (choice != IDYES) return;
+        }
         if (IsSolidObjectBlockingPosition(game, game.player.x, game.player.y))
         {
             showSaveGameError("Die Spielerposition liegt in einem Hindernis und kann nicht gespeichert werden.");
-            return false;
-        }
-
-        if (!activeSave)
-        {
-            showSaveGameError("Dem laufenden Spiel ist kein Spielstand zugeordnet.");
-            return false;
+            return;
         }
         std::string error;
-        if (!saveGameStore.Save(*activeSave, getSavePosition(game, activeSaveName), error))
-        {
-            showSaveGameError(error);
-            return false;
-        }
-        return true;
-    };
-    // Returns true only when closing is allowed: in the game, the player can save,
-    // quit without saving, or cancel; the main menu requires no confirmation.
-    const auto confirmGameClose = [&]() -> bool
-    {
-        if (inMainMenu) return true;
-
-        const int choice = MessageBoxW(window.getNativeHandle(), L"Möchten Sie vor dem Beenden speichern?",
-            L"MyRPG - Spiel beenden", MB_YESNOCANCEL | MB_ICONQUESTION | MB_DEFBUTTON3);
+        const auto name = action == MainMenu::Action::CreateSave ? mainMenu.NewGameName() : activeSaveName;
+        const auto position = getSavePosition(game, name, playtimeSeconds, playtimeComplete);
+        const bool saved = action == MainMenu::Action::CreateSave ? saveGameStore.Create(position, id, error) :
+            saveGameStore.Save(id, position, error);
+        if (!saved) { showSaveGameError(error); return; }
+        activeSave = id;
+        activeSaveName = name;
+        mainMenu.CloseSaveList();
+        saveListOpen = false;
+        nightFadeTime = 0.0f;
+        nightFadeActive = true;
         frameClock.restart();
+        playtimeClock.restart();
+    };
+    const auto confirmDiscardProgress = [&](const wchar_t* title) -> bool
+    {
+        const int choice = MessageBoxW(window.getNativeHandle(),
+            L"Nicht gespeicherter Fortschritt geht verloren. Möchtest du fortfahren?",
+            title, MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2);
+        frameClock.restart();
+        playtimeClock.restart();
         if (choice == 0)
         {
-            showSaveGameError("Die Speicherabfrage konnte nicht angezeigt werden.");
+            showSaveGameError("Die Warnung konnte nicht angezeigt werden.");
             return false;
         }
-        return choice == IDNO || (choice == IDYES && saveCurrentGame());
+        return choice == IDYES;
     };
-    const auto saveAndReturnToMainMenu = [&]()
+    const auto confirmGameClose = [&]() -> bool
     {
-        if (!saveCurrentGame()) return;
+        return inMainMenu || confirmDiscardProgress(L"MyRPG - Spiel beenden");
+    };
+    const auto returnToMainMenu = [&]()
+    {
+        if (!confirmDiscardProgress(L"MyRPG - Hauptmenü")) return;
 
         activeSave.reset();
         activeSaveName.clear();
@@ -325,13 +398,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         inMainMenu = true;
         frameClock.restart();
     };
-    // Changes are saved permanently immediately; return to the main menu occurs only after
-    // once saving the active game slot succeeds.
+    // Settings are persisted independently of game progress.
     const auto handleSettingsAction = [&](SettingsMenu::Action action)
     {
-        if (action == SettingsMenu::Action::SaveAndMainMenu)
+        if (action == SettingsMenu::Action::MainMenu)
         {
-            saveAndReturnToMainMenu();
+            returnToMainMenu();
         }
         else if (action == SettingsMenu::Action::SettingsChanged &&
                  !settingsStore.Save(settingsMenu.GetSettings(), settingsError))
@@ -346,13 +418,36 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     // Held movement keys are queried separately per frame below.
     while (window.isOpen())
     {
+        const auto elapsedPlayMicroseconds = playtimeClock.restart().asMicroseconds();
+        if (!inMainMenu && !settingsMenu.IsOpen() && !saveListOpen && !dialogue.IsOpen() && !nightFadeActive)
+            playtimeSeconds += static_cast<double>(elapsedPlayMicroseconds) / 1000000.0;
         bool dialogueClosedThisFrame = false;
-        const auto finishDialogue = [&]()
+        const auto finishDialogue = [&](bool completed)
         {
             if (dialogue.IsOpen()) return;
+            if (pendingSavepoint && completed)
+            {
+                pendingSavepoint = false;
+                if (dialogue.OpenSaveChoice(savepointSpeaker)) return;
+                showSaveGameError("Der Speicherpunkt-Dialog konnte nicht geoeffnet werden.");
+            }
+            pendingSavepoint = false;
             EndPlayerMonologue(game);
             dialogueClosedThisFrame = true;
             frameClock.restart();
+        };
+        const auto finishSaveChoice = [&](const std::optional<bool>& choice)
+        {
+            if (!choice) return;
+            finishDialogue(false);
+            if (*choice)
+            {
+                std::vector<SaveGameSlot> slots;
+                std::string error;
+                if (!saveGameStore.List(slots, error)) { showSaveGameError(error); return; }
+                mainMenu.OpenSaves(std::move(slots), true, activeSave);
+                saveListOpen = true;
+            }
         };
         while (const std::optional event = window.pollEvent())
         {
@@ -372,9 +467,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 view.setViewport(ComputeLetterboxViewport(resized->size, baseResolution));
                 window.setView(view);
             }
+            else if (nightFadeActive)
+            {
+                continue;
+            }
             else if (const auto* text = event->getIf<sf::Event::TextEntered>())
             {
-                if (inMainMenu && window.hasFocus()) mainMenu.HandleText(text->unicode);
+                if ((inMainMenu || saveListOpen) && window.hasFocus()) mainMenu.HandleText(text->unicode);
             }
             else if (const auto* key = event->getIf<sf::Event::KeyPressed>())
             {
@@ -388,10 +487,19 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 {
                     handleMainMenuAction(mainMenu.HandleKey(key->code));
                 }
+                else if (saveListOpen)
+                {
+                    handleSaveListAction(mainMenu.HandleKey(key->code));
+                    if (!saveListOpen) dialogueClosedThisFrame = true;
+                }
                 else if (dialogue.IsOpen())
                 {
-                    dialogue.HandleKey(key->code);
-                    finishDialogue();
+                    if (dialogue.IsChoice()) finishSaveChoice(dialogue.HandleChoiceKey(key->code));
+                    else
+                    {
+                        dialogue.HandleKey(key->code);
+                        finishDialogue(key->code != sf::Keyboard::Key::Escape);
+                    }
                 }
                 else if (key->code == sf::Keyboard::Key::Escape)
                 {
@@ -409,6 +517,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                         MessageBoxW(window.getNativeHandle(), L"Die Schrift fuer das Einstellungsmenue konnte nicht geladen werden.",
                                     L"MyRPG", MB_OK | MB_ICONERROR);
                         frameClock.restart();
+                        playtimeClock.restart();
                     }
                 }
                 else if (settingsMenu.IsOpen())
@@ -429,6 +538,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                     MapEditor editor;
                     editor.Run(window, game, confirmGameClose);
                     frameClock.restart();
+                    playtimeClock.restart();
                 }
 #endif
                 else if (key->code == sf::Keyboard::Key::M && !IsMapTransitionActive(game))
@@ -456,9 +566,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                                 L"“: " + sf::String::fromUtf8(error.begin(), error.end()).toWideString();
                             MessageBoxW(window.getNativeHandle(), message.c_str(), L"MyRPG - Dialogue", MB_OK | MB_ICONERROR);
                             frameClock.restart();
+                            playtimeClock.restart();
                         }
                         else if (dialogue.Open(greeting, npc->npcName))
                         {
+                            pendingSavepoint = npc->savepoint;
+                            savepointSpeaker = npc->npcName;
                             SetMovementState(game.input, false, false, false, false);
                             game.player.moving = false;
                         }
@@ -467,6 +580,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                             MessageBoxW(window.getNativeHandle(), L"Die Schrift fuer den Dialogue konnte nicht geladen werden.",
                                         L"MyRPG", MB_OK | MB_ICONERROR);
                             frameClock.restart();
+                            playtimeClock.restart();
                         }
                     }
                 }
@@ -482,10 +596,19 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                     {
                         handleMainMenuAction(mainMenu.HandleClick(position, baseResolution));
                     }
+                    else if (saveListOpen)
+                    {
+                        handleSaveListAction(mainMenu.HandleClick(position, baseResolution));
+                        if (!saveListOpen) dialogueClosedThisFrame = true;
+                    }
                     else if (dialogue.IsOpen())
                     {
-                        dialogue.Advance();
-                        finishDialogue();
+                        if (dialogue.IsChoice()) finishSaveChoice(dialogue.HandleChoiceClick(position, baseResolution));
+                        else
+                        {
+                            dialogue.Advance();
+                            finishDialogue(true);
+                        }
                     }
                     else if (settingsMenu.IsOpen())
                     {
@@ -511,8 +634,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
         // Movement is possible only in active gameplay with menus and dialogues closed.
         // When focus is lost, all directions become false and the character stops immediately.
-        const bool hasFocus = window.hasFocus() && !inMainMenu && !settingsMenu.IsOpen() &&
-            !dialogue.IsOpen() && !dialogueClosedThisFrame;
+        const bool hasFocus = window.hasFocus() && !inMainMenu && !settingsMenu.IsOpen() && !saveListOpen &&
+            !dialogue.IsOpen() && !dialogueClosedThisFrame && !nightFadeActive;
         SetMovementState(
             game.input,
             hasFocus && (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up)),
@@ -526,7 +649,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         // is restarted after dialogues and error messages, no time jumps occur afterward.
         const float deltaTime = frameClock.restart().asSeconds();
         const float fps = deltaTime > 0.0f ? (1.0f / deltaTime) : 0.0f;
-        if (!inMainMenu && !settingsMenu.IsOpen() && !dialogue.IsOpen() && !dialogueClosedThisFrame)
+        if (nightFadeActive && window.hasFocus())
+        {
+            nightFadeTime += (std::min)(deltaTime, 0.05f);
+            if (nightFadeTime >= nightFadeDuration) nightFadeActive = false;
+        }
+        if (!inMainMenu && !settingsMenu.IsOpen() && !saveListOpen && !dialogue.IsOpen() && !dialogueClosedThisFrame && !nightFadeActive)
         {
             UpdateGame(game, deltaTime);
             if (!game.pendingMonologue.empty())
@@ -542,6 +670,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                         sf::String::fromUtf8(error.begin(), error.end()).toWideString();
                     MessageBoxW(window.getNativeHandle(), message.c_str(), L"MyRPG - Dialogue", MB_OK | MB_ICONERROR);
                     frameClock.restart();
+                    playtimeClock.restart();
                 }
                 else if (dialogue.Open(paragraphs, ""))
                 {
@@ -552,6 +681,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                     MessageBoxW(window.getNativeHandle(), L"Die Schrift fuer den Dialogue konnte nicht geladen werden.",
                                 L"MyRPG", MB_OK | MB_ICONERROR);
                     frameClock.restart();
+                    playtimeClock.restart();
                 }
             }
         }
@@ -581,13 +711,28 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         else
         {
             debugCoordinatesBounds = RenderGame(window, viewport, game, fps, settingsMenu.GetSettings().showFps);
-            if (settingsMenu.IsOpen())
+            if (saveListOpen)
+            {
+                sf::RectangleShape overlay({ static_cast<float>(baseResolution.x), static_cast<float>(baseResolution.y) });
+                overlay.setFillColor(sf::Color(0, 0, 0, 170));
+                window.draw(overlay);
+                mainMenu.DrawSaveList(window, baseResolution);
+            }
+            else if (settingsMenu.IsOpen())
             {
                 settingsMenu.Draw(window, baseResolution);
             }
             else if (dialogue.IsOpen())
             {
                 dialogue.Draw(window, baseResolution);
+            }
+            if (nightFadeActive)
+            {
+                const float progress = nightFadeTime / nightFadeDuration;
+                const float opacity = progress < 0.5f ? progress * 2.0f : (1.0f - progress) * 2.0f;
+                sf::RectangleShape darkness({ static_cast<float>(baseResolution.x), static_cast<float>(baseResolution.y) });
+                darkness.setFillColor(sf::Color(0, 0, 0, static_cast<std::uint8_t>((std::clamp)(opacity, 0.0f, 1.0f) * 255.0f)));
+                window.draw(darkness);
             }
         }
         window.display();

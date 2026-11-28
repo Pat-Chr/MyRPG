@@ -17,6 +17,8 @@ struct SaveGamePosition
 	float x = 0.0f;
 	float y = 0.0f;
 	std::string name;
+	std::optional<double> playtimeSeconds;
+	bool playtimeComplete = false;
 };
 
 struct SaveGameSlot
@@ -27,6 +29,19 @@ struct SaveGameSlot
 	Id id;
 	std::string mapFile;
 	std::string name;
+	std::optional<double> playtimeSeconds;
+	bool playtimeComplete = false;
+
+	std::string PlaytimeLabel() const
+	{
+		if (!playtimeSeconds) return "Spielzeit unbekannt";
+		const auto seconds = static_cast<std::uint64_t>(*playtimeSeconds);
+		const auto twoDigits = [](std::uint64_t value) {
+			return (value < 10 ? "0" : "") + std::to_string(value);
+		};
+		return twoDigits(seconds / 3600) + ":" +
+			twoDigits((seconds / 60) % 60) + ":" + twoDigits(seconds % 60);
+	}
 
 	std::string Label() const
 	{
@@ -52,7 +67,8 @@ public:
 			std::string loadError;
 			// Unreadable files remain visible and can be deleted explicitly.
 			if (!Load(id, position, loadError)) position = {};
-			result.push_back({ id, std::move(position.mapFile), std::move(position.name) });
+			result.push_back({ id, std::move(position.mapFile), std::move(position.name),
+				position.playtimeSeconds, position.playtimeComplete });
 		}
 		slots = std::move(result);
 		return true;
@@ -79,6 +95,24 @@ public:
 			(document.contains("name") && !document["name"].is_string()))
 		{
 			error = "Der Spielstand ist beschaedigt oder hat ein nicht unterstuetztes Format.";
+			return false;
+		}
+		if (document.contains("playtime_seconds"))
+		{
+			const auto& field = document["playtime_seconds"];
+			if (!field.is_number() || !std::isfinite(field.get<double>()) ||
+				field.get<double>() < 0.0 || field.get<double>() > MaxPlaytimeSeconds ||
+				(document.contains("playtime_complete") && !document["playtime_complete"].is_boolean()))
+			{
+				error = "Der Spielstand enthaelt eine ungueltige Spielzeit.";
+				return false;
+			}
+			loaded.playtimeSeconds = field.get<double>();
+			loaded.playtimeComplete = document.value("playtime_complete", true);
+		}
+		else if (document.contains("playtime_complete"))
+		{
+			error = "Der Spielstand enthaelt eine ungueltige Spielzeit.";
 			return false;
 		}
 		loaded.mapFile = document["map"].get<std::string>();
@@ -129,7 +163,9 @@ public:
 private:
 	bool Write(SaveGameSlot::Id id, const SaveGamePosition& position, bool replaceExisting, std::string& error) const
 	{
-		if (!IsMapFileName(position.mapFile) || !std::isfinite(position.x) || !std::isfinite(position.y))
+		if (!IsMapFileName(position.mapFile) || !std::isfinite(position.x) || !std::isfinite(position.y) ||
+			(position.playtimeSeconds && (!std::isfinite(*position.playtimeSeconds) ||
+				*position.playtimeSeconds < 0.0 || *position.playtimeSeconds > MaxPlaytimeSeconds)))
 		{
 			error = "Die aktuelle Karte oder Spielerposition kann nicht gespeichert werden.";
 			return false;
@@ -139,6 +175,11 @@ private:
 		nlohmann::json document{ { "version", Version }, { "map", position.mapFile },
 			{ "x", position.x }, { "y", position.y } };
 		if (!position.name.empty()) document["name"] = position.name;
+		if (position.playtimeSeconds)
+		{
+			document["playtime_seconds"] = *position.playtimeSeconds;
+			document["playtime_complete"] = position.playtimeComplete;
+		}
 		return UserDataFiles::WriteAtomically(path, document.dump(2) + '\n', replaceExisting, error);
 	}
 
@@ -147,6 +188,7 @@ private:
 	static constexpr std::wstring_view Prefix = L"save_";
 	static constexpr std::wstring_view Extension = L".json";
 	static constexpr int Version = 1;
+	static constexpr double MaxPlaytimeSeconds = 1000000000000.0;
 
 	static bool ResolveSlot(SaveGameSlot::Id id, std::filesystem::path& path, std::string& error)
 	{

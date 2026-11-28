@@ -169,7 +169,7 @@ OBJECT object_129 scenery 704 512 Assets/Sprites/Environment/Forest/Spritesheet_
 OBJECT object_130 scenery 640 512 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=96,32,16,16
 OBJECT object_131 scenery 576 512 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=80,32,16,16
 OBJECT object_132 scenery 512 512 Assets/Sprites/Environment/Forest/Spritesheet_Forest_1.png solid=0 tile=80,32,16,16
-OBJECT object_133 npc 590.064575 -155.761185 Assets/Sprites/Characters/NPC_Trader1.png solid=1 name=Karl%20Nickel walking_area=1 walk_cells=8,-3;9,-3;10,-3;8,-2;9,-2;10,-2
+OBJECT object_133 npc 590.064575 -155.761185 Assets/Sprites/Characters/NPC_Trader1.png solid=1 name=Karl%20Nickel savepoint=1 walking_area=1 walk_cells=8,-3;9,-3;10,-3;8,-2;9,-2;10,-2
 OBJECT object_134 npc 509.144165 -316.297638 Assets/Sprites/Characters/NPC_Baker1.png solid=1 name=Baked walking_area=1 walk_cells=7,-6;8,-6;7,-5;8,-5
 TRIGGER TestDialogue1 -217.313324 53.4044647 46.0000305 44.9999695 dialogue glow=1 spawn_x=0 spawn_y=0
 OBJECT object_135 npc -502.314606 225.968872 Assets/Sprites/Characters/NPC_Trainer1.png solid=1 name=Berry walking_area=1 walk_cells=-8,3;-9,3;-9,2;-8,2;-8,4;-9,4;-7,3;-7,2;-7,4

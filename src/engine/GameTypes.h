@@ -153,6 +153,7 @@ struct MapObject
 	bool infiniteHealth = false;
 	bool passive = true;
 	bool enemy = false;
+	bool savepoint = false;
 	float hitRemaining = 0.0f;
 	int lastDamage = 0;
 };
