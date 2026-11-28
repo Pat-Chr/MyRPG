@@ -513,7 +513,7 @@ private:
 	float ObjectPanelHeight() const
 	{
 		return mode == Mode::Select && selectedObject < document.map.objects.size() &&
-			document.map.objects[selectedObject].type == MapObjectType::Npc ? 460.0f : 200.0f;
+			document.map.objects[selectedObject].type == MapObjectType::Npc ? 490.0f : 200.0f;
 	}
 	bool IsOverObjectPanel(sf::Vector2f position) const
 	{
@@ -1187,10 +1187,11 @@ private:
 		{
 			if (event.button == sf::Mouse::Button::Left && mode == Mode::Select &&
 				document.map.objects[selectedObject].type == MapObjectType::Npc && x >= 970 && x < 1270 &&
-				y >= 435 + PanelOffset && y < 525 + PanelOffset)
+				y >= 435 + PanelOffset && y < 555 + PanelOffset)
 			{
 				auto& object = document.map.objects[selectedObject];
-				bool& flag = y < 465 + PanelOffset ? object.infiniteHealth : y < 495 + PanelOffset ? object.passive : object.enemy;
+				bool& flag = y < 465 + PanelOffset ? object.infiniteHealth : y < 495 + PanelOffset ? object.passive :
+					y < 525 + PanelOffset ? object.enemy : object.savepoint;
 				flag = !flag;
 				document.dirty = true;
 			}
@@ -1532,6 +1533,7 @@ private:
 			checkbox(435, object->infiniteHealth, "Unendlich leben");
 			checkbox(465, object->passive, "Passiv (greift nicht an)");
 			checkbox(495, object->enemy, "Enemy");
+			checkbox(525, object->savepoint, "Savepoint");
 		}
 	}
 	void DrawTriggerPanel(sf::RenderWindow& window, const sf::Font& font) const

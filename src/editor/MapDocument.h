@@ -136,7 +136,7 @@ public:
 				}
 				std::string option, decodedName;
 				bool hasTile = false, hasName = false, hasArea = false, hasCells = false;
-				bool hasInfiniteHealth = false, hasPassive = false, hasHealth = false, hasEnemy = false;
+				bool hasInfiniteHealth = false, hasPassive = false, hasHealth = false, hasEnemy = false, hasSavepoint = false;
 				while (fields >> option)
 				{
 					int flag = 0;
@@ -148,6 +148,7 @@ public:
 					else if (type == "npc" && !hasInfiniteHealth && TryParseFlag(option, "infinite_health", flag)) hasInfiniteHealth = true;
 					else if (type == "npc" && !hasPassive && TryParseFlag(option, "passive", flag)) hasPassive = true;
 					else if (type == "npc" && !hasEnemy && TryParseFlag(option, "enemy", flag)) hasEnemy = true;
+					else if (type == "npc" && !hasSavepoint && TryParseFlag(option, "savepoint", flag)) hasSavepoint = true;
 					else if (type == "npc" && !hasHealth && option.starts_with("health=")) hasHealth = true;
 					else { error = "Ungueltige oder nicht unterstuetzte OBJECT-Option; die Karte wird nicht bearbeitet."; return false; }
 				}
@@ -403,7 +404,7 @@ private:
 	{
 		return a.id == b.id && a.type == b.type && a.x == b.x && a.y == b.y && a.spritePath == b.spritePath && a.solid == b.solid &&
 			   a.npcName == b.npcName && a.walkingAreaEnabled == b.walkingAreaEnabled && a.walkingCells == b.walkingCells &&
-			   a.health == b.health && a.infiniteHealth == b.infiniteHealth && a.passive == b.passive && a.enemy == b.enemy &&
+			   a.health == b.health && a.infiniteHealth == b.infiniteHealth && a.passive == b.passive && a.enemy == b.enemy && a.savepoint == b.savepoint &&
 			   a.hasTile == b.hasTile && (!a.hasTile || (a.tileX == b.tileX && a.tileY == b.tileY && a.tileWidth == b.tileWidth && a.tileHeight == b.tileHeight));
 	}
 	static std::string Format(const MapObject& object)
@@ -417,7 +418,8 @@ private:
 		if (object.type == MapObjectType::Npc)
 		{
 			stream << " health=" << object.health << " infinite_health=" << (object.infiniteHealth ? 1 : 0)
-				<< " passive=" << (object.passive ? 1 : 0) << " enemy=" << (object.enemy ? 1 : 0);
+				<< " passive=" << (object.passive ? 1 : 0) << " enemy=" << (object.enemy ? 1 : 0)
+				<< " savepoint=" << (object.savepoint ? 1 : 0);
 			if (object.walkingAreaEnabled) stream << " walking_area=1";
 			if (!object.walkingCells.empty())
 			{

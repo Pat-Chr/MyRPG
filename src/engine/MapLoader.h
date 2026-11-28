@@ -259,10 +259,21 @@ inline bool TryLoadMapFromFile(const std::string& filePath, MapData& outMap)
 
 				std::string token;
 				bool hasName = false, hasWalkingArea = false, hasWalkingCells = false;
-				bool hasInfiniteHealth = false, hasPassive = false, hasHealth = false, hasEnemy = false;
+				bool hasInfiniteHealth = false, hasPassive = false, hasHealth = false, hasEnemy = false, hasSavepoint = false;
 				while (lineStream >> token)
 				{
-					if (token.starts_with("infinite_health=") || token.starts_with("passive=") || token.starts_with("enemy="))
+					if (token.starts_with("savepoint="))
+					{
+						int flag = 0;
+						if (object.type != MapObjectType::Npc || hasSavepoint || !TryParseFlag(token, "savepoint", flag))
+						{
+							std::cerr << filePath << ':' << lineNumber << ": Invalid NPC savepoint: " << token << '\n';
+							return false;
+						}
+						hasSavepoint = true;
+						object.savepoint = flag != 0;
+					}
+					else if (token.starts_with("infinite_health=") || token.starts_with("passive=") || token.starts_with("enemy="))
 					{
 						const bool infinite = token.starts_with("infinite_health=");
 						const bool enemy = token.starts_with("enemy=");

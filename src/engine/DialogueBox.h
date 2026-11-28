@@ -3,6 +3,7 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Window/Keyboard.hpp>
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -22,11 +23,46 @@ public:
 		messages = paragraphs;
 		currentMessage = 0;
 		speakerName = speaker;
+		choice = false;
 		open = true;
 		return true;
 	}
 
+	bool OpenSaveChoice(const std::string& speaker)
+	{
+		if (!Open({ "M\xc3\xb6" "chtest du \xc3\xbc" "bernachten? (Spiel speichern)" }, speaker)) return false;
+		choice = true;
+		choiceYes = false;
+		return true;
+	}
+
 	bool IsOpen() const { return open; }
+	bool IsChoice() const { return open && choice; }
+
+	std::optional<bool> HandleChoiceKey(sf::Keyboard::Key key)
+	{
+		if (!IsChoice()) return std::nullopt;
+		if (key == sf::Keyboard::Key::Left || key == sf::Keyboard::Key::Right ||
+			key == sf::Keyboard::Key::Up || key == sf::Keyboard::Key::Down) choiceYes = !choiceYes;
+		else if (key == sf::Keyboard::Key::Escape) { open = false; return false; }
+		else if (key == sf::Keyboard::Key::Enter || key == sf::Keyboard::Key::Space || key == sf::Keyboard::Key::E)
+		{ open = false; return choiceYes; }
+		return std::nullopt;
+	}
+
+	std::optional<bool> HandleChoiceClick(sf::Vector2f position, sf::Vector2u resolution)
+	{
+		if (!IsChoice()) return std::nullopt;
+		for (int i = 0; i < 2; ++i)
+		{
+			if (ChoiceBounds(resolution, i).contains(position))
+			{
+				open = false;
+				return i == 0;
+			}
+		}
+		return std::nullopt;
+	}
 
 	void Advance()
 	{
@@ -123,18 +159,42 @@ public:
 		text.setFillColor(sf::Color::White);
 		target.draw(text);
 
-		sf::Text hint(font, "Klick / E / Enter / Leertaste | Esc", 16);
-		hint.setFillColor(sf::Color(183, 199, 215));
-		const auto bounds = hint.getLocalBounds();
-		hint.setPosition({ width - 84.0f - bounds.size.x, height - 72.0f });
-		target.draw(hint);
+		if (choice)
+		{
+			for (int i = 0; i < 2; ++i)
+			{
+				const auto bounds = ChoiceBounds(resolution, i);
+				sf::RectangleShape button(bounds.size);
+				button.setPosition(bounds.position);
+				button.setFillColor((i == 0) == choiceYes ? sf::Color(85, 125, 155) : sf::Color(40, 60, 95));
+				target.draw(button);
+				sf::Text label(font, i == 0 ? "Ja" : "Nein", 20);
+				label.setPosition(bounds.position + sf::Vector2f(12.0f, 2.0f));
+				target.draw(label);
+			}
+		}
+		else
+		{
+			sf::Text hint(font, "Klick / E / Enter / Leertaste | Esc", 16);
+			hint.setFillColor(sf::Color(183, 199, 215));
+			const auto bounds = hint.getLocalBounds();
+			hint.setPosition({ width - 84.0f - bounds.size.x, height - 72.0f });
+			target.draw(hint);
+		}
 	}
 
 private:
+	static sf::FloatRect ChoiceBounds(sf::Vector2u resolution, int index)
+	{
+		return { { 84.0f + 110.0f * index, static_cast<float>(resolution.y) - 78.0f }, { 100.0f, 30.0f } };
+	}
+
 	sf::Font font;
 	std::vector<std::string> messages;
 	std::size_t currentMessage = 0;
 	std::string speakerName;
 	bool fontLoaded = false;
 	bool open = false;
+	bool choice = false;
+	bool choiceYes = false;
 };
